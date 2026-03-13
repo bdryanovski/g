@@ -2,9 +2,9 @@ use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
 use crate::commands::git as gitcmd;
 use crate::config;
@@ -16,17 +16,23 @@ use crate::ui;
 pub struct Workspace {
     pub name: String,
     pub description: Option<String>,
+    pub path: String,
     pub branch: String,
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    /// Map of filename → content hash (for quick checking)
-    pub env_files: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct WorkspaceStore {
     pub workspaces: Vec<Workspace>,
-    pub current: Option<String>,
+}
+
+/// Live worktree info parsed from `git worktree list --porcelain`
+struct WorktreeInfo {
+    path: PathBuf,
+    #[allow(dead_code)]
+    head: String,
+    branch: Option<String>,
+    bare: bool,
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -46,369 +52,70 @@ fn save_store(store: &WorkspaceStore) -> Result<()> {
     fs::write(&path, raw).context("Failed to save workspaces file")
 }
 
-fn workspace_files_dir(name: &str) -> Result<PathBuf> {
-    let dir = config::workspace_store_dir()?.join(name);
-    fs::create_dir_all(&dir)?;
-    Ok(dir)
-}
+// ─── Git Worktree Helpers ────────────────────────────────────────────────────
 
-// ─── Commands ─────────────────────────────────────────────────────────────────
+fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
+    let raw = gitcmd::git_output(&["worktree", "list", "--porcelain"])
+        .context("Failed to list git worktrees. Are you inside a git repository?")?;
 
-pub fn list() -> Result<()> {
-    let store = load_store()?;
+    let mut worktrees = Vec::new();
+    let mut current_path: Option<PathBuf> = None;
+    let mut current_head = String::new();
+    let mut current_branch: Option<String> = None;
+    let mut is_bare = false;
 
-    if store.workspaces.is_empty() {
-        println!();
-        println!("  {}", "No workspaces yet.".bright_black());
-        println!("  {} {}", "tip:".bright_black(), "vcli workspace create <name>  to create one".bright_black());
-        println!();
-        return Ok(());
+    for line in raw.lines() {
+        if let Some(p) = line.strip_prefix("worktree ") {
+            if let Some(path) = current_path.take() {
+                worktrees.push(WorktreeInfo {
+                    path,
+                    head: current_head.clone(),
+                    branch: current_branch.take(),
+                    bare: is_bare,
+                });
+            }
+            current_path = Some(PathBuf::from(p));
+            current_head = String::new();
+            current_branch = None;
+            is_bare = false;
+        } else if let Some(h) = line.strip_prefix("HEAD ") {
+            current_head = h.to_string();
+        } else if let Some(b) = line.strip_prefix("branch ") {
+            current_branch = Some(
+                b.strip_prefix("refs/heads/")
+                    .unwrap_or(b)
+                    .to_string(),
+            );
+        } else if line == "bare" {
+            is_bare = true;
+        }
     }
 
-    println!();
-    let mut table = ui::Table::new(vec!["", "Name", "Branch", "Env Files", "Updated"]);
-    for ws in &store.workspaces {
-        let is_current = store.current.as_deref() == Some(&ws.name);
-        let marker = if is_current { "◉".green().bold().to_string() } else { "◯".bright_black().to_string() };
-        let name = if is_current {
-            ws.name.green().bold().to_string()
-        } else {
-            ws.name.white().to_string()
-        };
-        let desc = ws.description.as_deref().unwrap_or("");
-        let label = if desc.is_empty() {
-            name
-        } else {
-            format!("{}  {}", name, desc.bright_black())
-        };
-        table.add_row(vec![
-            marker,
-            label,
-            ui::color_branch(&ws.branch),
-            format!("{} files", ws.env_files.len()).bright_black().to_string(),
-            format_relative_time(ws.updated_at),
-        ]);
+    if let Some(path) = current_path.take() {
+        worktrees.push(WorktreeInfo {
+            path,
+            head: current_head,
+            branch: current_branch,
+            bare: is_bare,
+        });
     }
-    table.print();
-    println!();
-    Ok(())
+
+    Ok(worktrees)
 }
 
-pub fn create(name: &str, description: Option<&str>) -> Result<()> {
-    let mut store = load_store()?;
+fn worktree_path_for(name: &str) -> Result<PathBuf> {
     let cfg = config::load()?;
-
-    if store.workspaces.iter().any(|w| w.name == name) {
-        bail!("Workspace '{}' already exists. Use a different name.", name);
-    }
-
-    let branch = gitcmd::current_branch().context("Not inside a git repository")?;
     let repo_root = gitcmd::repo_root()?;
-    let dest_dir = workspace_files_dir(name)?;
-
-    // Copy env files
-    let mut env_files = HashMap::new();
-    let mut copied = 0usize;
-
-    for pattern in &cfg.workspace.copy_patterns {
-        let matches = glob_files(&repo_root, pattern);
-        for file_path in matches {
-            let rel = file_path
-                .strip_prefix(&repo_root)
-                .unwrap_or(&file_path)
-                .to_string_lossy()
-                .to_string();
-            let dest = dest_dir.join(&rel);
-            if let Some(parent) = dest.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            if let Ok(content) = fs::read_to_string(&file_path) {
-                let hash = simple_hash(&content);
-                fs::write(&dest, &content)?;
-                env_files.insert(rel, hash);
-                copied += 1;
-            }
-        }
-    }
-
-    let now = Utc::now();
-    store.workspaces.push(Workspace {
-        name: name.to_string(),
-        description: description.map(str::to_string),
-        branch: branch.clone(),
-        created_at: now,
-        updated_at: now,
-        env_files,
-    });
-
-    if store.current.is_none() {
-        store.current = Some(name.to_string());
-    }
-
-    save_store(&store)?;
-
-    println!();
-    ui::print_success(&format!(
-        "Created workspace {} on branch {}",
-        name.green().bold(),
-        branch.cyan()
-    ));
-    if copied > 0 {
-        println!(
-            "  {} Captured {} env file{}",
-            "  ".bright_black(),
-            copied.to_string().yellow(),
-            if copied == 1 { "" } else { "s" }
-        );
-    }
-    println!();
-    Ok(())
-}
-
-pub fn switch(name: &str, no_stash: bool) -> Result<()> {
-    let mut store = load_store()?;
-    let cfg = config::load()?;
-
-    let target_name = store
-        .workspaces
-        .iter()
-        .find(|w| w.name == name || w.name.contains(name))
-        .map(|w| w.name.clone())
-        .with_context(|| format!("Workspace '{}' not found. Run `vcli workspace list` to see all workspaces.", name))?;
-
-    let current_branch = gitcmd::current_branch()?;
-
-    // Check for uncommitted changes
-    let has_changes = !gitcmd::git_output_lossy(&["status", "--porcelain"]).is_empty();
-
-    if has_changes {
-        if cfg.workspace.auto_stash && !no_stash {
-            let pb = ui::spinner(&format!("Stashing changes on {}", current_branch));
-            gitcmd::git_output(&["stash", "push", "-m", &format!("vcli-auto-stash-{}", current_branch)])?;
-            pb.finish_and_clear();
-            ui::print_info(&format!("Stashed changes on {}", current_branch.cyan()));
-        } else if !no_stash {
-            bail!(
-                "You have uncommitted changes. Use --no-stash to switch anyway (changes will remain), or commit/stash first."
-            );
-        }
-    }
-
-    let repo_root = gitcmd::repo_root()?;
-
-    // Save the current workspace's env files before switching
-    if let Some(current_name) = &store.current {
-        if let Some(current_ws) = store.workspaces.iter_mut().find(|w| &w.name == current_name) {
-            let save_dir = workspace_files_dir(&current_ws.name)?;
-            for (rel_path, hash) in current_ws.env_files.iter_mut() {
-                let src = Path::new(&repo_root).join(rel_path);
-                if src.exists() {
-                    if let Ok(content) = fs::read_to_string(&src) {
-                        let new_hash = simple_hash(&content);
-                        if new_hash != *hash {
-                            let dest = save_dir.join(rel_path);
-                            if let Some(parent) = dest.parent() {
-                                fs::create_dir_all(parent)?;
-                            }
-                            fs::write(&dest, &content)?;
-                            *hash = new_hash;
-                        }
-                    }
-                }
-            }
-            current_ws.updated_at = Utc::now();
-        }
-    }
-
-    // Switch branch
-    let target_ws = store
-        .workspaces
-        .iter()
-        .find(|w| w.name == target_name)
-        .cloned()
-        .unwrap();
-
-    let pb = ui::spinner(&format!("Switching to branch {}", target_ws.branch));
-    gitcmd::git_output(&["checkout", &target_ws.branch])
-        .with_context(|| format!("Failed to switch to branch '{}'", target_ws.branch))?;
-    pb.finish_and_clear();
-
-    // Restore target workspace's env files
-    let src_dir = workspace_files_dir(&target_ws.name)?;
-    let mut restored = 0usize;
-
-    for (rel_path, _hash) in &target_ws.env_files {
-        let src = src_dir.join(rel_path);
-        let dest = Path::new(&repo_root).join(rel_path);
-        if src.exists() {
-            if let Some(parent) = dest.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            if let Ok(content) = fs::read_to_string(&src) {
-                fs::write(&dest, content)?;
-                restored += 1;
-            }
-        }
-    }
-
-    // Update current workspace and timestamp
-    store.current = Some(target_ws.name.clone());
-    if let Some(ws) = store.workspaces.iter_mut().find(|w| w.name == target_name) {
-        ws.updated_at = Utc::now();
-    }
-    save_store(&store)?;
-
-    println!();
-    ui::print_success(&format!(
-        "Switched to workspace {} → branch {}",
-        target_ws.name.green().bold(),
-        target_ws.branch.cyan().bold()
-    ));
-
-    if restored > 0 {
-        println!(
-            "     {} Restored {} env file{}",
-            "".bright_black(),
-            restored.to_string().yellow(),
-            if restored == 1 { "" } else { "s" }
-        );
-    }
-
-    if let Some(desc) = &target_ws.description {
-        println!("     {} {}", "desc:".bright_black(), desc.bright_white());
-    }
-    println!();
-    Ok(())
-}
-
-pub fn delete(name: &str) -> Result<()> {
-    let mut store = load_store()?;
-
-    let idx = store
-        .workspaces
-        .iter()
-        .position(|w| w.name == name)
-        .with_context(|| format!("Workspace '{}' not found.", name))?;
-
-    store.workspaces.remove(idx);
-    if store.current.as_deref() == Some(name) {
-        store.current = store.workspaces.first().map(|w| w.name.clone());
-    }
-
-    // Remove stored files
-    let dir = config::workspace_store_dir()?.join(name);
-    if dir.exists() {
-        fs::remove_dir_all(&dir)?;
-    }
-
-    save_store(&store)?;
-    ui::print_success(&format!("Deleted workspace '{}'", name.red()));
-    Ok(())
-}
-
-pub fn status() -> Result<()> {
-    let store = load_store()?;
-    let branch = gitcmd::current_branch().unwrap_or_else(|_| "unknown".into());
-
-    println!();
-    if let Some(current_name) = &store.current {
-        if let Some(ws) = store.workspaces.iter().find(|w| &w.name == current_name) {
-            println!(
-                "  {} {} {}",
-                "Current workspace:".bright_black(),
-                ws.name.green().bold(),
-                format!("({})", ws.branch).bright_black()
-            );
-            if let Some(desc) = &ws.description {
-                println!("  {} {}", "Description:".bright_black(), desc);
-            }
-            println!(
-                "  {} {}",
-                "Env files:".bright_black(),
-                ws.env_files.len().to_string().yellow()
-            );
-            println!(
-                "  {} {}",
-                "Active branch:".bright_black(),
-                branch.cyan().bold()
-            );
-            if ws.branch != branch {
-                ui::print_warning(&format!(
-                    "Workspace branch '{}' ≠ current branch '{}'",
-                    ws.branch, branch
-                ));
-            }
-        }
-    } else {
-        println!("  {}", "No active workspace.".bright_black());
-    }
-    println!();
-    Ok(())
-}
-
-pub fn rename(old: &str, new: &str) -> Result<()> {
-    let mut store = load_store()?;
-    let ws = store
-        .workspaces
-        .iter_mut()
-        .find(|w| w.name == old)
-        .with_context(|| format!("Workspace '{}' not found.", old))?;
-
-    ws.name = new.to_string();
-    if store.current.as_deref() == Some(old) {
-        store.current = Some(new.to_string());
-    }
-
-    // Rename stored files directory
-    let old_dir = config::workspace_store_dir()?.join(old);
-    let new_dir = config::workspace_store_dir()?.join(new);
-    if old_dir.exists() {
-        fs::rename(&old_dir, &new_dir)?;
-    }
-
-    save_store(&store)?;
-    ui::print_success(&format!("Renamed workspace '{}' → '{}'", old, new.green()));
-    Ok(())
-}
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-fn glob_files(root: &str, pattern: &str) -> Vec<PathBuf> {
-    // Simple pattern matching: supports leading * wildcard
-    let root_path = Path::new(root);
-    let mut results = vec![];
-
-    if pattern.contains('*') {
-        // Split on * and check prefix/suffix
-        let parts: Vec<&str> = pattern.splitn(2, '*').collect();
-        let prefix = parts[0];
-        let suffix = if parts.len() > 1 { parts[1] } else { "" };
-
-        if let Ok(entries) = fs::read_dir(root_path) {
-            for entry in entries.flatten() {
-                let file_name = entry.file_name();
-                let name = file_name.to_string_lossy();
-                if name.starts_with(prefix) && name.ends_with(suffix) {
-                    results.push(entry.path());
-                }
-            }
-        }
-    } else {
-        let full = root_path.join(pattern);
-        if full.exists() {
-            results.push(full);
-        }
-    }
-
-    results
-}
-
-fn simple_hash(content: &str) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    let mut h = DefaultHasher::new();
-    content.hash(&mut h);
-    format!("{:x}", h.finish())
+    let root = Path::new(&repo_root);
+    let repo_name = root
+        .file_name()
+        .context("Could not determine repo directory name")?
+        .to_string_lossy();
+    let parent = root
+        .parent()
+        .context("Repo is at filesystem root")?;
+    let dir_name = format!("{}{}{}", repo_name, cfg.workspace.separator, name);
+    Ok(parent.join(dir_name))
 }
 
 fn format_relative_time(dt: DateTime<Utc>) -> String {
@@ -427,4 +134,430 @@ fn format_relative_time(dt: DateTime<Utc>) -> String {
     }
     .bright_black()
     .to_string()
+}
+
+// ─── Commands ─────────────────────────────────────────────────────────────────
+
+pub fn list() -> Result<()> {
+    let store = load_store()?;
+    let worktrees = list_worktrees()?;
+    let cwd = std::env::current_dir()?;
+
+    if worktrees.is_empty() {
+        println!();
+        println!("  {}", "No worktrees found.".bright_black());
+        println!();
+        return Ok(());
+    }
+
+    println!();
+    let mut table = ui::Table::new(vec!["", "Name", "Branch", "Path", "Created"]);
+
+    for wt in &worktrees {
+        if wt.bare {
+            continue;
+        }
+
+        let branch_display = wt.branch.as_deref().unwrap_or("(detached)");
+        let is_current = cwd.starts_with(&wt.path);
+
+        // Try to find vcli metadata for this worktree
+        let meta = store.workspaces.iter().find(|ws| {
+            Path::new(&ws.path) == wt.path
+        });
+
+        let (name_display, created_display) = if let Some(ws) = meta {
+            let name = if is_current {
+                ws.name.green().bold().to_string()
+            } else {
+                ws.name.white().to_string()
+            };
+            let label = if let Some(desc) = &ws.description {
+                if !desc.is_empty() {
+                    format!("{}  {}", name, desc.bright_black())
+                } else {
+                    name
+                }
+            } else {
+                name
+            };
+            (label, format_relative_time(ws.created_at))
+        } else {
+            // Main worktree or untracked worktree
+            let name = if is_current {
+                "(main)".green().bold().to_string()
+            } else {
+                "(main)".bright_black().to_string()
+            };
+            (name, "—".bright_black().to_string())
+        };
+
+        let marker = if is_current {
+            "◉".green().bold().to_string()
+        } else {
+            "◯".bright_black().to_string()
+        };
+
+        let path_display = wt.path.display().to_string().bright_black().to_string();
+
+        table.add_row(vec![
+            marker,
+            name_display,
+            ui::color_branch(branch_display),
+            path_display,
+            created_display,
+        ]);
+    }
+
+    table.print();
+    println!();
+
+    if store.workspaces.is_empty() {
+        println!(
+            "  {} {}",
+            "tip:".bright_black(),
+            "vcli workspace create <name>  to create a worktree workspace".bright_black()
+        );
+        println!();
+    }
+
+    Ok(())
+}
+
+pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Result<()> {
+    let mut store = load_store()?;
+
+    if store.workspaces.iter().any(|w| w.name == name) {
+        bail!("Workspace '{}' already exists. Use a different name.", name);
+    }
+
+    let wt_path = worktree_path_for(name)?;
+    if wt_path.exists() {
+        bail!(
+            "Directory '{}' already exists. Choose a different workspace name.",
+            wt_path.display()
+        );
+    }
+
+    let branch_name = branch.unwrap_or(name);
+    let wt_path_str = wt_path.to_string_lossy().to_string();
+
+    // Check if the branch already exists
+    let branch_exists = gitcmd::git_output(&["rev-parse", "--verify", branch_name]).is_ok();
+
+    let pb = ui::spinner(&format!("Creating worktree for branch {}", branch_name));
+
+    let result = if branch_exists {
+        gitcmd::git_output(&["worktree", "add", &wt_path_str, branch_name])
+    } else {
+        gitcmd::git_output(&["worktree", "add", "-b", branch_name, &wt_path_str])
+    };
+
+    pb.finish_and_clear();
+
+    result.with_context(|| {
+        format!(
+            "Failed to create worktree at '{}' for branch '{}'",
+            wt_path.display(),
+            branch_name
+        )
+    })?;
+
+    let now = Utc::now();
+    store.workspaces.push(Workspace {
+        name: name.to_string(),
+        description: description.map(str::to_string),
+        path: wt_path_str.clone(),
+        branch: branch_name.to_string(),
+        created_at: now,
+    });
+
+    save_store(&store)?;
+
+    println!();
+    ui::print_success(&format!(
+        "Created workspace {} on branch {}",
+        name.green().bold(),
+        branch_name.cyan()
+    ));
+    println!(
+        "     {} {}",
+        "path:".bright_black(),
+        wt_path_str.cyan().underline()
+    );
+    println!();
+    println!(
+        "  {} {}",
+        "tip:".bright_black(),
+        format!("vcli workspace switch {}  to open a shell there", name).bright_black()
+    );
+    println!();
+    Ok(())
+}
+
+pub fn switch(name: &str) -> Result<()> {
+    let store = load_store()?;
+
+    let workspace = store
+        .workspaces
+        .iter()
+        .find(|w| w.name == name || w.name.contains(name))
+        .with_context(|| {
+            format!(
+                "Workspace '{}' not found. Run `vcli workspace list` to see all workspaces.",
+                name
+            )
+        })?;
+
+    let wt_path = Path::new(&workspace.path);
+    if !wt_path.exists() {
+        bail!(
+            "Workspace directory '{}' no longer exists. It may have been removed outside vcli.\n\
+             Run `vcli workspace delete {}` to clean up.",
+            wt_path.display(),
+            workspace.name
+        );
+    }
+
+    println!();
+    ui::print_info(&format!(
+        "Opening shell in workspace {} → {}",
+        workspace.name.green().bold(),
+        workspace.path.cyan().underline()
+    ));
+    if let Some(desc) = &workspace.description {
+        println!("     {} {}", "desc:".bright_black(), desc.bright_white());
+    }
+    println!(
+        "     {} {}",
+        "branch:".bright_black(),
+        workspace.branch.green().bold()
+    );
+    println!(
+        "     {}",
+        "Exit the shell (Ctrl+D or `exit`) to return.".bright_black()
+    );
+    println!();
+
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
+
+    let status = Command::new(&shell)
+        .current_dir(wt_path)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .with_context(|| format!("Failed to spawn shell '{}'", shell))?;
+
+    if !status.success() {
+        if let Some(code) = status.code() {
+            if code != 0 {
+                println!();
+                ui::print_info(&format!("Shell exited with code {}", code));
+            }
+        }
+    }
+
+    println!();
+    ui::print_info("Returned to original directory.");
+    println!();
+
+    Ok(())
+}
+
+pub fn delete(name: &str, force: bool) -> Result<()> {
+    let mut store = load_store()?;
+
+    let idx = store
+        .workspaces
+        .iter()
+        .position(|w| w.name == name)
+        .with_context(|| format!("Workspace '{}' not found.", name))?;
+
+    let workspace = &store.workspaces[idx];
+    let wt_path = &workspace.path;
+
+    let pb = ui::spinner(&format!("Removing worktree {}", name));
+
+    let mut args = vec!["worktree", "remove"];
+    if force {
+        args.push("--force");
+    }
+    args.push(wt_path);
+
+    let result = gitcmd::git_output(&args);
+    pb.finish_and_clear();
+
+    match result {
+        Ok(_) => {}
+        Err(e) => {
+            let msg = format!("{}", e);
+            if msg.contains("dirty") || msg.contains("untracked") {
+                bail!(
+                    "Worktree has uncommitted changes. Use `vcli workspace delete {} --force` to remove anyway.",
+                    name
+                );
+            }
+            if !Path::new(wt_path).exists() {
+                ui::print_warning("Worktree directory already removed; cleaning up metadata.");
+                gitcmd::git_output(&["worktree", "prune"]).ok();
+            } else {
+                return Err(e).context("Failed to remove worktree");
+            }
+        }
+    }
+
+    store.workspaces.remove(idx);
+    save_store(&store)?;
+
+    println!();
+    ui::print_success(&format!("Deleted workspace '{}'", name.red()));
+    println!();
+    Ok(())
+}
+
+pub fn status() -> Result<()> {
+    let store = load_store()?;
+    let cwd = std::env::current_dir()?;
+    let worktrees = list_worktrees()?;
+
+    let current_wt = worktrees.iter().find(|wt| cwd.starts_with(&wt.path));
+
+    println!();
+
+    if let Some(wt) = current_wt {
+        let branch = wt.branch.as_deref().unwrap_or("(detached)");
+        let meta = store.workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
+
+        if let Some(ws) = meta {
+            println!(
+                "  {} {} {}",
+                "Workspace:".bright_black(),
+                ws.name.green().bold(),
+                format!("({})", ws.branch).bright_black()
+            );
+            if let Some(desc) = &ws.description {
+                println!("  {} {}", "Description:".bright_black(), desc);
+            }
+            println!(
+                "  {} {}",
+                "Path:".bright_black(),
+                ws.path.cyan().underline()
+            );
+            println!(
+                "  {} {}",
+                "Created:".bright_black(),
+                format_relative_time(ws.created_at)
+            );
+        } else {
+            println!(
+                "  {} {}",
+                "Worktree:".bright_black(),
+                "(main repository)".green().bold()
+            );
+        }
+
+        println!(
+            "  {} {}",
+            "Branch:".bright_black(),
+            branch.cyan().bold()
+        );
+
+        let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
+        let changes: Vec<&str> = porcelain.lines().collect();
+        if changes.is_empty() {
+            println!(
+                "  {} {}",
+                "Status:".bright_black(),
+                "clean".green()
+            );
+        } else {
+            let staged = changes.iter().filter(|l| {
+                l.len() >= 2 && &l[0..1] != " " && &l[0..1] != "?"
+            }).count();
+            let unstaged = changes.iter().filter(|l| {
+                l.len() >= 2 && &l[1..2] != " " && &l[0..1] != "?"
+            }).count();
+            let untracked = changes.iter().filter(|l| l.starts_with("??")).count();
+            println!(
+                "  {} {} change{}{}{}",
+                "Status:".bright_black(),
+                changes.len().to_string().yellow(),
+                if changes.len() == 1 { "" } else { "s" },
+                if staged > 0 {
+                    format!(" ({} staged)", staged).green().to_string()
+                } else {
+                    String::new()
+                },
+                if untracked > 0 {
+                    format!(" ({} untracked)", untracked).bright_black().to_string()
+                } else if unstaged > 0 {
+                    format!(" ({} unstaged)", unstaged).yellow().to_string()
+                } else {
+                    String::new()
+                },
+            );
+        }
+    } else {
+        println!("  {}", "Not inside any known worktree.".bright_black());
+    }
+
+    println!();
+    Ok(())
+}
+
+pub fn rename(old: &str, new: &str) -> Result<()> {
+    let mut store = load_store()?;
+
+    let ws = store
+        .workspaces
+        .iter_mut()
+        .find(|w| w.name == old)
+        .with_context(|| format!("Workspace '{}' not found.", old))?;
+
+    let old_path = PathBuf::from(&ws.path);
+    let new_path = worktree_path_for(new)?;
+
+    if new_path.exists() {
+        bail!(
+            "Directory '{}' already exists. Choose a different name.",
+            new_path.display()
+        );
+    }
+
+    if !old_path.exists() {
+        bail!(
+            "Workspace directory '{}' no longer exists. Clean up with `vcli workspace delete {}`.",
+            old_path.display(),
+            old
+        );
+    }
+
+    let pb = ui::spinner(&format!("Moving worktree {} → {}", old, new));
+
+    fs::rename(&old_path, &new_path)
+        .with_context(|| format!("Failed to move '{}' to '{}'", old_path.display(), new_path.display()))?;
+
+    gitcmd::git_output(&["worktree", "repair"])
+        .context("Failed to repair worktree tracking after move")?;
+
+    pb.finish_and_clear();
+
+    ws.name = new.to_string();
+    ws.path = new_path.to_string_lossy().to_string();
+    save_store(&store)?;
+
+    println!();
+    ui::print_success(&format!(
+        "Renamed workspace '{}' → '{}'",
+        old,
+        new.green()
+    ));
+    println!(
+        "     {} {}",
+        "path:".bright_black(),
+        new_path.display().to_string().cyan().underline()
+    );
+    println!();
+    Ok(())
 }

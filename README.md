@@ -4,7 +4,7 @@ A beautiful, opinionated Git CLI built in Rust. `vcli` is a full drop-in replace
 
 - 🎨 **Beautiful colored output** — enhanced log, status, diff, branch, show
 - 🏗️ **Stacked PRs** — create, sync, and publish layered pull requests to GitHub with a single command
-- 🗂️ **Workspaces** — named snapshots of your branch + env files, switch instantly
+- 🗂️ **Workspaces** — parallel branch checkouts via `git worktree`, no branch switching needed
 - ✍️ **Guided commits** — interactive conventional commit builder with validation
 - 🔍 **Branch comparison** — visual ahead/behind, file stat bars, commit lists
 - 🔌 **Pluggable diff tools** — auto-detects `delta` / `diff-so-fancy`, or configure your own
@@ -129,28 +129,39 @@ vcli commit -m "feat: quick non-interactive"
 
 ## Workspaces
 
-Workspaces let you snapshot a branch + all your `.env` files so you can switch contexts cleanly.
+Workspaces are an abstraction on top of `git worktree`. Each workspace is a **separate directory** with its own checkout of a branch — no branch switching, no stashing, no context loss. You can have multiple branches checked out simultaneously.
 
 ```bash
-vcli workspace create backend-work --description "API refactor"
-vcli workspace create frontend-work
+# Create a workspace (creates sibling directory + new branch)
+vcli workspace create feature-auth --description "Auth system"
 
-vcli workspace list       # see all workspaces
-vcli workspace switch backend-work
-vcli workspace status     # show current workspace info
-vcli workspace rename backend-work api-refactor
-vcli workspace delete frontend-work
+# Create a workspace for an existing branch
+vcli workspace create hotfix -b fix/login-bug
+
+# List all worktree workspaces
+vcli workspace list
+
+# Open a subshell inside a workspace directory
+vcli workspace switch feature-auth
+# ... work on it, then Ctrl+D or `exit` to return
+
+# Show info about the worktree you're currently in
+vcli workspace status
+
+# Rename (moves directory + repairs git tracking)
+vcli workspace rename feature-auth auth-system
+
+# Remove a workspace
+vcli workspace delete feature-auth
+vcli workspace delete feature-auth --force   # if worktree is dirty
 ```
 
-**What gets copied:** Any file matching `workspace.copy_patterns` in config:
+Worktrees are created as **siblings** to your repo. If your repo lives at `~/proj/myapp`, a workspace named `feature-auth` creates a checkout at `~/proj/myapp--feature-auth`. The separator is configurable:
 
 ```toml
 [workspace]
-copy_patterns = [".env", ".env.local", ".env.*.local"]
-auto_stash = true
+separator = "--"
 ```
-
-Switching automatically stashes uncommitted work, checks out the workspace branch, and restores env files.
 
 ---
 
@@ -276,8 +287,7 @@ default_reviewers = ["alice", "bob"]
 default_labels = ["needs-review"]
 
 [workspace]
-copy_patterns = [".env", ".env.local", ".env.*.local"]
-auto_stash = true
+separator = "--"   # repo--workspace sibling directory naming
 
 [aliases]
 co = "checkout"
@@ -399,9 +409,6 @@ src/
 
 ~/.config/vcli/
 ├── config.toml       — Main config
-├── workspaces.toml   — Workspace store
-├── stacks.toml       — Stack store
-└── workspace_files/  — Stored env file snapshots
-    └── <workspace>/
-        └── .env
+├── workspaces.toml   — Workspace metadata (names, descriptions)
+└── stacks.toml       — Stack store
 ```
