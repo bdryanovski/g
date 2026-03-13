@@ -1,7 +1,17 @@
 //! Workspace (git worktree) management.
 //!
-//! This module stores small metadata about workspaces in a TOML file, while
-//! leveraging `git worktree` for the actual filesystem and branch operations.
+//! Tutorial overview:
+//! - A "workspace" here is just a git worktree plus metadata stored in a TOML file.
+//! - We keep the source of truth for branches/worktrees in git itself, and only
+//!   store optional UI metadata (name/description/created_at) in `workspaces.toml`.
+//! - The functions in this module are called from `main.rs` when a user runs
+//!   `vcli workspace <command>`.
+//!
+//! Rust concepts used here:
+//! - `serde` derives (`Serialize`, `Deserialize`) to read/write TOML.
+//! - `Option<T>` for optional fields like description or branch.
+//! - `Path` vs `PathBuf` for filesystem paths (borrowed vs owned).
+//! - Iterators and pattern matching when parsing git output.
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
@@ -23,18 +33,21 @@ pub struct Workspace {
     /// Human-friendly workspace name.
     pub name: String,
     /// Optional description shown in list view.
+    /// `Option<String>` means "may be absent" without using null or empty strings.
     pub description: Option<String>,
     /// Absolute filesystem path to the worktree directory.
     pub path: String,
     /// Branch associated with the worktree.
     pub branch: String,
     /// Timestamp used for relative "created X days ago" UI.
+    /// `chrono::DateTime<Utc>` gives time-zone-aware timestamps.
     pub created_at: DateTime<Utc>,
 }
 
 /// Persistent store of workspaces plus their metadata.
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct WorkspaceStore {
+    /// We store all workspaces in a flat vector for easy TOML serialization.
     pub workspaces: Vec<Workspace>,
 }
 
@@ -56,15 +69,18 @@ struct WorktreeInfo {
 fn load_store() -> Result<WorkspaceStore> {
     let path = config::workspaces_path()?;
     if !path.exists() {
+        // If the file doesn't exist yet, return an empty store instead of erroring.
         return Ok(WorkspaceStore::default());
     }
     let raw = fs::read_to_string(&path).context("Failed to read workspaces file")?;
+    // Deserialize the TOML into our struct. `toml::from_str` returns a Result.
     toml::from_str(&raw).context("Failed to parse workspaces file")
 }
 
 /// Persist the workspace store to disk.
 fn save_store(store: &WorkspaceStore) -> Result<()> {
     let path = config::workspaces_path()?;
+    // Serialize our structs into human-readable TOML.
     let raw = toml::to_string_pretty(store).context("Failed to serialize workspaces")?;
     fs::write(&path, raw).context("Failed to save workspaces file")
 }
@@ -165,6 +181,7 @@ pub fn list() -> Result<()> {
     let worktrees = list_worktrees()?;
     let cwd = std::env::current_dir()?;
 
+    // Early return pattern: if no worktrees, exit gracefully.
     if worktrees.is_empty() {
         println!();
         println!("  {}", "No worktrees found.".bright_black());
@@ -286,6 +303,7 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
         )
     })?;
 
+    // Record metadata so `list` and `status` can show friendly names.
     let now = Utc::now();
     store.workspaces.push(Workspace {
         name: name.to_string(),
@@ -333,6 +351,7 @@ pub fn switch(name: &str) -> Result<()> {
             )
         })?;
 
+    // Guard: ensure the directory still exists (it might have been removed manually).
     let wt_path = Path::new(&workspace.path);
     if !wt_path.exists() {
         bail!(
@@ -449,6 +468,7 @@ pub fn status() -> Result<()> {
     let cwd = std::env::current_dir()?;
     let worktrees = list_worktrees()?;
 
+    // Find which worktree we are currently in by prefix matching on cwd.
     let current_wt = worktrees.iter().find(|wt| cwd.starts_with(&wt.path));
 
     println!();
@@ -491,6 +511,7 @@ pub fn status() -> Result<()> {
             branch.cyan().bold()
         );
 
+        // Porcelain output is machine-readable; we count staged/unstaged/untracked items.
         let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
         let changes: Vec<&str> = porcelain.lines().collect();
         if changes.is_empty() {
@@ -564,9 +585,11 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
 
     let pb = ui::spinner(&format!("Moving worktree {} → {}", old, new));
 
+    // Move the directory first.
     fs::rename(&old_path, &new_path)
         .with_context(|| format!("Failed to move '{}' to '{}'", old_path.display(), new_path.display()))?;
 
+    // Repair git's internal worktree bookkeeping after the move.
     gitcmd::git_output(&["worktree", "repair"])
         .context("Failed to repair worktree tracking after move")?;
 
