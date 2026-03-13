@@ -3,12 +3,12 @@
 A beautiful, opinionated Git CLI built in Rust. `vcli` is a full drop-in replacement for the `git` command that adds:
 
 - 🎨 **Beautiful colored output** — enhanced log, status, diff, branch, show
-- 🏗️  **Stacked PRs** — create, sync, and publish layered pull requests to GitHub with a single command  
-- 🗂️  **Workspaces** — named snapshots of your branch + env files, switch instantly  
-- ✍️  **Guided commits** — interactive conventional commit builder with validation  
-- 🔍 **Branch comparison** — visual ahead/behind, file stat bars, commit lists  
-- 🔌 **Pluggable diff tools** — auto-detects `delta` / `diff-so-fancy`, or configure your own  
-- ⚙️  **Config-driven** — everything tweakable via `~/.config/vcli/config.toml`
+- 🏗️ **Stacked PRs** — create, sync, and publish layered pull requests to GitHub with a single command
+- 🗂️ **Workspaces** — named snapshots of your branch + env files, switch instantly
+- ✍️ **Guided commits** — interactive conventional commit builder with validation
+- 🔍 **Branch comparison** — visual ahead/behind, file stat bars, commit lists
+- 🔌 **Pluggable diff tools** — auto-detects `delta` / `diff-so-fancy`, or configure your own
+- ⚙️ **Config-driven** — everything tweakable via `~/.config/vcli/config.toml`
 
 ---
 
@@ -111,10 +111,10 @@ vcli commit
 
 Interactive step-by-step commit builder:
 
-1. **Type** — pick from your configured conventional commit types (feat, fix, docs, …)  
-2. **Scope** — optional component/area  
-3. **Subject** — validated against max length  
-4. **Body** — explain *why*, not *what*  
+1. **Type** — pick from your configured conventional commit types (feat, fix, docs, …)
+2. **Scope** — optional component/area
+3. **Subject** — validated against max length
+4. **Body** — explain _why_, not _what_
 5. **Footer** — `BREAKING CHANGE:`, `Closes #123`, etc.
 
 **Preview** is shown before confirming. Live character count warns you when the subject is too long.
@@ -298,11 +298,11 @@ paths = []
 
 `vcli diff` auto-detects the best available tool:
 
-| Tool | Install |
-|------|---------|
-| [delta](https://github.com/dandavison/delta) | `brew install git-delta` |
+| Tool                                                       | Install                      |
+| ---------------------------------------------------------- | ---------------------------- |
+| [delta](https://github.com/dandavison/delta)               | `brew install git-delta`     |
 | [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy) | `brew install diff-so-fancy` |
-| builtin | (always available) |
+| builtin                                                    | (always available)           |
 
 Override in config: `diff.tool = "delta"` or point to any binary.
 
@@ -352,11 +352,11 @@ paths = ["/path/to/my-plugin", "~/scripts/vcli-release"]
 
 ## Environment Variables
 
-| Variable | Purpose |
-|----------|---------|
+| Variable       | Purpose                                              |
+| -------------- | ---------------------------------------------------- |
 | `GITHUB_TOKEN` | GitHub personal access token (preferred over config) |
-| `EDITOR` | Editor for `vcli config --edit` (default: `vim`) |
-| `NO_COLOR` | Disable all color output |
+| `EDITOR`       | Editor for `vcli config --edit` (default: `vim`)     |
+| `NO_COLOR`     | Disable all color output                             |
 
 ---
 
