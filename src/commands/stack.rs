@@ -230,7 +230,7 @@ pub fn view() -> Result<()> {
 
 /// Sync all branches in the stack (rebase each on the one below)
 pub fn sync(no_interactive: bool) -> Result<()> {
-    let mut store = load_store()?;
+    let store = load_store()?;
     let stack = current_stack(&store)?.clone();
 
     println!();
