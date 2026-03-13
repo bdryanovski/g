@@ -1,3 +1,5 @@
+//! Compare two branches with commit stats, file stats, and optional diffs.
+
 use anyhow::Result;
 use colored::Colorize;
 
@@ -6,6 +8,7 @@ use crate::commands::git as gitcmd;
 use crate::config;
 use crate::ui;
 
+/// Entry point for `vcli compare`.
 pub fn compare(args: &CompareArgs) -> Result<()> {
     let cfg = config::load()?;
 
@@ -30,14 +33,14 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
         head.green().bold()
     );
 
-    // Optionally fetch first
+    // Optionally fetch first to reduce stale comparisons.
     if cfg.general.auto_fetch {
         let pb = ui::spinner("Fetching remotes…");
         let _ = gitcmd::git_output(&["fetch", "--all", "--quiet"]);
         pb.finish_and_clear();
     }
 
-    // Count commits ahead/behind
+    // Count commits ahead/behind.
     let ahead_output =
         gitcmd::git_output_lossy(&["rev-list", "--count", &format!("{}..{}", base, head)]);
     let behind_output =
@@ -71,6 +74,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
     Ok(())
 }
 
+/// Print a list of commits that are in `head` but not in `base`.
 fn show_commits(base: &str, head: &str, count: usize) -> Result<()> {
     ui::print_section(
         &format!("Commits ahead ({}) {} {} {}",
@@ -113,6 +117,7 @@ fn show_commits(base: &str, head: &str, count: usize) -> Result<()> {
     Ok(())
 }
 
+/// Show a diffstat summary between branches.
 fn show_file_stat(base: &str, head: &str) -> Result<()> {
     // Use three-dot diff for comparing tips of both branches
     let stat_raw = gitcmd::git_output_lossy(&[
@@ -146,6 +151,7 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
     Ok(())
 }
 
+/// Delegate to the enhanced diff for a full patch view.
 fn show_full_diff(base: &str, head: &str) -> Result<()> {
     println!();
     // Run enhanced diff
@@ -153,6 +159,7 @@ fn show_full_diff(base: &str, head: &str) -> Result<()> {
     crate::commands::git::enhanced_diff(&diff_args)
 }
 
+/// Colorize a single diffstat line.
 fn colorize_file_stat_line(line: &str) -> String {
     if let Some(pipe_pos) = line.rfind('|') {
         let path_part = &line[..pipe_pos];
@@ -186,6 +193,7 @@ fn parse_stat_counts(stat: &str) -> (usize, usize) {
     (added, deleted)
 }
 
+/// Colorize the final summary line of a diffstat output.
 fn colorize_summary_line(line: &str) -> String {
     // "12 files changed, 345 insertions(+), 67 deletions(-)"
     line.split(", ")
@@ -201,3 +209,6 @@ fn colorize_summary_line(line: &str) -> String {
         .collect::<Vec<_>>()
         .join(&", ".bright_black().to_string())
 }
+
+// TODO(compare): Add `--base`/`--head` validation (ensure branches exist before running).
+// TODO(compare): Support `--name-only` or `--name-status` quick modes.

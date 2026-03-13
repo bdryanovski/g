@@ -1,25 +1,33 @@
+//! Minimal GitHub API wrapper for stacked PRs.
+//!
+//! Uses `ureq` for HTTP and parses only the fields needed by vcli.
+
 use anyhow::{bail, Context, Result};
 
 use crate::commands::git as gitcmd;
 
 // ─── GitHub API Types ─────────────────────────────────────────────────────────
 
-/// Lightweight PR info used by stack operations
+/// Lightweight PR info used by stack operations.
 pub struct PrInfo {
+    /// PR number on GitHub.
     pub number: u64,
+    /// Web URL for humans.
     pub html_url: String,
+    /// Base branch name.
     pub base_ref: String,
 }
 
 // ─── Detect Repo From Remote ─────────────────────────────────────────────────
 
-/// Detect owner/repo from origin remote URL
+/// Detect owner/repo from origin remote URL.
 pub fn detect_repo() -> Result<(String, String)> {
     let url = gitcmd::git_output(&["remote", "get-url", "origin"])
         .context("No 'origin' remote found. Add one with: git remote add origin <url>")?;
     parse_github_url(&url)
 }
 
+/// Parse a GitHub-style remote URL into (owner, repo).
 fn parse_github_url(url: &str) -> Result<(String, String)> {
     // HTTPS: https://github.com/owner/repo.git
     // SSH:   git@github.com:owner/repo.git
@@ -41,7 +49,7 @@ fn parse_github_url(url: &str) -> Result<(String, String)> {
         }
     }
 
-    // GitHub Enterprise HTTPS
+    // GitHub Enterprise HTTPS (best-effort parsing).
     if cleaned.contains('/') {
         if let Some(pos) = cleaned.rfind('/') {
             let repo = &cleaned[pos + 1..];
@@ -62,6 +70,7 @@ fn parse_github_url(url: &str) -> Result<(String, String)> {
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
 
+/// Build a GitHub API request with auth headers.
 fn make_request(token: &str, api_base: &str, method: &str, path: &str) -> ureq::Request {
     let url = format!("{}/{}", api_base.trim_end_matches('/'), path.trim_start_matches('/'));
     ureq::request(method, &url)
@@ -73,7 +82,7 @@ fn make_request(token: &str, api_base: &str, method: &str, path: &str) -> ureq::
 
 // ─── PR Operations ────────────────────────────────────────────────────────────
 
-/// Find an existing open PR for a given head branch
+/// Find an existing open PR for a given head branch.
 pub fn find_pr(
     token: &str,
     api_base: &str,
@@ -110,7 +119,7 @@ pub fn find_pr(
     }
 }
 
-/// Create a new pull request
+/// Create a new pull request.
 pub fn create_pr(
     token: &str,
     api_base: &str,
@@ -165,7 +174,7 @@ pub fn create_pr(
     }
 }
 
-/// Update the base branch of an existing PR
+/// Update the base branch of an existing PR.
 pub fn update_pr_base(
     token: &str,
     api_base: &str,
@@ -200,6 +209,7 @@ pub fn update_pr_base(
 
 // ─── PR Body Template ─────────────────────────────────────────────────────────
 
+/// Generate a simple PR body containing recent commit subjects.
 fn generate_pr_body(head: &str, base: &str) -> String {
     // Get recent commits for the PR body
     let commits = gitcmd::git_output_lossy(&[
@@ -221,3 +231,6 @@ fn generate_pr_body(head: &str, base: &str) -> String {
     body.push_str("*Created with [vcli](https://github.com/your-org/vcli) — stacked PR workflow*\n");
     body
 }
+
+// TODO(github): Add support for draft vs. ready transitions and labels/reviewers.
+// TODO(github): Handle pagination when listing PRs for large repos.

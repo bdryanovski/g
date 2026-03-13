@@ -1,4 +1,9 @@
-use clap::{Parser, Subcommand, Args};
+//! CLI argument definitions using `clap`.
+//!
+//! This file defines the full command surface for `vcli` and maps subcommands
+//! to data structures that are later dispatched in `main.rs`.
+
+use clap::{Args, Parser, Subcommand};
 
 /// vcli — A beautiful Git CLI with stacked PRs, workspace management, and enhanced UX.
 /// All standard git commands are passed through transparently.
@@ -24,6 +29,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
+/// Top-level command set for `vcli`.
 #[derive(Subcommand)]
 pub enum Commands {
     /// Manage worktree-based workspaces (parallel branch checkouts)
@@ -65,6 +71,7 @@ pub enum Commands {
 
 // ─── Workspace ───────────────────────────────────────────────────────────────
 
+/// Workspace-related subcommands for git worktree management.
 #[derive(Subcommand)]
 pub enum WorkspaceCommands {
     /// List all workspaces (git worktrees)
@@ -111,6 +118,7 @@ pub enum WorkspaceCommands {
 
 // ─── Stack ────────────────────────────────────────────────────────────────────
 
+/// Stack-related subcommands for stacked PR workflows.
 #[derive(Subcommand)]
 pub enum StackCommands {
     /// Initialize a new stack starting from the current branch
@@ -173,6 +181,7 @@ pub enum StackCommands {
 
 // ─── Commit ───────────────────────────────────────────────────────────────────
 
+/// Arguments for the interactive and non-interactive commit flow.
 #[derive(Args)]
 pub struct CommitArgs {
     /// Commit message subject (skips interactive mode)
@@ -206,6 +215,7 @@ pub struct CommitArgs {
 
 // ─── Compare ─────────────────────────────────────────────────────────────────
 
+/// Arguments for comparing two branches.
 #[derive(Args)]
 pub struct CompareArgs {
     /// Base branch (defaults to main/master)
@@ -229,6 +239,7 @@ pub struct CompareArgs {
 
 // ─── Git pass-through ─────────────────────────────────────────────────────────
 
+/// Pass-through args used by enhanced git commands.
 #[derive(Args)]
 pub struct GitPassArgs {
     /// Extra arguments forwarded to git
@@ -238,6 +249,7 @@ pub struct GitPassArgs {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
+/// Arguments for configuration-related commands.
 #[derive(Args)]
 pub struct ConfigArgs {
     /// Open config file in $EDITOR
@@ -251,3 +263,6 @@ pub struct ConfigArgs {
     /// Get a config value
     pub key: Option<String>,
 }
+
+// TODO(cli): Add `--json` output flags for commands that are easy to serialize (list/status).
+// TODO(cli): Add completion script generation (e.g., `vcli completions zsh`).
