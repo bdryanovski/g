@@ -169,11 +169,11 @@ pub fn switch(name: &str, no_stash: bool) -> Result<()> {
     let mut store = load_store()?;
     let cfg = config::load()?;
 
-    let workspace = store
+    let target_name = store
         .workspaces
         .iter()
         .find(|w| w.name == name || w.name.contains(name))
-        .cloned()
+        .map(|w| w.name.clone())
         .with_context(|| format!("Workspace '{}' not found. Run `vcli workspace list` to see all workspaces.", name))?;
 
     let current_branch = gitcmd::current_branch()?;
@@ -184,7 +184,7 @@ pub fn switch(name: &str, no_stash: bool) -> Result<()> {
     if has_changes {
         if cfg.workspace.auto_stash && !no_stash {
             let pb = ui::spinner(&format!("Stashing changes on {}", current_branch));
-            gitcmd::git_output(&["stash", "push", "-m", &format!("vcli-workspace-{}", name)])?;
+            gitcmd::git_output(&["stash", "push", "-m", &format!("vcli-auto-stash-{}", current_branch)])?;
             pb.finish_and_clear();
             ui::print_info(&format!("Stashed changes on {}", current_branch.cyan()));
         } else if !no_stash {
@@ -194,18 +194,50 @@ pub fn switch(name: &str, no_stash: bool) -> Result<()> {
         }
     }
 
+    let repo_root = gitcmd::repo_root()?;
+
+    // Save the current workspace's env files before switching
+    if let Some(current_name) = &store.current {
+        if let Some(current_ws) = store.workspaces.iter_mut().find(|w| &w.name == current_name) {
+            let save_dir = workspace_files_dir(&current_ws.name)?;
+            for (rel_path, hash) in current_ws.env_files.iter_mut() {
+                let src = Path::new(&repo_root).join(rel_path);
+                if src.exists() {
+                    if let Ok(content) = fs::read_to_string(&src) {
+                        let new_hash = simple_hash(&content);
+                        if new_hash != *hash {
+                            let dest = save_dir.join(rel_path);
+                            if let Some(parent) = dest.parent() {
+                                fs::create_dir_all(parent)?;
+                            }
+                            fs::write(&dest, &content)?;
+                            *hash = new_hash;
+                        }
+                    }
+                }
+            }
+            current_ws.updated_at = Utc::now();
+        }
+    }
+
     // Switch branch
-    let pb = ui::spinner(&format!("Switching to branch {}", workspace.branch));
-    gitcmd::git_output(&["checkout", &workspace.branch])
-        .with_context(|| format!("Failed to switch to branch '{}'", workspace.branch))?;
+    let target_ws = store
+        .workspaces
+        .iter()
+        .find(|w| w.name == target_name)
+        .cloned()
+        .unwrap();
+
+    let pb = ui::spinner(&format!("Switching to branch {}", target_ws.branch));
+    gitcmd::git_output(&["checkout", &target_ws.branch])
+        .with_context(|| format!("Failed to switch to branch '{}'", target_ws.branch))?;
     pb.finish_and_clear();
 
-    // Restore env files
-    let repo_root = gitcmd::repo_root()?;
-    let src_dir = workspace_files_dir(&workspace.name)?;
+    // Restore target workspace's env files
+    let src_dir = workspace_files_dir(&target_ws.name)?;
     let mut restored = 0usize;
 
-    for (rel_path, _hash) in &workspace.env_files {
+    for (rel_path, _hash) in &target_ws.env_files {
         let src = src_dir.join(rel_path);
         let dest = Path::new(&repo_root).join(rel_path);
         if src.exists() {
@@ -219,15 +251,18 @@ pub fn switch(name: &str, no_stash: bool) -> Result<()> {
         }
     }
 
-    // Update current workspace
-    store.current = Some(workspace.name.clone());
+    // Update current workspace and timestamp
+    store.current = Some(target_ws.name.clone());
+    if let Some(ws) = store.workspaces.iter_mut().find(|w| w.name == target_name) {
+        ws.updated_at = Utc::now();
+    }
     save_store(&store)?;
 
     println!();
     ui::print_success(&format!(
         "Switched to workspace {} → branch {}",
-        workspace.name.green().bold(),
-        workspace.branch.cyan().bold()
+        target_ws.name.green().bold(),
+        target_ws.branch.cyan().bold()
     ));
 
     if restored > 0 {
@@ -239,7 +274,7 @@ pub fn switch(name: &str, no_stash: bool) -> Result<()> {
         );
     }
 
-    if let Some(desc) = &workspace.description {
+    if let Some(desc) = &target_ws.description {
         println!("     {} {}", "desc:".bright_black(), desc.bright_white());
     }
     println!();
