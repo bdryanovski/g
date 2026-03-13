@@ -288,7 +288,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     if !unmerged.is_empty() {
         ui::print_section("Conflicts", Some(unmerged.len()));
         for (code, path) in &unmerged {
-            let (icon, _) = ui::status_icon("U");
+            let (icon, _) = ui::status_icon(code);
             println!("  {} {} {}", "  ⚡".red().bold(), icon, path.red().bold());
         }
     }
@@ -438,8 +438,6 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         "-a",
     ]);
 
-    let current = current_branch().unwrap_or_default();
-
     println!();
     let mut table = ui::Table::new(vec!["", "Branch", "Hash", "Last Commit", "Author", "Date", "Tracking"]);
 
@@ -501,9 +499,6 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
 // ─── Enhanced Show ────────────────────────────────────────────────────────────
 
 pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
-    let cfg = config::load().unwrap_or_default();
-    let tool = resolve_diff_tool(&cfg.diff.tool);
-
     // Show commit metadata beautifully, then the diff
     let rev = extra_args.first().map(|s| s.as_str()).unwrap_or("HEAD");
 
@@ -513,7 +508,7 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
     for line in meta_raw.lines() {
         let fields: Vec<&str> = line.splitn(10, '\x01').collect();
         if fields.len() >= 9 {
-            let (hash, short_hash, subject, body, author, email, date_iso, date_rel, refs) =
+            let (hash, _short_hash, subject, body, author, email, date_iso, date_rel, refs) =
                 (fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6], fields[7], fields[8]);
 
             println!();

@@ -259,6 +259,7 @@ pub fn load() -> Result<Config> {
 }
 
 /// Save config to disk.
+#[allow(dead_code)]
 pub fn save(config: &Config) -> Result<()> {
     let path = config_path()?;
     let raw = toml::to_string_pretty(config).context("Failed to serialize config")?;

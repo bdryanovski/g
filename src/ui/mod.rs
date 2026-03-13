@@ -24,6 +24,7 @@ pub fn print_error(msg: &str) {
 }
 
 /// Print a section header in a box
+#[allow(dead_code)]
 pub fn print_header(title: &str) {
     let width = title.len() + 4;
     let line = "─".repeat(width);
@@ -46,6 +47,7 @@ pub fn print_section(title: &str, count: Option<usize>) {
 }
 
 /// Divider line
+#[allow(dead_code)]
 pub fn print_divider() {
     println!("  {}", "─".repeat(60).bright_black());
 }
@@ -153,6 +155,7 @@ pub fn spinner(msg: &str) -> indicatif::ProgressBar {
     pb
 }
 
+#[allow(dead_code)]
 pub fn progress_bar(len: u64, msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new(len);
     pb.set_style(
@@ -314,6 +317,7 @@ pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
 
 // ─── Stack Tree ───────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<String>)]) {
     // branches: (name, is_current, pr_url)
     println!("\n  {} {}", "Stack:".bold().bright_white(), stack_name.cyan().bold());
