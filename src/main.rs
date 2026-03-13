@@ -1,3 +1,10 @@
+//! Program entry point and top-level command routing.
+//!
+//! This module wires together:
+//! - CLI parsing (clap)
+//! - config loading/creation
+//! - command dispatch to feature modules
+
 mod cli;
 mod commands;
 mod config;
@@ -12,11 +19,12 @@ use colored::Colorize;
 
 use cli::{Cli, Commands, StackCommands, WorkspaceCommands};
 
+/// Entry point that renders a friendly error chain and exits non-zero on failure.
 fn main() {
     if let Err(e) = run() {
         ui::print_error(&format!("{}", e));
 
-        // Print cause chain
+        // Print cause chain for better debugging.
         let err_ref: &dyn Error = e.as_ref();
         let mut source = err_ref.source();
         while let Some(cause) = source {
@@ -28,7 +36,9 @@ fn main() {
     }
 }
 
+/// Parse CLI arguments, ensure config exists, then dispatch commands.
 fn run() -> Result<()> {
+    // clap parses CLI flags into our typed structure.
     let cli = Cli::parse();
 
     // Ensure config dir and default config exist
@@ -40,6 +50,7 @@ fn run() -> Result<()> {
             .map_err(|e| anyhow::anyhow!("Cannot change directory to '{}': {}", dir, e))?;
     }
 
+    // Dispatch by top-level command.
     match cli.command {
         // ─── Workspace ────────────────────────────────────────────────────────
         Commands::Workspace(cmd) => match cmd {
@@ -90,7 +101,7 @@ fn run() -> Result<()> {
 
         // ─── Passthrough ─────────────────────────────────────────────────────
         Commands::Git(args) => {
-            // Check aliases before passing through
+            // Check aliases before passing through.
             let cfg = config::load().unwrap_or_default();
             if let Some(first) = args.first() {
                 if let Some(alias_target) = cfg.aliases.get(first) {
@@ -107,6 +118,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+/// Handle `vcli config` subcommands and default config display.
 fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     if args.edit {
         let path = config::config_path()?;
@@ -180,3 +192,6 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     println!();
     Ok(())
 }
+
+// TODO(main): Consider a structured error reporter (e.g. color-eyre) for richer backtraces.
+// TODO(main): Add tests for command dispatch (e.g., `Cli::try_parse_from` with args).

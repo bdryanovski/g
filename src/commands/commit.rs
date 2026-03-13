@@ -1,3 +1,8 @@
+//! Interactive commit builder and commit execution.
+//!
+//! Provides a guided flow for constructing Conventional Commit messages,
+//! with optional non-interactive overrides.
+
 use anyhow::{bail, Result};
 use colored::Colorize;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
@@ -7,20 +12,21 @@ use crate::commands::git as gitcmd;
 use crate::config;
 use crate::ui;
 
+/// Entry point for `vcli commit`.
 pub fn commit(args: &CommitArgs) -> Result<()> {
     let cfg = config::load()?;
 
-    // Check we're in a repo
+    // Check we're in a repo.
     if !gitcmd::is_inside_git_repo() {
         bail!("Not inside a git repository.");
     }
 
-    // If -a flag, stage everything
+    // If -a flag, stage everything.
     if args.all {
         gitcmd::git_output(&["add", "-A"])?;
     }
 
-    // Check there's something staged
+    // Check there's something staged.
     let staged = gitcmd::git_output_lossy(&["diff", "--cached", "--name-only"]);
     if staged.is_empty() && !args.amend {
         ui::print_warning("Nothing staged to commit.");
@@ -33,10 +39,10 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
         return Ok(());
     }
 
-    // Show what's staged
+    // Show what's staged.
     show_staged_summary()?;
 
-    // Build commit message
+    // Build commit message.
     let message = if let Some(msg) = &args.message {
         // Non-interactive: use provided message
         let body = args.body.clone().unwrap_or_default();
@@ -46,11 +52,11 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
             format!("{}\n\n{}", msg, body)
         }
     } else {
-        // Interactive commit builder
+        // Interactive commit builder.
         build_commit_message(args, &cfg)?
     };
 
-    // Validate subject length
+    // Validate subject length.
     let subject_line = message.lines().next().unwrap_or(&message);
     if subject_line.len() > cfg.commit.max_subject_length {
         ui::print_warning(&format!(
@@ -67,7 +73,7 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
         }
     }
 
-    // Execute the commit
+    // Execute the commit.
     let mut git_args = vec!["commit", "-m", &message];
 
     if args.no_verify {
@@ -89,7 +95,7 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
 
     match result {
         Ok(out) => {
-            // Parse the commit hash from git output
+            // Parse the commit hash from git output.
             let hash = gitcmd::git_output_lossy(&["rev-parse", "--short", "HEAD"]);
             println!();
             ui::print_success(&format!(
@@ -113,6 +119,7 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
     Ok(())
 }
 
+/// Print a short diffstat summary for staged changes.
 fn show_staged_summary() -> Result<()> {
     let stat = gitcmd::git_output_lossy(&["diff", "--cached", "--stat"]);
     if stat.is_empty() {
@@ -144,18 +151,19 @@ fn colorize_stat_line(line: &str) -> String {
             .replace('-', &"-".red().to_string());
         format!("{}{}{}", file.white(), "|".bright_black(), rest_colored)
     } else {
-        // Summary line
+        // Summary line.
         line.bright_black().to_string()
     }
 }
 
+/// Build a commit message using interactive prompts and config rules.
 fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<String> {
     let theme = ColorfulTheme::default();
 
     println!("  {}", "Building commit message…".bold().cyan());
     println!();
 
-    // Step 1: Type
+    // Step 1: Type.
     let commit_type = if let Some(t) = &args.r#type {
         t.clone()
     } else {
@@ -175,7 +183,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         cfg.commit.types[idx].clone()
     };
 
-    // Step 2: Scope (optional)
+    // Step 2: Scope (optional).
     let scope = if let Some(s) = &args.scope {
         if s.is_empty() { None } else { Some(s.clone()) }
     } else if cfg.commit.require_scope {
@@ -191,7 +199,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         if s.is_empty() { None } else { Some(s) }
     };
 
-    // Step 3: Subject
+    // Step 3: Subject.
     let subject: String = Input::with_theme(&theme)
         .with_prompt("  Subject (imperative, present tense)")
         .validate_with(|input: &String| {
@@ -205,19 +213,19 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         })
         .interact_text()?;
 
-    // Build the first line
+    // Build the first line.
     let first_line = if let Some(sc) = &scope {
         format!("{}({}): {}", commit_type, sc, subject.trim())
     } else {
         format!("{}: {}", commit_type, subject.trim())
     };
 
-    // Show preview
+    // Show preview.
     println!();
     println!("  {} {}", "Preview:".bright_black(), ui::color_subject(&first_line).bold());
     println!();
 
-    // Step 4: Body (optional)
+    // Step 4: Body (optional).
     let body = if cfg.commit.require_body {
         let b: String = Input::with_theme(&theme)
             .with_prompt("  Body (explain WHY, not WHAT)")
@@ -250,7 +258,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         }
     };
 
-    // Step 5: Footer (breaking change / closes)
+    // Step 5: Footer (breaking change / closes).
     let add_footer = Confirm::with_theme(&theme)
         .with_prompt("  Add footer? (BREAKING CHANGE, closes #issue, etc.)")
         .default(false)
@@ -266,7 +274,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         String::new()
     };
 
-    // Assemble final message
+    // Assemble final message.
     let mut message = first_line.clone();
     if !body.is_empty() {
         message.push_str("\n\n");
@@ -277,7 +285,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         message.push_str(&footer);
     }
 
-    // Final preview
+    // Final preview.
     println!();
     println!("  {}", "─".repeat(60).bright_black());
     for line in message.lines() {
@@ -298,6 +306,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
     Ok(message)
 }
 
+/// Render a commit type label with icon and description.
 fn format_type_label(t: &str) -> String {
     let (icon, description) = match t {
         "feat"     => ("✨", "A new feature"),
@@ -319,3 +328,7 @@ fn format_type_label(t: &str) -> String {
         format!("{} {:12}  {}", icon, t, description.bright_black())
     }
 }
+
+// TODO(commit): Honor `commit.template` from config when building messages.
+// TODO(commit): Add a non-interactive `--edit` flow to open an editor before commit.
+// TODO(commit): Improve staging summary to group by file status.

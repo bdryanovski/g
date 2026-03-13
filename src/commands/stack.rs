@@ -1,3 +1,8 @@
+//! Stacked PR workflow management.
+//!
+//! This module tracks logical stacks of branches (bottom-to-top) and provides
+//! operations like sync, push, and GitHub PR creation.
+
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
@@ -11,6 +16,7 @@ use crate::ui;
 
 // ─── Data Structures ─────────────────────────────────────────────────────────
 
+/// Persistent representation of a stack of branches.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Stack {
     /// User-facing name for the stack
@@ -23,6 +29,7 @@ pub struct Stack {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Per-branch metadata within a stack.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StackBranch {
     pub name: String,
@@ -31,6 +38,7 @@ pub struct StackBranch {
     pub description: Option<String>,
 }
 
+/// Storage format for all stacks plus a fast lookup map.
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct StackStore {
     pub stacks: Vec<Stack>,
@@ -40,6 +48,7 @@ pub struct StackStore {
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
+/// Load stacks from disk (or return empty store if missing).
 fn load_store() -> Result<StackStore> {
     let path = config::stacks_path()?;
     if !path.exists() {
@@ -49,12 +58,14 @@ fn load_store() -> Result<StackStore> {
     toml::from_str(&raw).context("Failed to parse stacks file")
 }
 
+/// Persist stack store to disk.
 fn save_store(store: &StackStore) -> Result<()> {
     let path = config::stacks_path()?;
     let raw = toml::to_string_pretty(store).context("Failed to serialize stacks")?;
     fs::write(&path, raw).context("Failed to save stacks file")
 }
 
+/// Look up the stack for the current git branch.
 fn current_stack(store: &StackStore) -> Result<&Stack> {
     let branch = gitcmd::current_branch()?;
     let stack_name = store
@@ -112,7 +123,7 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
     let mut store = load_store()?;
     let current_branch = gitcmd::current_branch()?;
 
-    // Read-only pass: get stack name and position
+    // Read-only pass: get stack name and position so we can mutate after git ops.
     let (stack_name, current_pos) = {
         let stack = current_stack(&store)?;
         let pos = stack
@@ -123,11 +134,11 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
         (stack.name.clone(), pos)
     };
 
-    // Create the git branch
+    // Create the git branch.
     gitcmd::git_output(&["checkout", "-b", branch_name])
         .with_context(|| format!("Failed to create branch '{}'", branch_name))?;
 
-    // Mutable pass: update the store
+    // Mutable pass: update the store.
     let stack = store
         .stacks
         .iter_mut()
@@ -156,6 +167,7 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
     Ok(())
 }
 
+/// List all stacks and show the current branch position.
 pub fn list() -> Result<()> {
     let store = load_store()?;
     let current_branch = gitcmd::current_branch().unwrap_or_default();
@@ -224,6 +236,7 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 
+/// Alias for `list()` to present stacks as a tree.
 pub fn view() -> Result<()> {
     list()
 }
@@ -293,7 +306,7 @@ pub fn sync(no_interactive: bool) -> Result<()> {
         }
     }
 
-    // Return to original branch
+    // Return to original branch (best-effort).
     let _ = gitcmd::git_output(&["checkout", &saved_branch]);
 
     println!();
@@ -302,7 +315,7 @@ pub fn sync(no_interactive: bool) -> Result<()> {
     Ok(())
 }
 
-/// Force-push all branches in the stack to their remotes
+/// Force-push all branches in the stack to their remotes.
 pub fn push(force: bool) -> Result<()> {
     let store = load_store()?;
     let stack = current_stack(&store)?.clone();
@@ -347,7 +360,7 @@ pub fn push(force: bool) -> Result<()> {
     Ok(())
 }
 
-/// Create or update GitHub PRs for all branches in the stack
+/// Create or update GitHub PRs for all branches in the stack.
 pub fn create_prs(open: bool, draft: bool) -> Result<()> {
     let mut store = load_store()?;
     let stack = current_stack(&store)?.clone();
@@ -366,14 +379,14 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
     );
     println!();
 
-    // Skip the root branch (index 0), create PRs for branches 1..n
+    // Skip the root branch (index 0), create PRs for branches 1..n.
     for i in 1..stack.branches.len() {
         let base = stack.branches[i - 1].name.clone();
         let branch = stack.branches[i].name.clone();
 
         let pb = ui::spinner(&format!("Creating PR: {} → {}", branch.green(), base.cyan()));
 
-        // Check if PR already exists for this branch
+        // Check if PR already exists for this branch.
         let existing = github::find_pr(&token, &cfg.github.api_base, &owner, &repo, &branch)?;
 
         let result: Result<crate::github::PrInfo, anyhow::Error> = if let Some(pr) = existing {
@@ -392,8 +405,8 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                 Ok(pr)
             }
         } else {
-            let pr_title = gitcmd::git_output_lossy(&["log", "--format=%s", "-1", &branch]);
-            let title = if pr_title.is_empty() { branch.clone() } else { pr_title };
+                let pr_title = gitcmd::git_output_lossy(&["log", "--format=%s", "-1", &branch]);
+                let title = if pr_title.is_empty() { branch.clone() } else { pr_title };
             let pr = github::create_pr(
                 &token, &cfg.github.api_base, &owner, &repo, &title, &branch, &base, draft,
             )?;
@@ -417,7 +430,7 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                     pr.html_url.bright_black().underline()
                 ));
 
-                // Store PR info back in stack
+                // Store PR info back in stack.
                 let stack_mut = store.stacks.iter_mut().find(|s| s.name == stack.name);
                 if let Some(s) = stack_mut {
                     if let Some(b) = s.branches.iter_mut().find(|b| b.name == branch) {
@@ -441,6 +454,7 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
     Ok(())
 }
 
+/// Remove a branch from its stack (does not delete the git branch).
 pub fn remove_branch(branch: &str) -> Result<()> {
     let mut store = load_store()?;
 
@@ -471,6 +485,7 @@ pub fn remove_branch(branch: &str) -> Result<()> {
     Ok(())
 }
 
+/// Delete a stack, optionally deleting its git branches.
 pub fn delete_stack(name: &str, delete_branches: bool) -> Result<()> {
     let mut store = load_store()?;
 
@@ -501,6 +516,7 @@ pub fn delete_stack(name: &str, delete_branches: bool) -> Result<()> {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/// Resolve a GitHub token, preferring the environment variable if set.
 fn get_github_token(cfg: &config::Config) -> Result<String> {
     // Prefer GITHUB_TOKEN env var
     if let Ok(t) = std::env::var("GITHUB_TOKEN") {
@@ -515,6 +531,7 @@ fn get_github_token(cfg: &config::Config) -> Result<String> {
         })
 }
 
+/// Open a URL with the system handler (best-effort).
 fn open_url(url: &str) -> Result<()> {
     #[cfg(target_os = "macos")]
     std::process::Command::new("open").arg(url).spawn()?;
@@ -524,3 +541,7 @@ fn open_url(url: &str) -> Result<()> {
     std::process::Command::new("cmd").args(["/C", "start", url]).spawn()?;
     Ok(())
 }
+
+// TODO(stack): Persist per-branch status (CI state, review state) for richer UX.
+// TODO(stack): Add `stack rebase --onto` to control rebase base explicitly.
+// TODO(stack): Improve conflict handling by offering to open a merge tool.

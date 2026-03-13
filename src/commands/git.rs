@@ -1,3 +1,8 @@
+//! Git command helpers and enhanced output modes.
+//!
+//! This module wraps `git` CLI invocations and adds rich UI for log, status,
+//! diff, branch, and show commands.
+
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
 use std::process::{Command, Stdio};
@@ -7,6 +12,7 @@ use crate::ui;
 
 // ─── Git Executable ───────────────────────────────────────────────────────────
 
+/// Resolve the git executable path (from config or default to "git").
 pub fn git_exe() -> String {
     let cfg = config::load().unwrap_or_default();
     cfg.general
@@ -14,7 +20,7 @@ pub fn git_exe() -> String {
         .unwrap_or_else(|| "git".to_string())
 }
 
-/// Run git and return stdout as a String
+/// Run git and return stdout as a String (error on non-zero exit).
 pub fn git_output(args: &[&str]) -> Result<String> {
     let out = Command::new(git_exe())
         .args(args)
@@ -28,7 +34,7 @@ pub fn git_output(args: &[&str]) -> Result<String> {
     }
 }
 
-/// Run git and return output even on non-zero exit
+/// Run git and return stdout even on non-zero exit.
 pub fn git_output_lossy(args: &[&str]) -> String {
     Command::new(git_exe())
         .args(args)
@@ -37,11 +43,11 @@ pub fn git_output_lossy(args: &[&str]) -> String {
         .unwrap_or_default()
 }
 
-/// Run git, streaming stdout/stderr directly to the terminal (for passthrough)
+/// Run git, streaming stdout/stderr directly to the terminal (for passthrough).
 pub fn passthrough(args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
 
-    // Check aliases first
+    // Check aliases first.
     if let Some(first) = args.first() {
         if let Some(alias_target) = cfg.aliases.get(first) {
             let mut new_args: Vec<String> = alias_target
@@ -69,14 +75,17 @@ pub fn passthrough(args: &[String]) -> Result<()> {
 
 // ─── Current Branch / Repo Helpers ───────────────────────────────────────────
 
+/// Return the current branch name (or "HEAD" in detached state).
 pub fn current_branch() -> Result<String> {
     git_output(&["rev-parse", "--abbrev-ref", "HEAD"])
 }
 
+/// Return the repository root directory.
 pub fn repo_root() -> Result<String> {
     git_output(&["rev-parse", "--show-toplevel"])
 }
 
+/// Determine the default branch using origin/HEAD or config fallback.
 pub fn default_branch() -> String {
     let cfg = config::load().unwrap_or_default();
     // Try to detect from remote HEAD
@@ -89,6 +98,7 @@ pub fn default_branch() -> String {
     cfg.general.default_branch
 }
 
+/// Quick boolean check for "am I in a git repo?"
 pub fn is_inside_git_repo() -> bool {
     Command::new(git_exe())
         .args(["rev-parse", "--git-dir"])
@@ -101,7 +111,7 @@ pub fn is_inside_git_repo() -> bool {
 
 // ─── Enhanced Log ─────────────────────────────────────────────────────────────
 
-/// Parse and pretty-print git log with beautiful colors
+/// Parse and pretty-print git log with beautiful colors.
 pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
 
@@ -109,7 +119,8 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     const SEP: &str = "\x01";
     const REC: &str = "\x02";
 
-    // Build format string: record_sep + hash + sep + short_hash + sep + subject + sep + author_name + sep + rel_date + sep + refs + record_sep
+    // Build format string: record_sep + hash + sep + short_hash + sep + subject + sep
+    // + author_name + sep + rel_date + sep + refs + record_sep
     let fmt = format!(
         "{}%H{}%h{}%s{}%an{}%ar{}%D{}",
         REC, SEP, SEP, SEP, SEP, SEP, REC
@@ -125,7 +136,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
         args.push("--graph".to_string());
     }
 
-    // Default limit unless user passed -n or --max-count
+    // Default limit unless user passed -n or --max-count.
     let has_limit = extra_args.iter().any(|a| a.starts_with("-n") || a.starts_with("--max-count") || a.starts_with("--all"));
     if !has_limit {
         args.push(format!("-n{}", cfg.ui.log_limit));
@@ -173,7 +184,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
             }
         }
 
-        // Graph-only lines (no commit data)
+        // Graph-only lines (no commit data).
         if !line.trim().is_empty() {
             println!("{}", ui::colorize_graph(line));
         }
@@ -185,6 +196,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
 
 // ─── Enhanced Status ─────────────────────────────────────────────────────────
 
+/// Pretty status output using porcelain v2 data.
 pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     let branch = current_branch().unwrap_or_else(|_| "unknown".into());
 
@@ -259,7 +271,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     // ─── Print ────────────────────────────────────────────────────────────────
 
-    // Branch header
+    // Branch header.
     println!();
     print!(
         "  {} {}",
@@ -271,12 +283,12 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     }
     println!();
 
-    // Ahead/behind
+    // Ahead/behind.
     if ahead > 0 || behind > 0 {
         println!("  {}", ui::format_ahead_behind(ahead, behind));
     }
 
-    // Nothing to show
+    // Nothing to show.
     if staged.is_empty() && unstaged.is_empty() && untracked.is_empty() && unmerged.is_empty() {
         println!();
         println!("  {} {}", "✓".green().bold(), "Working tree is clean".green());
@@ -284,7 +296,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    // Unmerged
+    // Unmerged.
     if !unmerged.is_empty() {
         ui::print_section("Conflicts", Some(unmerged.len()));
         for (code, path) in &unmerged {
@@ -293,7 +305,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Staged
+    // Staged.
     if !staged.is_empty() {
         ui::print_section("Staged Changes", Some(staged.len()));
         let last = staged.len() - 1;
@@ -304,7 +316,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Unstaged
+    // Unstaged.
     if !unstaged.is_empty() {
         ui::print_section("Unstaged Changes", Some(unstaged.len()));
         let last = unstaged.len() - 1;
@@ -315,7 +327,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Untracked
+    // Untracked.
     if !untracked.is_empty() {
         ui::print_section("Untracked Files", Some(untracked.len()));
         let last = untracked.len() - 1;
@@ -327,7 +339,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     println!();
 
-    // Hints
+    // Hints.
     if !staged.is_empty() {
         println!(
             "  {}  {}",
@@ -348,6 +360,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
 // ─── Enhanced Diff ────────────────────────────────────────────────────────────
 
+/// Run diff using a configured external tool if available.
 pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
     let tool = resolve_diff_tool(&cfg.diff.tool);
@@ -394,6 +407,7 @@ pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
     }
 }
 
+/// Determine which diff tool to run based on config and availability.
 fn resolve_diff_tool(tool: &str) -> String {
     match tool {
         "auto" => {
@@ -409,6 +423,7 @@ fn resolve_diff_tool(tool: &str) -> String {
     }
 }
 
+/// Helper to run git with a specific subcommand + extra args.
 fn passthrough_with_subcommand(sub: &str, extra: &[String]) -> Result<()> {
     let mut args = vec![sub.to_string()];
     args.extend_from_slice(extra);
@@ -417,6 +432,7 @@ fn passthrough_with_subcommand(sub: &str, extra: &[String]) -> Result<()> {
 
 // ─── Enhanced Branch ─────────────────────────────────────────────────────────
 
+/// Branch listing with metadata and color, or passthrough for mutations.
 pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     // If extra args look like modifications (create/delete), just pass through
     let mutating = extra_args.iter().any(|a| {
@@ -498,6 +514,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
 
 // ─── Enhanced Show ────────────────────────────────────────────────────────────
 
+/// Show commit metadata with nice formatting, then the diff.
 pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
     // Show commit metadata beautifully, then the diff
     let rev = extra_args.first().map(|s| s.as_str()).unwrap_or("HEAD");
@@ -528,7 +545,7 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Now show the diff
+    // Now show the diff.
     let diff_args: Vec<String> = {
         let mut a = vec!["-1".to_string(), rev.to_string()];
         // Remove the rev from extra_args if present
@@ -537,3 +554,7 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
     };
     enhanced_diff(&diff_args)
 }
+
+// TODO(git): Support pager configuration for enhanced outputs (respect config.general.pager).
+// TODO(git): Improve parsing of porcelain v2 renames with both old/new paths.
+// TODO(git): Add unit tests for log/status parsing with fixed sample outputs.

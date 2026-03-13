@@ -1,29 +1,39 @@
+//! Terminal UI helpers (colors, tables, formatting).
+//!
+//! These functions keep presentation logic in one place so the command
+//! modules can focus on business logic.
+
 use colored::Colorize;
 use std::fmt::Write as FmtWrite;
 
 // ─── Theme Colors ─────────────────────────────────────────────────────────────
 
 /// Print an info message with a cyan bullet
+/// Print an info message with a cyan bullet.
 pub fn print_info(msg: &str) {
     println!("  {} {}", "ℹ".cyan(), msg);
 }
 
 /// Print a success message with a green checkmark
+/// Print a success message with a green checkmark.
 pub fn print_success(msg: &str) {
     println!("  {} {}", "✓".green().bold(), msg);
 }
 
 /// Print a warning message with a yellow warning sign
+/// Print a warning message with a yellow warning sign.
 pub fn print_warning(msg: &str) {
     eprintln!("  {} {}", "⚠".yellow().bold(), msg);
 }
 
 /// Print an error message with a red X
+/// Print an error message with a red X.
 pub fn print_error(msg: &str) {
     eprintln!("  {} {}", "✗".red().bold(), msg);
 }
 
 /// Print a section header in a box
+/// Print a section header in a box.
 #[allow(dead_code)]
 pub fn print_header(title: &str) {
     let width = title.len() + 4;
@@ -34,6 +44,7 @@ pub fn print_header(title: &str) {
 }
 
 /// Print a section title (lighter than header)
+/// Print a section title (lighter than header).
 pub fn print_section(title: &str, count: Option<usize>) {
     if let Some(n) = count {
         println!(
@@ -47,6 +58,7 @@ pub fn print_section(title: &str, count: Option<usize>) {
 }
 
 /// Divider line
+/// Divider line.
 #[allow(dead_code)]
 pub fn print_divider() {
     println!("  {}", "─".repeat(60).bright_black());
@@ -54,10 +66,12 @@ pub fn print_divider() {
 
 // ─── Git Color Helpers ────────────────────────────────────────────────────────
 
+/// Color a git hash.
 pub fn color_hash(hash: &str) -> String {
     hash.yellow().dimmed().to_string()
 }
 
+/// Color a branch name based on its type (local/remote/HEAD).
 pub fn color_branch(name: &str) -> String {
     if name.starts_with("origin/") || name.starts_with("upstream/") {
         name.red().bold().to_string()
@@ -68,6 +82,7 @@ pub fn color_branch(name: &str) -> String {
     }
 }
 
+/// Color a ref decoration (tags, remotes, HEAD, etc.).
 pub fn color_ref(r: &str) -> String {
     if r.contains("HEAD") {
         r.cyan().bold().to_string()
@@ -80,14 +95,17 @@ pub fn color_ref(r: &str) -> String {
     }
 }
 
+/// Color an author name.
 pub fn color_author(name: &str) -> String {
     name.cyan().to_string()
 }
 
+/// Color a date string.
 pub fn color_date(date: &str) -> String {
     date.bright_black().to_string()
 }
 
+/// Color a commit subject, highlighting Conventional Commit prefixes.
 pub fn color_subject(subject: &str) -> String {
     if let Some(idx) = subject.find(':') {
         let prefix = &subject[..idx];
@@ -117,16 +135,19 @@ pub fn color_subject(subject: &str) -> String {
     }
 }
 
+/// Render a green "+N" added count.
 pub fn color_added(n: i64) -> String {
     format!("+{}", n).green().to_string()
 }
 
+/// Render a red "-N" deleted count.
 pub fn color_deleted(n: i64) -> String {
     format!("-{}", n).red().to_string()
 }
 
 // ─── Status Icons ─────────────────────────────────────────────────────────────
 
+/// Convert porcelain status code to an icon + colored code.
 pub fn status_icon(code: &str) -> (&'static str, String) {
     match code {
         "A" | "AA" => ("✚", "A".green().bold().to_string()),
@@ -143,6 +164,7 @@ pub fn status_icon(code: &str) -> (&'static str, String) {
 
 // ─── Progress / Spinner ───────────────────────────────────────────────────────
 
+/// Create a spinner progress bar with a custom message.
 pub fn spinner(msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new_spinner();
     pb.set_style(
@@ -155,6 +177,7 @@ pub fn spinner(msg: &str) -> indicatif::ProgressBar {
     pb
 }
 
+/// Create a progress bar with a fixed length and message.
 #[allow(dead_code)]
 pub fn progress_bar(len: u64, msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new(len);
@@ -171,6 +194,7 @@ pub fn progress_bar(len: u64, msg: &str) -> indicatif::ProgressBar {
 
 // ─── Diff Stat Bar ────────────────────────────────────────────────────────────
 
+/// Render a fixed-width bar showing added vs deleted proportions.
 pub fn render_stat_bar(added: usize, deleted: usize, width: usize) -> String {
     let total = added + deleted;
     if total == 0 {
@@ -192,7 +216,7 @@ pub fn render_stat_bar(added: usize, deleted: usize, width: usize) -> String {
 
 // ─── Ref Decoration Formatter ─────────────────────────────────────────────────
 
-/// Format git ref decorations (HEAD -> main, origin/main) into colored badges
+/// Format git ref decorations (HEAD -> main, origin/main) into colored badges.
 pub fn format_refs(refs_str: &str) -> String {
     if refs_str.trim().is_empty() {
         return String::new();
@@ -219,6 +243,7 @@ pub fn format_refs(refs_str: &str) -> String {
 
 // ─── Table Formatter ─────────────────────────────────────────────────────────
 
+/// Simple table renderer that accounts for ANSI color codes.
 pub struct Table {
     headers: Vec<String>,
     rows: Vec<Vec<String>>,
@@ -226,6 +251,7 @@ pub struct Table {
 }
 
 impl Table {
+    /// Create a new table with the provided header labels.
     pub fn new(headers: Vec<&str>) -> Self {
         let col_widths = headers.iter().map(|h| h.len()).collect();
         Self {
@@ -235,6 +261,7 @@ impl Table {
         }
     }
 
+    /// Add a row to the table (updates column widths).
     pub fn add_row(&mut self, row: Vec<String>) {
         for (i, cell) in row.iter().enumerate() {
             // strip ANSI codes for width calculation
@@ -246,6 +273,7 @@ impl Table {
         self.rows.push(row);
     }
 
+    /// Print the table to stdout.
     pub fn print(&self) {
         // Header
         let header_cells: Vec<String> = self
@@ -280,7 +308,7 @@ impl Table {
     }
 }
 
-/// Strip ANSI escape codes for length calculation
+/// Strip ANSI escape codes for length calculation.
 pub fn strip_ansi(s: &str) -> String {
     let mut result = String::new();
     let mut in_escape = false;
@@ -300,6 +328,7 @@ pub fn strip_ansi(s: &str) -> String {
 
 // ─── Branch Ahead/Behind ─────────────────────────────────────────────────────
 
+/// Format ahead/behind counts into a compact, colored string.
 pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
     match (ahead, behind) {
         (0, 0) => "up to date".bright_black().to_string(),
@@ -317,6 +346,7 @@ pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
 
 // ─── Stack Tree ───────────────────────────────────────────────────────────────
 
+/// Print a stack tree (older helper, kept for potential reuse).
 #[allow(dead_code)]
 pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<String>)]) {
     // branches: (name, is_current, pr_url)
@@ -353,6 +383,7 @@ pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<Stri
 
 // ─── Commit Entry ─────────────────────────────────────────────────────────────
 
+/// Renderable commit entry used by log and compare output.
 pub struct CommitEntry {
     pub hash: String,
     pub subject: String,
@@ -363,6 +394,7 @@ pub struct CommitEntry {
 }
 
 impl CommitEntry {
+    /// Render a single commit entry with padding and colored fields.
     pub fn render(&self, max_subject: usize) -> String {
         let mut out = String::new();
 
@@ -398,6 +430,7 @@ impl CommitEntry {
     }
 }
 
+/// Truncate a string to a maximum length, adding an ellipsis if needed.
 fn truncate(s: &str, max: usize) -> String {
     if s.len() > max {
         format!("{}…", &s[..max - 1])
@@ -406,6 +439,7 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
+/// Colorize ASCII graph output from `git log --graph`.
 pub fn colorize_graph(graph: &str) -> String {
     // Colorize git graph lines: * | \ / are the main chars
     let colors = [
@@ -437,3 +471,6 @@ pub fn colorize_graph(graph: &str) -> String {
     }
     result
 }
+
+// TODO(ui): Centralize icon characters and allow toggling ASCII-only mode.
+// TODO(ui): Add width-aware truncation for multi-byte Unicode characters.

@@ -1,3 +1,8 @@
+//! Configuration types and config file I/O.
+//!
+//! This module defines the user-facing configuration schema and helpers
+//! to load/save TOML files under `~/.config/vcli`.
+
 use anyhow::{Context, Result};
 use dirs::home_dir;
 use serde::{Deserialize, Serialize};
@@ -7,6 +12,7 @@ use std::path::PathBuf;
 
 // ─── Config Structure ────────────────────────────────────────────────────────
 
+/// Root configuration struct (matches the TOML schema).
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     #[serde(default)]
@@ -29,6 +35,7 @@ pub struct Config {
     pub plugins: PluginsConfig,
 }
 
+/// General settings (git path, default branch, etc.).
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GeneralConfig {
     /// Default branch name (main, master, trunk, etc.)
@@ -52,6 +59,7 @@ impl Default for GeneralConfig {
     }
 }
 
+/// UI-related settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UiConfig {
     /// Enable colored output
@@ -78,6 +86,7 @@ impl Default for UiConfig {
     }
 }
 
+/// Commit-flow settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CommitConfig {
     /// Conventional commit types
@@ -119,6 +128,7 @@ impl Default for CommitConfig {
     }
 }
 
+/// Diff-tool settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiffConfig {
     /// Diff tool: "builtin" | "delta" | "diff-so-fancy" | custom path
@@ -139,6 +149,7 @@ impl Default for DiffConfig {
     }
 }
 
+/// GitHub integration settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GithubConfig {
     /// GitHub personal access token (prefer GITHUB_TOKEN env var)
@@ -162,6 +173,7 @@ impl Default for GithubConfig {
     }
 }
 
+/// Workspace management settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WorkspaceConfig {
     /// Separator between repo name and workspace name in sibling directories
@@ -176,6 +188,7 @@ impl Default for WorkspaceConfig {
     }
 }
 
+/// Log-formatting settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogConfig {
     /// Format string for log output (git format)
@@ -196,6 +209,7 @@ impl Default for LogConfig {
     }
 }
 
+/// Plugin discovery settings.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct PluginsConfig {
     /// Paths to plugin scripts/binaries
@@ -206,19 +220,23 @@ pub struct PluginsConfig {
 
 // ─── Config I/O ──────────────────────────────────────────────────────────────
 
+/// Return the `~/.config/vcli` directory.
 pub fn config_dir() -> Result<PathBuf> {
     let home = home_dir().context("Could not find home directory")?;
     Ok(home.join(".config").join("vcli"))
 }
 
+/// Return the full path to `config.toml`.
 pub fn config_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("config.toml"))
 }
 
+/// Return the full path to `workspaces.toml`.
 pub fn workspaces_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("workspaces.toml"))
 }
 
+/// Return the full path to `stacks.toml`.
 pub fn stacks_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("stacks.toml"))
 }
@@ -270,6 +288,7 @@ pub fn save(config: &Config) -> Result<()> {
 
 // ─── Default Config Template ─────────────────────────────────────────────────
 
+/// Default config template written when no config exists.
 fn default_config_toml() -> &'static str {
     r#"# vcli configuration
 # Documentation: https://github.com/your-org/vcli
@@ -381,3 +400,6 @@ impl Default for Config {
         })
     }
 }
+
+// TODO(config): Support layered config (system + user + repo-local overrides).
+// TODO(config): Validate config values and surface friendly errors (e.g., bad date_format).
