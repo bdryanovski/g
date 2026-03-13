@@ -1,7 +1,15 @@
 //! CLI argument definitions using `clap`.
 //!
-//! This file defines the full command surface for `vcli` and maps subcommands
-//! to data structures that are later dispatched in `main.rs`.
+//! Tutorial overview:
+//! - `clap` uses derive macros (`#[derive(Parser)]`, `#[derive(Subcommand)]`)
+//!   to turn Rust structs/enums into a command-line interface.
+//! - Struct fields become flags or positional args, based on `#[arg(...)]`.
+//! - Enums represent subcommands, and nested enums represent sub-subcommands.
+//!
+//! Rust concepts used here:
+//! - Derive macros that generate parsing code at compile time.
+//! - Attributes (`#[command(...)]`, `#[arg(...)]`) to configure parsing.
+//! - Enums with data (e.g., `Create { name, branch }`) to model subcommand payloads.
 
 use clap::{Args, Parser, Subcommand};
 
@@ -25,6 +33,7 @@ pub struct Cli {
     #[arg(short = 'c', global = true, value_name = "KEY=VAL")]
     pub config_override: Vec<String>,
 
+    /// The parsed top-level command chosen by the user.
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -66,6 +75,7 @@ pub enum Commands {
 
     /// Passthrough: all other git commands are forwarded transparently
     #[command(external_subcommand)]
+    // This collects any unknown subcommand + args into a Vec<String>.
     Git(Vec<String>),
 }
 
@@ -194,6 +204,7 @@ pub struct CommitArgs {
 
     /// Commit type (feat, fix, docs, etc.) — skips prompt
     #[arg(long)]
+    // `type` is a Rust keyword, so we use a raw identifier: `r#type`.
     pub r#type: Option<String>,
 
     /// Commit scope — skips prompt

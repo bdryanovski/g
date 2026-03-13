@@ -1,7 +1,15 @@
 //! Stacked PR workflow management.
 //!
-//! This module tracks logical stacks of branches (bottom-to-top) and provides
-//! operations like sync, push, and GitHub PR creation.
+//! Tutorial overview:
+//! - A "stack" is an ordered list of branches where each branch depends on the one below.
+//! - We persist stacks in a TOML file (`stacks.toml`) alongside a lookup map from branch → stack.
+//! - Commands here manage both git state (checkout, rebase, push) and metadata (PR numbers/URLs).
+//!
+//! Rust concepts used here:
+//! - `Option` to represent optional PR numbers/URLs.
+//! - Borrowing vs owning: we read from the store immutably, then mutate after git commands.
+//! - Iterators with `position`, `find`, and `enumerate` to navigate branches.
+//! - Error handling with `anyhow::Context` to add messages to low-level failures.
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
@@ -90,6 +98,7 @@ pub fn new_stack(name: &str) -> Result<()> {
         bail!("Stack '{}' already exists.", name);
     }
 
+    // Seed the stack with the current branch as the root (index 0).
     let now = Utc::now();
     let stack = Stack {
         name: name.to_string(),
