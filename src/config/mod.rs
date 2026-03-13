@@ -164,23 +164,14 @@ impl Default for GithubConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WorkspaceConfig {
-    /// Glob patterns of files to copy when creating a workspace
-    pub copy_patterns: Vec<String>,
-    /// Automatically stash when switching workspaces
-    pub auto_stash: bool,
+    /// Separator between repo name and workspace name in sibling directories
+    pub separator: String,
 }
 
 impl Default for WorkspaceConfig {
     fn default() -> Self {
         Self {
-            copy_patterns: vec![
-                ".env".into(),
-                ".env.local".into(),
-                ".env.*.local".into(),
-                ".env.development".into(),
-                ".env.test".into(),
-            ],
-            auto_stash: true,
+            separator: "--".into(),
         }
     }
 }
@@ -230,10 +221,6 @@ pub fn workspaces_path() -> Result<PathBuf> {
 
 pub fn stacks_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("stacks.toml"))
-}
-
-pub fn workspace_store_dir() -> Result<PathBuf> {
-    Ok(config_dir()?.join("workspace_files"))
 }
 
 /// Ensure the config directory and default config file exist.
@@ -355,15 +342,9 @@ api_base = "https://api.github.com"
 
 # ─── Workspace ────────────────────────────────────────────────────────────────
 [workspace]
-# Files to copy when creating/switching workspaces
-copy_patterns = [
-    ".env",
-    ".env.local",
-    ".env.*.local",
-    ".env.development",
-    ".env.test",
-]
-auto_stash = true  # Stash uncommitted changes when switching workspaces
+# Separator between repo name and workspace name for sibling worktree directories
+# e.g. with "--": ~/proj/myapp--feature-x
+separator = "--"
 
 # ─── Aliases ──────────────────────────────────────────────────────────────────
 [aliases]

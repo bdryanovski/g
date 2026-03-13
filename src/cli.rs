@@ -26,7 +26,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Manage named workspaces (branch + env state snapshots)
+    /// Manage worktree-based workspaces (parallel branch checkouts)
     #[command(subcommand)]
     Workspace(WorkspaceCommands),
 
@@ -67,37 +67,40 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum WorkspaceCommands {
-    /// List all workspaces
+    /// List all workspaces (git worktrees)
     List,
 
-    /// Create a new workspace from the current state
+    /// Create a new workspace as a sibling worktree directory
     Create {
         /// Name for the new workspace
         name: String,
+        /// Branch to check out (defaults to creating a new branch with the workspace name)
+        #[arg(short, long)]
+        branch: Option<String>,
         /// Description of this workspace
         #[arg(short, long)]
         description: Option<String>,
     },
 
-    /// Switch to a workspace
+    /// Open a subshell in a workspace directory
     Switch {
         /// Workspace name (fuzzy matched)
         name: String,
-        /// Don't stash current changes before switching
-        #[arg(long)]
-        no_stash: bool,
     },
 
-    /// Delete a workspace
+    /// Remove a workspace (git worktree remove)
     Delete {
         /// Workspace name
         name: String,
+        /// Force removal even if the worktree is dirty
+        #[arg(long)]
+        force: bool,
     },
 
     /// Show current workspace info
     Status,
 
-    /// Rename a workspace
+    /// Rename a workspace (move directory and repair worktree)
     Rename {
         /// Current name
         old: String,

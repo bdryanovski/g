@@ -44,13 +44,15 @@ fn run() -> Result<()> {
         // ─── Workspace ────────────────────────────────────────────────────────
         Commands::Workspace(cmd) => match cmd {
             WorkspaceCommands::List => commands::workspace::list()?,
-            WorkspaceCommands::Create { name, description } => {
-                commands::workspace::create(&name, description.as_deref())?
+            WorkspaceCommands::Create { name, branch, description } => {
+                commands::workspace::create(&name, branch.as_deref(), description.as_deref())?
             }
-            WorkspaceCommands::Switch { name, no_stash } => {
-                commands::workspace::switch(&name, no_stash)?
+            WorkspaceCommands::Switch { name } => {
+                commands::workspace::switch(&name)?
             }
-            WorkspaceCommands::Delete { name } => commands::workspace::delete(&name)?,
+            WorkspaceCommands::Delete { name, force } => {
+                commands::workspace::delete(&name, force)?
+            }
             WorkspaceCommands::Status => commands::workspace::status()?,
             WorkspaceCommands::Rename { old, new } => commands::workspace::rename(&old, &new)?,
         },
