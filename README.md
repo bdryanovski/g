@@ -12,7 +12,7 @@ A beautiful, opinionated Git CLI built in Rust. `vcli` is a full drop-in replace
 
 ---
 
-## Install
+## Install instructions
 
 ```bash
 # From source (requires Rust)
