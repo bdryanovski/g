@@ -12,7 +12,7 @@ use crate::commands::git as gitcmd;
 use crate::config;
 use crate::ui;
 
-/// Entry point for `vcli commit`.
+/// Entry point for `g commit`.
 pub fn commit(args: &CommitArgs) -> Result<()> {
     let cfg = config::load()?;
 
@@ -34,7 +34,7 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
             "  {} Use {} or {} to stage changes.",
             "tip:".bright_black(),
             "git add <file>".yellow(),
-            "vcli commit -a".yellow()
+            "g commit -a".yellow()
         );
         return Ok(());
     }

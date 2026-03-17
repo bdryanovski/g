@@ -13,11 +13,11 @@
 
 use clap::{Args, Parser, Subcommand};
 
-/// vcli — A beautiful Git CLI with stacked PRs, workspace management, and enhanced UX.
+/// g — A beautiful Git CLI with stacked PRs, workspace management, and enhanced UX.
 /// All standard git commands are passed through transparently.
 #[derive(Parser)]
 #[command(
-    name = "vcli",
+    name = "g",
     about = "Version CLI — enhanced Git with stacked PRs, workspaces, and beautiful output",
     long_about = None,
     version,
@@ -38,7 +38,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-/// Top-level command set for `vcli`.
+/// Top-level command set for `g`.
 #[derive(Subcommand)]
 pub enum Commands {
     /// Manage worktree-based workspaces (parallel branch checkouts)
@@ -276,4 +276,4 @@ pub struct ConfigArgs {
 }
 
 // TODO(cli): Add `--json` output flags for commands that are easy to serialize (list/status).
-// TODO(cli): Add completion script generation (e.g., `vcli completions zsh`).
+// TODO(cli): Add completion script generation (e.g., `g completions zsh`).

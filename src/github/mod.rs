@@ -1,6 +1,6 @@
 //! Minimal GitHub API wrapper for stacked PRs.
 //!
-//! Uses `ureq` for HTTP and parses only the fields needed by vcli.
+//! Uses `ureq` for HTTP and parses only the fields needed by g.
 
 use anyhow::{bail, Context, Result};
 
@@ -77,7 +77,7 @@ fn make_request(token: &str, api_base: &str, method: &str, path: &str) -> ureq::
         .set("Authorization", &format!("Bearer {}", token))
         .set("Accept", "application/vnd.github+json")
         .set("X-GitHub-Api-Version", "2022-11-28")
-        .set("User-Agent", "vcli/0.1")
+        .set("User-Agent", "g/0.1")
 }
 
 // ─── PR Operations ────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ fn generate_pr_body(head: &str, base: &str) -> String {
     }
 
     body.push_str("\n---\n");
-    body.push_str("*Created with [vcli](https://github.com/your-org/vcli) — stacked PR workflow*\n");
+    body.push_str("*Created with [g](https://github.com/your-org/g) — stacked PR workflow*\n");
     body
 }
 

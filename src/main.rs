@@ -134,7 +134,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-/// Handle `vcli config` subcommands and default config display.
+/// Handle `g config` subcommands and default config display.
 fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     if args.edit {
         let path = config::config_path()?;
@@ -205,7 +205,7 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     println!(
         "  {} {}",
         "tip:".bright_black(),
-        "vcli config --edit  to open in $EDITOR".bright_black()
+        "g config --edit  to open in $EDITOR".bright_black()
     );
     println!();
     Ok(())

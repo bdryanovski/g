@@ -1,7 +1,7 @@
 //! Configuration types and config file I/O.
 //!
 //! This module defines the user-facing configuration schema and helpers
-//! to load/save TOML files under `~/.config/vcli`.
+//! to load/save TOML files under `~/.config/g`.
 
 use anyhow::{Context, Result};
 use dirs::home_dir;
@@ -214,16 +214,16 @@ impl Default for LogConfig {
 pub struct PluginsConfig {
     /// Paths to plugin scripts/binaries
     pub paths: Vec<String>,
-    /// Whether to load plugins from $PATH with prefix "vcli-"
+    /// Whether to load plugins from $PATH with prefix "g"
     pub discover: bool,
 }
 
 // ─── Config I/O ──────────────────────────────────────────────────────────────
 
-/// Return the `~/.config/vcli` directory.
+/// Return the `~/.config/g` directory.
 pub fn config_dir() -> Result<PathBuf> {
     let home = home_dir().context("Could not find home directory")?;
-    Ok(home.join(".config").join("vcli"))
+    Ok(home.join(".config").join("g"))
 }
 
 /// Return the full path to `config.toml`.
@@ -290,8 +290,8 @@ pub fn save(config: &Config) -> Result<()> {
 
 /// Default config template written when no config exists.
 fn default_config_toml() -> &'static str {
-    r#"# vcli configuration
-# Documentation: https://github.com/your-org/vcli
+    r#"# g configuration
+# Documentation: https://github.com/your-org/g/
 
 # ─── General ──────────────────────────────────────────────────────────────────
 [general]
@@ -378,7 +378,7 @@ sw = "switch"
 
 # ─── Plugins ──────────────────────────────────────────────────────────────────
 [plugins]
-# Discover commands named "vcli-<name>" in PATH
+# Discover commands named "g-<name>" in PATH
 discover = true
 # Additional plugin paths
 paths = []
