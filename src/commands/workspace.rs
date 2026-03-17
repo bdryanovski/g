@@ -5,7 +5,7 @@
 //! - We keep the source of truth for branches/worktrees in git itself, and only
 //!   store optional UI metadata (name/description/created_at) in `workspaces.toml`.
 //! - The functions in this module are called from `main.rs` when a user runs
-//!   `vcli workspace <command>`.
+//!   `g workspace <command>`.
 //!
 //! Rust concepts used here:
 //! - `serde` derives (`Serialize`, `Deserialize`) to read/write TOML.
@@ -175,7 +175,7 @@ fn format_relative_time(dt: DateTime<Utc>) -> String {
 
 // ─── Commands ─────────────────────────────────────────────────────────────────
 
-/// List all git worktrees with optional vcli metadata.
+/// List all git worktrees with optional g metadata.
 pub fn list() -> Result<()> {
     let store = load_store()?;
     let worktrees = list_worktrees()?;
@@ -200,7 +200,7 @@ pub fn list() -> Result<()> {
         let branch_display = wt.branch.as_deref().unwrap_or("(detached)");
         let is_current = cwd.starts_with(&wt.path);
 
-        // Try to find vcli metadata for this worktree
+        // Try to find g metadata for this worktree
         let meta = store.workspaces.iter().find(|ws| {
             Path::new(&ws.path) == wt.path
         });
@@ -255,7 +255,7 @@ pub fn list() -> Result<()> {
         println!(
             "  {} {}",
             "tip:".bright_black(),
-            "vcli workspace create <name>  to create a worktree workspace".bright_black()
+            "g workspace create <name>  to create a worktree workspace".bright_black()
         );
         println!();
     }
@@ -330,7 +330,7 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
     println!(
         "  {} {}",
         "tip:".bright_black(),
-        format!("vcli workspace switch {}  to open a shell there", name).bright_black()
+        format!("g workspace switch {}  to open a shell there", name).bright_black()
     );
     println!();
     Ok(())
@@ -346,7 +346,7 @@ pub fn switch(name: &str) -> Result<()> {
         .find(|w| w.name == name || w.name.contains(name))
         .with_context(|| {
             format!(
-                "Workspace '{}' not found. Run `vcli workspace list` to see all workspaces.",
+                "Workspace '{}' not found. Run `g workspace list` to see all workspaces.",
                 name
             )
         })?;
@@ -355,8 +355,8 @@ pub fn switch(name: &str) -> Result<()> {
     let wt_path = Path::new(&workspace.path);
     if !wt_path.exists() {
         bail!(
-            "Workspace directory '{}' no longer exists. It may have been removed outside vcli.\n\
-             Run `vcli workspace delete {}` to clean up.",
+            "Workspace directory '{}' no longer exists. It may have been removed outside g.\n\
+             Run `g workspace delete {}` to clean up.",
             wt_path.display(),
             workspace.name
         );
@@ -439,7 +439,7 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
             let msg = format!("{}", e);
             if msg.contains("dirty") || msg.contains("untracked") {
                 bail!(
-                    "Worktree has uncommitted changes. Use `vcli workspace delete {} --force` to remove anyway.",
+                    "Worktree has uncommitted changes. Use `g workspace delete {} --force` to remove anyway.",
                     name
                 );
             }
@@ -577,7 +577,7 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
 
     if !old_path.exists() {
         bail!(
-            "Workspace directory '{}' no longer exists. Clean up with `vcli workspace delete {}`.",
+            "Workspace directory '{}' no longer exists. Clean up with `g workspace delete {}`.",
             old_path.display(),
             old
         );

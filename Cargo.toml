@@ -1,14 +1,14 @@
 [package]
-name = "vcli"
+name = "g"
 version = "0.1.0"
 edition = "2021"
-authors = ["vcli contributors"]
+authors = ["Bozhidar Dryanovski"]
 description = "A beautiful, feature-rich Git CLI with stacked PRs, workspace management, and enhanced UX"
 repository = ""
 license = "MIT"
 
 [[bin]]
-name = "vcli"
+name = "g"
 path = "src/main.rs"
 
 [dependencies]

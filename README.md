@@ -1,6 +1,6 @@
-# vcli — Version CLI
+# g — Version CLI
 
-A beautiful, opinionated Git CLI built in Rust. `vcli` is a full drop-in replacement for the `git` command that adds:
+A beautiful, opinionated Git CLI built in Rust. `g` is a full drop-in replacement for the `git` command that adds:
 
 - 🎨 **Beautiful colored output** — enhanced log, status, diff, branch, show
 - 🏗️ **Stacked PRs** — create, sync, and publish layered pull requests to GitHub with a single command
@@ -8,7 +8,7 @@ A beautiful, opinionated Git CLI built in Rust. `vcli` is a full drop-in replace
 - ✍️ **Guided commits** — interactive conventional commit builder with validation
 - 🔍 **Branch comparison** — visual ahead/behind, file stat bars, commit lists
 - 🔌 **Pluggable diff tools** — auto-detects `delta` / `diff-so-fancy`, or configure your own
-- ⚙️ **Config-driven** — everything tweakable via `~/.config/vcli/config.toml`
+- ⚙️ **Config-driven** — everything tweakable via `~/.config/g/config.toml`
 
 ---
 
@@ -16,12 +16,12 @@ A beautiful, opinionated Git CLI built in Rust. `vcli` is a full drop-in replace
 
 ```bash
 # From source (requires Rust)
-git clone https://github.com/your-org/vcli
-cd vcli
+git clone https://github.com/your-org/g
+cd g
 cargo install --path .
 
 # Verify
-vcli --version
+g --version
 ```
 
 Set `GITHUB_TOKEN` for PR features:
@@ -36,69 +36,69 @@ export GITHUB_TOKEN=ghp_your_token_here   # add to .zshrc / .bashrc
 
 ```bash
 # All git commands work transparently
-vcli pull
-vcli fetch --all
-vcli rebase origin/main
+g pull
+g fetch --all
+g rebase origin/main
 
 # Enhanced versions of common commands
-vcli log
-vcli status
-vcli diff
-vcli branch
-vcli show HEAD
+g log
+g status
+g diff
+g branch
+g show HEAD
 ```
 
 ---
 
 ## Commands
 
-### `vcli log`
+### `g log`
 
 Beautiful colored commit log with graph, conventional commit type coloring, and ref decorations.
 
 ```
-vcli log                  # last 30 commits (configurable)
-vcli log -n 50
-vcli log --all
-vcli log --no-graph       # disable the graph
-vcli log main..HEAD       # range
+g log                  # last 30 commits (configurable)
+g log -n 50
+g log --all
+g log --no-graph       # disable the graph
+g log main..HEAD       # range
 ```
 
-### `vcli status`
+### `g status`
 
 Enhanced status with icons, staged/unstaged/untracked sections, ahead/behind tracking info.
 
 ```
-vcli status
+g status
 ```
 
-### `vcli diff`
+### `g diff`
 
 Auto-detects and pipes through `delta` or `diff-so-fancy` if available.
 
 ```
-vcli diff
-vcli diff HEAD~3
-vcli diff main..feature-branch
+g diff
+g diff HEAD~3
+g diff main..feature-branch
 ```
 
-### `vcli branch`
+### `g branch`
 
 Rich branch table with hash, last commit subject, author, date, and upstream tracking.
 
 ```
-vcli branch               # list all branches
-vcli branch -b new-feat   # create (passes through to git)
-vcli branch -d old-feat   # delete (passes through)
+g branch               # list all branches
+g branch -b new-feat   # create (passes through to git)
+g branch -d old-feat   # delete (passes through)
 ```
 
-### `vcli show`
+### `g show`
 
 Beautiful commit header + diff.
 
 ```
-vcli show
-vcli show abc1234
+g show
+g show abc1234
 ```
 
 ---
@@ -106,7 +106,7 @@ vcli show abc1234
 ## Guided Commits
 
 ```bash
-vcli commit
+g commit
 ```
 
 Interactive step-by-step commit builder:
@@ -120,9 +120,9 @@ Interactive step-by-step commit builder:
 **Preview** is shown before confirming. Live character count warns you when the subject is too long.
 
 ```bash
-vcli commit -a            # stage all + commit
-vcli commit --amend       # amend last commit
-vcli commit -m "feat: quick non-interactive"
+g commit -a            # stage all + commit
+g commit --amend       # amend last commit
+g commit -m "feat: quick non-interactive"
 ```
 
 ---
@@ -133,27 +133,27 @@ Workspaces are an abstraction on top of `git worktree`. Each workspace is a **se
 
 ```bash
 # Create a workspace (creates sibling directory + new branch)
-vcli workspace create feature-auth --description "Auth system"
+g workspace create feature-auth --description "Auth system"
 
 # Create a workspace for an existing branch
-vcli workspace create hotfix -b fix/login-bug
+g workspace create hotfix -b fix/login-bug
 
 # List all worktree workspaces
-vcli workspace list
+g workspace list
 
 # Open a subshell inside a workspace directory
-vcli workspace switch feature-auth
+g workspace switch feature-auth
 # ... work on it, then Ctrl+D or `exit` to return
 
 # Show info about the worktree you're currently in
-vcli workspace status
+g workspace status
 
 # Rename (moves directory + repairs git tracking)
-vcli workspace rename feature-auth auth-system
+g workspace rename feature-auth auth-system
 
 # Remove a workspace
-vcli workspace delete feature-auth
-vcli workspace delete feature-auth --force   # if worktree is dirty
+g workspace delete feature-auth
+g workspace delete feature-auth --force   # if worktree is dirty
 ```
 
 Worktrees are created as **siblings** to your repo. If your repo lives at `~/proj/myapp`, a workspace named `feature-auth` creates a checkout at `~/proj/myapp--feature-auth`. The separator is configurable:
@@ -167,29 +167,29 @@ separator = "--"
 
 ## Stacked Pull Requests
 
-Stacked PRs let you break large changes into a series of small, reviewable PRs that each build on the previous one. `vcli stack` manages the rebase chain and GitHub PR creation for you.
+Stacked PRs let you break large changes into a series of small, reviewable PRs that each build on the previous one. `g stack` manages the rebase chain and GitHub PR creation for you.
 
 ### Workflow
 
 ```bash
 # 1. Start on main, create a stack
 git checkout main
-vcli stack new my-feature
+g stack new my-feature
 
 # 2. Add the first layer
-vcli stack add feature/auth-models
+g stack add feature/auth-models
 
 # Make your changes, commit...
-vcli commit
+g commit
 
 # 3. Add another layer on top
-vcli stack add feature/auth-api
+g stack add feature/auth-api
 
 # More changes, commit...
-vcli commit
+g commit
 
 # 4. View the stack
-vcli stack view
+g stack view
 # Stack: my-feature
 #
 #   ├── ◯ main
@@ -199,31 +199,31 @@ vcli stack view
 #   └── ◉ feature/auth-api  ← you are here
 
 # 5. Push all branches
-vcli stack push
+g stack push
 
 # 6. Create GitHub PRs (each targeting the branch below)
-vcli stack pr --open
+g stack pr --open
 
 # 7. If you amend feature/auth-models, sync the whole chain
-vcli stack sync
+g stack sync
 ```
 
 ### Stack Commands
 
 ```bash
-vcli stack new <name>        # create a new stack at current branch
-vcli stack add <branch>      # create and append a new branch to stack
-vcli stack list              # list all stacks
-vcli stack view              # tree view of current stack
-vcli stack sync              # rebase each branch onto the one below
-vcli stack push              # push all branches
-vcli stack push --force      # force-push with lease
-vcli stack pr                # create/update GitHub PRs
-vcli stack pr --draft        # as draft PRs
-vcli stack pr --open         # open PRs in browser after creating
-vcli stack remove <branch>   # remove a branch from the stack (doesn't delete it)
-vcli stack delete <name>     # delete the stack record
-vcli stack delete <name> --branches  # also delete all git branches
+g stack new <name>        # create a new stack at current branch
+g stack add <branch>      # create and append a new branch to stack
+g stack list              # list all stacks
+g stack view              # tree view of current stack
+g stack sync              # rebase each branch onto the one below
+g stack push              # push all branches
+g stack push --force      # force-push with lease
+g stack pr                # create/update GitHub PRs
+g stack pr --draft        # as draft PRs
+g stack pr --open         # open PRs in browser after creating
+g stack remove <branch>   # remove a branch from the stack (doesn't delete it)
+g stack delete <name>     # delete the stack record
+g stack delete <name> --branches  # also delete all git branches
 ```
 
 ---
@@ -231,24 +231,24 @@ vcli stack delete <name> --branches  # also delete all git branches
 ## Branch Comparison
 
 ```bash
-vcli compare                          # current branch vs main
-vcli compare feature/foo              # main vs feature/foo
-vcli compare main feature/foo         # explicit base and head
-vcli compare --stat                   # file stat only
-vcli compare --commits                # commits only
-vcli compare --diff                   # full diff
+g compare                          # current branch vs main
+g compare feature/foo              # main vs feature/foo
+g compare main feature/foo         # explicit base and head
+g compare --stat                   # file stat only
+g compare --commits                # commits only
+g compare --diff                   # full diff
 ```
 
 ---
 
 ## Configuration
 
-Config lives at `~/.config/vcli/config.toml`. Generated automatically on first run.
+Config lives at `~/.config/g/config.toml`. Generated automatically on first run.
 
 ```bash
-vcli config          # show summary
-vcli config --path   # print path
-vcli config --edit   # open in $EDITOR
+g config          # show summary
+g config --path   # print path
+g config --edit   # open in $EDITOR
 ```
 
 ### Key Options
@@ -298,7 +298,7 @@ rb = "rebase"
 sw = "switch"
 
 [plugins]
-discover = true    # loads vcli-* binaries from PATH
+discover = true    # loads g-* binaries from PATH
 paths = []
 ```
 
@@ -306,7 +306,7 @@ paths = []
 
 ## Diff Tools
 
-`vcli diff` auto-detects the best available tool:
+`g diff` auto-detects the best available tool:
 
 | Tool                                                       | Install                      |
 | ---------------------------------------------------------- | ---------------------------- |
@@ -330,32 +330,32 @@ undo = "reset --soft HEAD~1"
 ```
 
 ```bash
-vcli co main      # → git checkout main
-vcli lg           # → git log --oneline (enhanced)
-vcli undo         # → git reset --soft HEAD~1
+g co main      # → git checkout main
+g lg           # → git log --oneline (enhanced)
+g undo         # → git reset --soft HEAD~1
 ```
 
 ---
 
 ## Plugins
 
-Any binary named `vcli-<name>` in your `$PATH` becomes a `vcli <name>` command:
+Any binary named `g-<name>` in your `$PATH` becomes a `vcli <name>` command:
 
 ```bash
-# Create ~/bin/vcli-deploy (executable)
+# Create ~/bin/g-deploy (executable)
 #!/bin/bash
 echo "deploying..."
 ```
 
 ```bash
-vcli deploy   # runs vcli-deploy
+g deploy   # runs vcli-deploy
 ```
 
 Or specify explicit paths in config:
 
 ```toml
 [plugins]
-paths = ["/path/to/my-plugin", "~/scripts/vcli-release"]
+paths = ["/path/to/my-plugin", "~/scripts/g-release"]
 ```
 
 ---
@@ -365,7 +365,7 @@ paths = ["/path/to/my-plugin", "~/scripts/vcli-release"]
 | Variable       | Purpose                                              |
 | -------------- | ---------------------------------------------------- |
 | `GITHUB_TOKEN` | GitHub personal access token (preferred over config) |
-| `EDITOR`       | Editor for `vcli config --edit` (default: `vim`)     |
+| `EDITOR`       | Editor for `g config --edit` (default: `vim`)        |
 | `NO_COLOR`     | Disable all color output                             |
 
 ---
@@ -407,7 +407,7 @@ src/
 └── github/
     └── mod.rs        — GitHub API client (PRs, repo detection)
 
-~/.config/vcli/
+~/.config/g/
 ├── config.toml       — Main config
 ├── workspaces.toml   — Workspace metadata (names, descriptions)
 └── stacks.toml       — Stack store

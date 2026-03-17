@@ -8,7 +8,7 @@ use crate::commands::git as gitcmd;
 use crate::config;
 use crate::ui;
 
-/// Entry point for `vcli compare`.
+/// Entry point for `g compare`.
 pub fn compare(args: &CompareArgs) -> Result<()> {
     let cfg = config::load()?;
 

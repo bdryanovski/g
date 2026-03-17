@@ -79,7 +79,7 @@ fn current_stack(store: &StackStore) -> Result<&Stack> {
     let stack_name = store
         .branch_to_stack
         .get(&branch)
-        .with_context(|| format!("Branch '{}' is not part of any stack. Use `vcli stack new <name>` to create one.", branch))?;
+        .with_context(|| format!("Branch '{}' is not part of any stack. Use `g stack new <name>` to create one.", branch))?;
     store
         .stacks
         .iter()
@@ -187,7 +187,7 @@ pub fn list() -> Result<()> {
         println!(
             "  {} {}",
             "tip:".bright_black(),
-            "vcli stack new <name>  to create a stack from the current branch".bright_black()
+            "g stack new <name>  to create a stack from the current branch".bright_black()
         );
         println!();
         return Ok(());
@@ -300,14 +300,14 @@ pub fn sync(no_interactive: bool) -> Result<()> {
                     );
                 } else {
                     ui::print_warning(&format!(
-                        "Conflict in {}: resolve manually, then run `vcli stack sync` again",
+                        "Conflict in {}: resolve manually, then run `g stack sync` again",
                         branch.yellow()
                     ));
                     println!();
                     println!("  {} After resolving conflicts:", "→".cyan());
                     println!("    {} git add <files>", "1.".bright_black());
                     println!("    {} git rebase --continue", "2.".bright_black());
-                    println!("    {} vcli stack sync  (to continue remaining branches)", "3.".bright_black());
+                    println!("    {} g stack sync  (to continue remaining branches)", "3.".bright_black());
                     println!();
                     return Ok(());
                 }
@@ -358,7 +358,7 @@ pub fn push(force: bool) -> Result<()> {
                     println!(
                         "  {} try {}",
                         "tip:".bright_black(),
-                        "vcli stack push --force".yellow()
+                        "g stack push --force".yellow()
                     );
                 }
             }
@@ -536,7 +536,7 @@ fn get_github_token(cfg: &config::Config) -> Result<String> {
         .clone()
         .filter(|t| !t.is_empty())
         .with_context(|| {
-            "GitHub token not found. Set GITHUB_TOKEN env var or add `token` to [github] in ~/.config/vcli/config.toml".to_string()
+            "GitHub token not found. Set GITHUB_TOKEN env var or add `token` to [github] in ~/.config/g/config.toml".to_string()
         })
 }
 

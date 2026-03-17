@@ -344,7 +344,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         println!(
             "  {}  {}",
             "tip:".bright_black(),
-            "vcli commit  — commit staged changes".bright_black()
+            "g commit  — commit staged changes".bright_black()
         );
     } else if !unstaged.is_empty() || !untracked.is_empty() {
         println!(
