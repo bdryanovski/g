@@ -19,10 +19,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
         .clone()
         .unwrap_or_else(|| gitcmd::default_branch());
 
-    let head = args
-        .head
-        .clone()
-        .unwrap_or_else(|| current.clone());
+    let head = args.head.clone().unwrap_or_else(|| current.clone());
 
     println!();
     println!(
@@ -77,7 +74,8 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
 /// Print a list of commits that are in `head` but not in `base`.
 fn show_commits(base: &str, head: &str, count: usize) -> Result<()> {
     ui::print_section(
-        &format!("Commits ahead ({}) {} {} {}",
+        &format!(
+            "Commits ahead ({}) {} {} {}",
             count.to_string().green(),
             head.green().bold(),
             "not in".bright_black(),
@@ -176,7 +174,8 @@ fn colorize_file_stat_line(line: &str) -> String {
             ui::color_deleted(deleted_count as i64)
         );
 
-        format!("  {}{}  {} {}",
+        format!(
+            "  {}{}  {} {}",
             path_part.white(),
             "|".bright_black(),
             counts,

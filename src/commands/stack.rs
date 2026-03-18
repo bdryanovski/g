@@ -76,10 +76,12 @@ fn save_store(store: &StackStore) -> Result<()> {
 /// Look up the stack for the current git branch.
 fn current_stack(store: &StackStore) -> Result<&Stack> {
     let branch = gitcmd::current_branch()?;
-    let stack_name = store
-        .branch_to_stack
-        .get(&branch)
-        .with_context(|| format!("Branch '{}' is not part of any stack. Use `g stack new <name>` to create one.", branch))?;
+    let stack_name = store.branch_to_stack.get(&branch).with_context(|| {
+        format!(
+            "Branch '{}' is not part of any stack. Use `g stack new <name>` to create one.",
+            branch
+        )
+    })?;
     store
         .stacks
         .iter()
@@ -113,7 +115,9 @@ pub fn new_stack(name: &str) -> Result<()> {
         updated_at: now,
     };
 
-    store.branch_to_stack.insert(branch.clone(), name.to_string());
+    store
+        .branch_to_stack
+        .insert(branch.clone(), name.to_string());
     store.stacks.push(stack);
     save_store(&store)?;
 
@@ -164,7 +168,9 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
         },
     );
     stack.updated_at = Utc::now();
-    store.branch_to_stack.insert(branch_name.to_string(), stack_name);
+    store
+        .branch_to_stack
+        .insert(branch_name.to_string(), stack_name);
     save_store(&store)?;
 
     println!();
@@ -206,7 +212,11 @@ pub fn list() -> Result<()> {
         let last = stack.branches.len().saturating_sub(1);
         for (i, branch) in stack.branches.iter().enumerate() {
             let is_current = branch.name == current_branch;
-            let connector = if i == last { "  └──" } else { "  ├──" };
+            let connector = if i == last {
+                "  └──"
+            } else {
+                "  ├──"
+            };
             let marker = if is_current {
                 "◉".green().bold().to_string()
             } else {
@@ -218,15 +228,13 @@ pub fn list() -> Result<()> {
                 branch.name.white().to_string()
             };
 
-            print!(
-                "{} {} {}",
-                connector.bright_black(),
-                marker,
-                name_colored
-            );
+            print!("{} {} {}", connector.bright_black(), marker, name_colored);
 
             if let Some(pr_url) = &branch.pr_url {
-                let pr_num = branch.pr_number.map(|n| format!(" #{}", n)).unwrap_or_default();
+                let pr_num = branch
+                    .pr_number
+                    .map(|n| format!(" #{}", n))
+                    .unwrap_or_default();
                 print!("  {}{}", "PR".bright_black(), pr_num.cyan());
                 print!("  {}", pr_url.bright_black().underline());
             }
@@ -269,11 +277,7 @@ pub fn sync(no_interactive: bool) -> Result<()> {
         let base = stack.branches[i - 1].name.clone();
         let branch = stack.branches[i].name.clone();
 
-        let pb = ui::spinner(&format!(
-            "Rebasing {} onto {}",
-            branch.green(),
-            base.cyan()
-        ));
+        let pb = ui::spinner(&format!("Rebasing {} onto {}", branch.green(), base.cyan()));
 
         gitcmd::git_output(&["checkout", &branch])
             .with_context(|| format!("Failed to checkout '{}'", branch))?;
@@ -307,7 +311,10 @@ pub fn sync(no_interactive: bool) -> Result<()> {
                     println!("  {} After resolving conflicts:", "→".cyan());
                     println!("    {} git add <files>", "1.".bright_black());
                     println!("    {} git rebase --continue", "2.".bright_black());
-                    println!("    {} g stack sync  (to continue remaining branches)", "3.".bright_black());
+                    println!(
+                        "    {} g stack sync  (to continue remaining branches)",
+                        "3.".bright_black()
+                    );
                     println!();
                     return Ok(());
                 }
@@ -393,7 +400,11 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
         let base = stack.branches[i - 1].name.clone();
         let branch = stack.branches[i].name.clone();
 
-        let pb = ui::spinner(&format!("Creating PR: {} → {}", branch.green(), base.cyan()));
+        let pb = ui::spinner(&format!(
+            "Creating PR: {} → {}",
+            branch.green(),
+            base.cyan()
+        ));
 
         // Check if PR already exists for this branch.
         let existing = github::find_pr(&token, &cfg.github.api_base, &owner, &repo, &branch)?;
@@ -406,7 +417,14 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                     pr.base_ref.red(),
                     base.green()
                 ));
-                let updated = github::update_pr_base(&token, &cfg.github.api_base, &owner, &repo, pr.number, &base)?;
+                let updated = github::update_pr_base(
+                    &token,
+                    &cfg.github.api_base,
+                    &owner,
+                    &repo,
+                    pr.number,
+                    &base,
+                )?;
                 pb.finish_and_clear();
                 Ok(updated)
             } else {
@@ -414,10 +432,21 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                 Ok(pr)
             }
         } else {
-                let pr_title = gitcmd::git_output_lossy(&["log", "--format=%s", "-1", &branch]);
-                let title = if pr_title.is_empty() { branch.clone() } else { pr_title };
+            let pr_title = gitcmd::git_output_lossy(&["log", "--format=%s", "-1", &branch]);
+            let title = if pr_title.is_empty() {
+                branch.clone()
+            } else {
+                pr_title
+            };
             let pr = github::create_pr(
-                &token, &cfg.github.api_base, &owner, &repo, &title, &branch, &base, draft,
+                &token,
+                &cfg.github.api_base,
+                &owner,
+                &repo,
+                &title,
+                &branch,
+                &base,
+                draft,
             )?;
             pb.finish_and_clear();
             Ok(pr)
@@ -547,7 +576,9 @@ fn open_url(url: &str) -> Result<()> {
     #[cfg(target_os = "linux")]
     std::process::Command::new("xdg-open").arg(url).spawn()?;
     #[cfg(target_os = "windows")]
-    std::process::Command::new("cmd").args(["/C", "start", url]).spawn()?;
+    std::process::Command::new("cmd")
+        .args(["/C", "start", url])
+        .spawn()?;
     Ok(())
 }
 

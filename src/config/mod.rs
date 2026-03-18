@@ -101,6 +101,8 @@ pub struct CommitConfig {
     pub max_subject_length: usize,
     /// Sign commits with GPG
     pub gpg_sign: bool,
+    /// Whether to use emojis in commit messages (e.g., "feat" -> "✨")
+    pub emoji: bool,
 }
 
 impl Default for CommitConfig {
@@ -124,6 +126,7 @@ impl Default for CommitConfig {
             template: None,
             max_subject_length: 72,
             gpg_sign: false,
+            emoji: false,
         }
     }
 }
@@ -254,10 +257,7 @@ pub fn ensure_config() -> Result<()> {
         let default = default_config_toml();
         fs::write(&path, default)
             .with_context(|| format!("Failed to write default config: {}", path.display()))?;
-        crate::ui::print_info(&format!(
-            "Created default config at {}",
-            path.display()
-        ));
+        crate::ui::print_info(&format!("Created default config at {}", path.display()));
     }
 
     Ok(())
@@ -271,8 +271,8 @@ pub fn load() -> Result<Config> {
     }
     let raw = fs::read_to_string(&path)
         .with_context(|| format!("Failed to read config: {}", path.display()))?;
-    let config: Config =
-        toml::from_str(&raw).with_context(|| format!("Failed to parse config: {}", path.display()))?;
+    let config: Config = toml::from_str(&raw)
+        .with_context(|| format!("Failed to parse config: {}", path.display()))?;
     Ok(config)
 }
 
@@ -281,8 +281,7 @@ pub fn load() -> Result<Config> {
 pub fn save(config: &Config) -> Result<()> {
     let path = config_path()?;
     let raw = toml::to_string_pretty(config).context("Failed to serialize config")?;
-    fs::write(&path, raw)
-        .with_context(|| format!("Failed to write config: {}", path.display()))?;
+    fs::write(&path, raw).with_context(|| format!("Failed to write config: {}", path.display()))?;
     Ok(())
 }
 

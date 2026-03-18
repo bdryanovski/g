@@ -39,7 +39,12 @@ pub fn print_header(title: &str) {
     let width = title.len() + 4;
     let line = "─".repeat(width);
     println!("{}", format!("╭{}╮", line).bright_black());
-    println!("{} {} {}", "│".bright_black(), title.bold().white(), "│".bright_black());
+    println!(
+        "{} {} {}",
+        "│".bright_black(),
+        title.bold().white(),
+        "│".bright_black()
+    );
     println!("{}", format!("╰{}╯", line).bright_black());
 }
 
@@ -122,7 +127,10 @@ pub fn color_subject(subject: &str) -> String {
             prefix.yellow().bold().to_string()
         } else if prefix.starts_with("test") {
             prefix.cyan().bold().to_string()
-        } else if prefix.starts_with("chore") || prefix.starts_with("build") || prefix.starts_with("ci") {
+        } else if prefix.starts_with("chore")
+            || prefix.starts_with("build")
+            || prefix.starts_with("ci")
+        {
             prefix.bright_black().bold().to_string()
         } else if prefix.starts_with("revert") {
             prefix.red().dimmed().to_string()
@@ -228,7 +236,12 @@ pub fn format_refs(refs_str: &str) -> String {
         .map(|r| {
             if r.starts_with("HEAD ->") {
                 let branch = r.trim_start_matches("HEAD ->").trim();
-                format!("{} {} {}", "HEAD →".cyan().bold(), "".bright_black(), color_branch(branch))
+                format!(
+                    "{} {} {}",
+                    "HEAD →".cyan().bold(),
+                    "".bright_black(),
+                    color_branch(branch)
+                )
             } else {
                 color_ref(r)
             }
@@ -237,7 +250,12 @@ pub fn format_refs(refs_str: &str) -> String {
     if formatted.is_empty() {
         String::new()
     } else {
-        format!(" {} {} {}", "(".bright_black(), formatted.join(&" · ".bright_black().to_string()), ")".bright_black())
+        format!(
+            " {} {} {}",
+            "(".bright_black(),
+            formatted.join(&" · ".bright_black().to_string()),
+            ")".bright_black()
+        )
     }
 }
 
@@ -280,7 +298,13 @@ impl Table {
             .headers
             .iter()
             .enumerate()
-            .map(|(i, h)| format!("{:<width$}", h.bold().bright_white().to_string(), width = self.col_widths[i]))
+            .map(|(i, h)| {
+                format!(
+                    "{:<width$}",
+                    h.bold().bright_white().to_string(),
+                    width = self.col_widths[i]
+                )
+            })
             .collect();
         println!("  {}", header_cells.join("  "));
 
@@ -299,7 +323,12 @@ impl Table {
                 .enumerate()
                 .map(|(i, cell)| {
                     let visible_len = strip_ansi(cell).len();
-                    let padding = self.col_widths.get(i).copied().unwrap_or(0).saturating_sub(visible_len);
+                    let padding = self
+                        .col_widths
+                        .get(i)
+                        .copied()
+                        .unwrap_or(0)
+                        .saturating_sub(visible_len);
                     format!("{}{}", cell, " ".repeat(padding))
                 })
                 .collect();
@@ -350,13 +379,21 @@ pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
 #[allow(dead_code)]
 pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<String>)]) {
     // branches: (name, is_current, pr_url)
-    println!("\n  {} {}", "Stack:".bold().bright_white(), stack_name.cyan().bold());
+    println!(
+        "\n  {} {}",
+        "Stack:".bold().bright_white(),
+        stack_name.cyan().bold()
+    );
     println!();
     let last = branches.len().saturating_sub(1);
     for (i, (branch, is_current, pr_url)) in branches.iter().enumerate() {
         let connector = if i == last { "└" } else { "├" };
         let pipe = if i == last { " " } else { "│" };
-        let marker = if *is_current { "◉".green().bold().to_string() } else { "◯".bright_black().to_string() };
+        let marker = if *is_current {
+            "◉".green().bold().to_string()
+        } else {
+            "◯".bright_black().to_string()
+        };
 
         print!(
             "  {}── {} {}",
@@ -413,7 +450,13 @@ impl CommitEntry {
         } else {
             self.subject.clone()
         };
-        write!(out, "{:<width$}", color_subject(&subject), width = max_subject + 10).ok();
+        write!(
+            out,
+            "{:<width$}",
+            color_subject(&subject),
+            width = max_subject + 10
+        )
+        .ok();
 
         // Author
         write!(out, "  {:<20}", color_author(&truncate(&self.author, 20))).ok();

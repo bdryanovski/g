@@ -31,9 +31,7 @@ pub fn detect_repo() -> Result<(String, String)> {
 fn parse_github_url(url: &str) -> Result<(String, String)> {
     // HTTPS: https://github.com/owner/repo.git
     // SSH:   git@github.com:owner/repo.git
-    let cleaned = url
-        .trim()
-        .trim_end_matches(".git");
+    let cleaned = url.trim().trim_end_matches(".git");
 
     if let Some(path) = cleaned.strip_prefix("https://github.com/") {
         let parts: Vec<&str> = path.splitn(2, '/').collect();
@@ -72,7 +70,11 @@ fn parse_github_url(url: &str) -> Result<(String, String)> {
 
 /// Build a GitHub API request with auth headers.
 fn make_request(token: &str, api_base: &str, method: &str, path: &str) -> ureq::Request {
-    let url = format!("{}/{}", api_base.trim_end_matches('/'), path.trim_start_matches('/'));
+    let url = format!(
+        "{}/{}",
+        api_base.trim_end_matches('/'),
+        path.trim_start_matches('/')
+    );
     ureq::request(method, &url)
         .set("Authorization", &format!("Bearer {}", token))
         .set("Accept", "application/vnd.github+json")
@@ -113,7 +115,11 @@ pub fn find_pr(
             }
         }
         Err(ureq::Error::Status(code, _)) => {
-            bail!("GitHub API error {}: could not list PRs for {}", code, head_branch);
+            bail!(
+                "GitHub API error {}: could not list PRs for {}",
+                code,
+                head_branch
+            );
         }
         Err(e) => bail!("Network error: {}", e),
     }
@@ -139,8 +145,7 @@ pub fn create_pr(
         "body": generate_pr_body(head, base),
     });
 
-    let resp = make_request(token, api_base, "POST", &path)
-        .send_json(body);
+    let resp = make_request(token, api_base, "POST", &path).send_json(body);
 
     match resp {
         Ok(response) => {
@@ -186,8 +191,7 @@ pub fn update_pr_base(
     let path = format!("repos/{}/{}/pulls/{}", owner, repo, pr_number);
     let body = serde_json::json!({ "base": new_base });
 
-    let resp = make_request(token, api_base, "PATCH", &path)
-        .send_json(body);
+    let resp = make_request(token, api_base, "PATCH", &path).send_json(body);
 
     match resp {
         Ok(response) => {

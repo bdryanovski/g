@@ -15,9 +15,7 @@ use crate::ui;
 /// Resolve the git executable path (from config or default to "git").
 pub fn git_exe() -> String {
     let cfg = config::load().unwrap_or_default();
-    cfg.general
-        .git_path
-        .unwrap_or_else(|| "git".to_string())
+    cfg.general.git_path.unwrap_or_else(|| "git".to_string())
 }
 
 /// Run git and return stdout as a String (error on non-zero exit).
@@ -50,10 +48,8 @@ pub fn passthrough(args: &[String]) -> Result<()> {
     // Check aliases first.
     if let Some(first) = args.first() {
         if let Some(alias_target) = cfg.aliases.get(first) {
-            let mut new_args: Vec<String> = alias_target
-                .split_whitespace()
-                .map(String::from)
-                .collect();
+            let mut new_args: Vec<String> =
+                alias_target.split_whitespace().map(String::from).collect();
             new_args.extend_from_slice(&args[1..]);
             return passthrough(&new_args);
         }
@@ -126,18 +122,21 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
         REC, SEP, SEP, SEP, SEP, SEP, REC
     );
 
-    let mut args = vec![
-        "log".to_string(),
-        format!("--pretty=format:{}", fmt),
-    ];
+    let mut args = vec!["log".to_string(), format!("--pretty=format:{}", fmt)];
 
     let has_graph = cfg.ui.show_graph && !extra_args.contains(&"--no-graph".to_string());
-    if has_graph && !extra_args.iter().any(|a| a == "--graph" || a == "--no-graph") {
+    if has_graph
+        && !extra_args
+            .iter()
+            .any(|a| a == "--graph" || a == "--no-graph")
+    {
         args.push("--graph".to_string());
     }
 
     // Default limit unless user passed -n or --max-count.
-    let has_limit = extra_args.iter().any(|a| a.starts_with("-n") || a.starts_with("--max-count") || a.starts_with("--all"));
+    let has_limit = extra_args
+        .iter()
+        .any(|a| a.starts_with("-n") || a.starts_with("--max-count") || a.starts_with("--all"));
     if !has_limit {
         args.push(format!("-n{}", cfg.ui.log_limit));
     }
@@ -229,7 +228,11 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
             let xy = &rest[..2];
             let _path_start = rest.find('\t').map(|i| i + 1).unwrap_or(10);
             let fields: Vec<&str> = rest.splitn(9, ' ').collect();
-            let path = if fields.len() >= 9 { fields[8] } else { rest.splitn(9, ' ').last().unwrap_or("") };
+            let path = if fields.len() >= 9 {
+                fields[8]
+            } else {
+                rest.splitn(9, ' ').last().unwrap_or("")
+            };
             let x = &xy[0..1]; // staged
             let y = &xy[1..2]; // unstaged
             if x != "." {
@@ -273,11 +276,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     // Branch header.
     println!();
-    print!(
-        "  {} {}",
-        "On branch".bright_black(),
-        branch.green().bold()
-    );
+    print!("  {} {}", "On branch".bright_black(), branch.green().bold());
     if let Some(up) = &upstream {
         print!("  {}", format!("tracking {}", up).bright_black());
     }
@@ -291,7 +290,11 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     // Nothing to show.
     if staged.is_empty() && unstaged.is_empty() && untracked.is_empty() && unmerged.is_empty() {
         println!();
-        println!("  {} {}", "✓".green().bold(), "Working tree is clean".green());
+        println!(
+            "  {} {}",
+            "✓".green().bold(),
+            "Working tree is clean".green()
+        );
         println!();
         return Ok(());
     }
@@ -323,7 +326,13 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         for (i, (code, path)) in unstaged.iter().enumerate() {
             let connector = if i == last { "└" } else { "├" }.bright_black();
             let (icon, code_colored) = ui::status_icon(code);
-            println!("  {} {} {} {}", connector, code_colored, icon, path.yellow());
+            println!(
+                "  {} {} {} {}",
+                connector,
+                code_colored,
+                icon,
+                path.yellow()
+            );
         }
     }
 
@@ -333,7 +342,12 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         let last = untracked.len() - 1;
         for (i, path) in untracked.iter().enumerate() {
             let connector = if i == last { "└" } else { "├" }.bright_black();
-            println!("  {} {} {}", connector, "?".bright_black(), path.bright_black());
+            println!(
+                "  {} {} {}",
+                connector,
+                "?".bright_black(),
+                path.bright_black()
+            );
         }
     }
 
@@ -376,9 +390,7 @@ pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
                     .stdout
                     .context("no stdout")?;
 
-                let status = Command::new("delta")
-                    .stdin(output)
-                    .status()?;
+                let status = Command::new("delta").stdin(output).status()?;
                 if !status.success() {
                     // fall through to builtin
                 }
@@ -396,9 +408,7 @@ pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
                     .stdout
                     .context("no stdout")?;
 
-                Command::new("diff-so-fancy")
-                    .stdin(output)
-                    .status()?;
+                Command::new("diff-so-fancy").stdin(output).status()?;
                 return Ok(());
             }
             passthrough_with_subcommand("diff", extra_args)
@@ -436,8 +446,13 @@ fn passthrough_with_subcommand(sub: &str, extra: &[String]) -> Result<()> {
 pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     // If extra args look like modifications (create/delete), just pass through
     let mutating = extra_args.iter().any(|a| {
-        a == "-d" || a == "-D" || a == "--delete" || a == "-m" || a == "--move"
-            || a == "--copy" || a == "-c"
+        a == "-d"
+            || a == "-D"
+            || a == "--delete"
+            || a == "-m"
+            || a == "--move"
+            || a == "--copy"
+            || a == "-c"
     });
 
     if mutating || !extra_args.is_empty() && !extra_args[0].starts_with('-') {
@@ -455,15 +470,24 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     ]);
 
     println!();
-    let mut table = ui::Table::new(vec!["", "Branch", "Hash", "Last Commit", "Author", "Date", "Tracking"]);
+    let mut table = ui::Table::new(vec![
+        "",
+        "Branch",
+        "Hash",
+        "Last Commit",
+        "Author",
+        "Date",
+        "Tracking",
+    ]);
 
     for line in raw.lines() {
         let fields: Vec<&str> = line.splitn(7, '\t').collect();
         if fields.len() < 7 {
             continue;
         }
-        let (name, hash, subject, author, date, upstream, head_marker) =
-            (fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6]);
+        let (name, hash, subject, author, date, upstream, head_marker) = (
+            fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
+        );
 
         // Skip remote tracking branches in the list (they're shown as "remote/branch")
         let is_remote = name.starts_with("remotes/");
@@ -473,7 +497,13 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             name.to_string()
         };
 
-        let marker = if head_marker == "*" { "◉" } else if is_remote { "○" } else { "◯" };
+        let marker = if head_marker == "*" {
+            "◉"
+        } else if is_remote {
+            "○"
+        } else {
+            "◯"
+        };
         let marker_colored = if head_marker == "*" {
             marker.green().bold().to_string()
         } else if is_remote {
@@ -501,9 +531,17 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             branch_colored,
             ui::color_hash(hash),
             ui::color_subject(&subj),
-            ui::color_author(&if author.len() > 18 { format!("{}…", &author[..17]) } else { author.to_string() }),
+            ui::color_author(&if author.len() > 18 {
+                format!("{}…", &author[..17])
+            } else {
+                author.to_string()
+            }),
             ui::color_date(date),
-            if upstream.is_empty() { "—".bright_black().to_string() } else { ui::color_branch(upstream) },
+            if upstream.is_empty() {
+                "—".bright_black().to_string()
+            } else {
+                ui::color_branch(upstream)
+            },
         ]);
     }
 
@@ -525,13 +563,29 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
     for line in meta_raw.lines() {
         let fields: Vec<&str> = line.splitn(10, '\x01').collect();
         if fields.len() >= 9 {
-            let (hash, _short_hash, subject, body, author, email, date_iso, date_rel, refs) =
-                (fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6], fields[7], fields[8]);
+            let (hash, _short_hash, subject, body, author, email, date_iso, date_rel, refs) = (
+                fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
+                fields[7], fields[8],
+            );
 
             println!();
-            println!("  {} {}{}", "commit".bright_black(), ui::color_hash(hash), ui::format_refs(refs));
-            println!("  {} {}", "Author:".bright_black(), format!("{} <{}>", author, email).cyan());
-            println!("  {}   {} {}", "Date:".bright_black(), date_iso.bright_black(), format!("({})", date_rel).bright_black());
+            println!(
+                "  {} {}{}",
+                "commit".bright_black(),
+                ui::color_hash(hash),
+                ui::format_refs(refs)
+            );
+            println!(
+                "  {} {}",
+                "Author:".bright_black(),
+                format!("{} <{}>", author, email).cyan()
+            );
+            println!(
+                "  {}   {} {}",
+                "Date:".bright_black(),
+                date_iso.bright_black(),
+                format!("({})", date_rel).bright_black()
+            );
             println!();
             println!("      {}", ui::color_subject(subject).bold());
             if !body.trim().is_empty() {
