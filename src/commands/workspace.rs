@@ -116,11 +116,7 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
         } else if let Some(h) = line.strip_prefix("HEAD ") {
             current_head = h.to_string();
         } else if let Some(b) = line.strip_prefix("branch ") {
-            current_branch = Some(
-                b.strip_prefix("refs/heads/")
-                    .unwrap_or(b)
-                    .to_string(),
-            );
+            current_branch = Some(b.strip_prefix("refs/heads/").unwrap_or(b).to_string());
         } else if line == "bare" {
             is_bare = true;
         }
@@ -147,9 +143,7 @@ fn worktree_path_for(name: &str) -> Result<PathBuf> {
         .file_name()
         .context("Could not determine repo directory name")?
         .to_string_lossy();
-    let parent = root
-        .parent()
-        .context("Repo is at filesystem root")?;
+    let parent = root.parent().context("Repo is at filesystem root")?;
     let dir_name = format!("{}{}{}", repo_name, cfg.workspace.separator, name);
     Ok(parent.join(dir_name))
 }
@@ -201,9 +195,10 @@ pub fn list() -> Result<()> {
         let is_current = cwd.starts_with(&wt.path);
 
         // Try to find g metadata for this worktree
-        let meta = store.workspaces.iter().find(|ws| {
-            Path::new(&ws.path) == wt.path
-        });
+        let meta = store
+            .workspaces
+            .iter()
+            .find(|ws| Path::new(&ws.path) == wt.path);
 
         let (name_display, created_display) = if let Some(ws) = meta {
             let name = if is_current {
@@ -475,7 +470,10 @@ pub fn status() -> Result<()> {
 
     if let Some(wt) = current_wt {
         let branch = wt.branch.as_deref().unwrap_or("(detached)");
-        let meta = store.workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
+        let meta = store
+            .workspaces
+            .iter()
+            .find(|ws| Path::new(&ws.path) == wt.path);
 
         if let Some(ws) = meta {
             println!(
@@ -505,28 +503,22 @@ pub fn status() -> Result<()> {
             );
         }
 
-        println!(
-            "  {} {}",
-            "Branch:".bright_black(),
-            branch.cyan().bold()
-        );
+        println!("  {} {}", "Branch:".bright_black(), branch.cyan().bold());
 
         // Porcelain output is machine-readable; we count staged/unstaged/untracked items.
         let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
         let changes: Vec<&str> = porcelain.lines().collect();
         if changes.is_empty() {
-            println!(
-                "  {} {}",
-                "Status:".bright_black(),
-                "clean".green()
-            );
+            println!("  {} {}", "Status:".bright_black(), "clean".green());
         } else {
-            let staged = changes.iter().filter(|l| {
-                l.len() >= 2 && &l[0..1] != " " && &l[0..1] != "?"
-            }).count();
-            let unstaged = changes.iter().filter(|l| {
-                l.len() >= 2 && &l[1..2] != " " && &l[0..1] != "?"
-            }).count();
+            let staged = changes
+                .iter()
+                .filter(|l| l.len() >= 2 && &l[0..1] != " " && &l[0..1] != "?")
+                .count();
+            let unstaged = changes
+                .iter()
+                .filter(|l| l.len() >= 2 && &l[1..2] != " " && &l[0..1] != "?")
+                .count();
             let untracked = changes.iter().filter(|l| l.starts_with("??")).count();
             println!(
                 "  {} {} change{}{}{}",
@@ -539,7 +531,9 @@ pub fn status() -> Result<()> {
                     String::new()
                 },
                 if untracked > 0 {
-                    format!(" ({} untracked)", untracked).bright_black().to_string()
+                    format!(" ({} untracked)", untracked)
+                        .bright_black()
+                        .to_string()
                 } else if unstaged > 0 {
                     format!(" ({} unstaged)", unstaged).yellow().to_string()
                 } else {
@@ -586,8 +580,13 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
     let pb = ui::spinner(&format!("Moving worktree {} → {}", old, new));
 
     // Move the directory first.
-    fs::rename(&old_path, &new_path)
-        .with_context(|| format!("Failed to move '{}' to '{}'", old_path.display(), new_path.display()))?;
+    fs::rename(&old_path, &new_path).with_context(|| {
+        format!(
+            "Failed to move '{}' to '{}'",
+            old_path.display(),
+            new_path.display()
+        )
+    })?;
 
     // Repair git's internal worktree bookkeeping after the move.
     gitcmd::git_output(&["worktree", "repair"])
@@ -600,11 +599,7 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
     save_store(&store)?;
 
     println!();
-    ui::print_success(&format!(
-        "Renamed workspace '{}' → '{}'",
-        old,
-        new.green()
-    ));
+    ui::print_success(&format!("Renamed workspace '{}' → '{}'", old, new.green()));
     println!(
         "     {} {}",
         "path:".bright_black(),

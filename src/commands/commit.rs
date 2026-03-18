@@ -21,6 +21,7 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
         bail!("Not inside a git repository.");
     }
 
+
     // If -a flag, stage everything.
     if args.all {
         gitcmd::git_output(&["add", "-A"])?;
@@ -171,7 +172,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
             .commit
             .types
             .iter()
-            .map(|t| format_type_label(t))
+            .map(|t| format_type_label(t, cfg.commit.emoji))
             .collect();
 
         let idx = Select::with_theme(&theme)
@@ -307,7 +308,7 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
 }
 
 /// Render a commit type label with icon and description.
-fn format_type_label(t: &str) -> String {
+fn format_type_label(t: &str, emoji: bool) -> String {
     let (icon, description) = match t {
         "feat"     => ("✨", "A new feature"),
         "fix"      => ("🐛", "A bug fix"),
@@ -323,9 +324,17 @@ fn format_type_label(t: &str) -> String {
         _          => ("·", ""),
     };
     if description.is_empty() {
-        format!("{} {}", icon, t)
+        if emoji {
+            format!("{} {}", icon, t)
+        } else {
+             t.to_string()
+        }
     } else {
-        format!("{} {:12}  {}", icon, t, description.bright_black())
+        if emoji {
+            format!("{} {:12}  {}", icon, t, description.bright_black())
+        } else {
+            format!("{} {:12}  {}", icon, t, description.bright_black())
+        }
     }
 }
 
