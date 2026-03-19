@@ -3,6 +3,7 @@
 //! Uses `ureq` for HTTP and parses only the fields needed by g.
 
 use anyhow::{bail, Context, Result};
+use std::collections::HashMap;
 
 use crate::commands::git as gitcmd;
 
@@ -123,6 +124,62 @@ pub fn find_pr(
         }
         Err(e) => bail!("Network error: {}", e),
     }
+}
+
+/// Fetch all open PRs for a repo in a single API call, keyed by head branch name.
+pub fn list_open_prs(
+    token: &str,
+    api_base: &str,
+    owner: &str,
+    repo: &str,
+) -> Result<HashMap<String, PrInfo>> {
+    let mut map = HashMap::new();
+    let mut page: u32 = 1;
+
+    loop {
+        let path = format!("repos/{}/{}/pulls", owner, repo);
+        let resp = make_request(token, api_base, "GET", &path)
+            .query("state", "open")
+            .query("per_page", "100")
+            .query("page", &page.to_string())
+            .call();
+
+        match resp {
+            Ok(response) => {
+                let prs: Vec<serde_json::Value> = response
+                    .into_json()
+                    .context("Failed to parse PR list response")?;
+
+                if prs.is_empty() {
+                    break;
+                }
+
+                for pr in &prs {
+                    if let Some(head_ref) = pr["head"]["ref"].as_str() {
+                        map.insert(
+                            head_ref.to_string(),
+                            PrInfo {
+                                number: pr["number"].as_u64().unwrap_or(0),
+                                html_url: pr["html_url"].as_str().unwrap_or("").to_string(),
+                                base_ref: pr["base"]["ref"].as_str().unwrap_or("").to_string(),
+                            },
+                        );
+                    }
+                }
+
+                if prs.len() < 100 {
+                    break;
+                }
+                page += 1;
+            }
+            Err(ureq::Error::Status(code, _)) => {
+                bail!("GitHub API error {}: could not list open PRs", code);
+            }
+            Err(e) => bail!("Network error: {}", e),
+        }
+    }
+
+    Ok(map)
 }
 
 /// Create a new pull request.
