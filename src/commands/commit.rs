@@ -16,11 +16,13 @@ use crate::ui;
 pub fn commit(args: &CommitArgs) -> Result<()> {
     let cfg = config::load()?;
 
-    // Check we're in a repo.
     if !gitcmd::is_inside_git_repo() {
         bail!("Not inside a git repository.");
     }
 
+    if gitcmd::is_dry_run() {
+        return commit_dry_run(args, &cfg);
+    }
 
     // If -a flag, stage everything.
     if args.all {
@@ -45,7 +47,6 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
 
     // Build commit message.
     let message = if let Some(msg) = &args.message {
-        // Non-interactive: use provided message
         let body = args.body.clone().unwrap_or_default();
         if body.is_empty() {
             msg.clone()
@@ -53,7 +54,6 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
             format!("{}\n\n{}", msg, body)
         }
     } else {
-        // Interactive commit builder.
         build_commit_message(args, &cfg)?
     };
 
@@ -96,7 +96,6 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
 
     match result {
         Ok(out) => {
-            // Parse the commit hash from git output.
             let hash = gitcmd::git_output_lossy(&["rev-parse", "--short", "HEAD"]);
             println!();
             ui::print_success(&format!(
@@ -115,6 +114,67 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
         Err(e) => {
             ui::print_error(&format!("Commit failed: {}", e));
         }
+    }
+
+    Ok(())
+}
+
+/// Show what the commit command would do without executing.
+fn commit_dry_run(args: &CommitArgs, cfg: &config::Config) -> Result<()> {
+    if args.all {
+        gitcmd::git_mutate(&["add", "-A"], "Stage all tracked and untracked files")?;
+    }
+
+    let message_desc = if let Some(msg) = &args.message {
+        let body = args.body.clone().unwrap_or_default();
+        if body.is_empty() {
+            msg.clone()
+        } else {
+            format!("{}\n\n{}", msg, body)
+        }
+    } else {
+        "<interactive prompt — message built via guided flow>".to_string()
+    };
+
+    let mut git_args: Vec<&str> = vec!["commit", "-m"];
+    let msg_placeholder;
+    if args.message.is_some() {
+        msg_placeholder = message_desc.clone();
+        git_args.push(&msg_placeholder);
+    } else {
+        git_args.push("<message>");
+    }
+
+    if args.no_verify {
+        git_args.push("--no-verify");
+    }
+    if args.amend {
+        git_args.push("--amend");
+    }
+    if cfg.commit.gpg_sign {
+        git_args.push("-S");
+    }
+
+    let explanation = if args.amend {
+        "Amend the previous commit with staged changes"
+    } else {
+        "Create a new commit with staged changes"
+    };
+
+    gitcmd::git_mutate(&git_args, explanation)?;
+
+    if args.message.is_some() {
+        println!(
+            "           {} {}",
+            "message:".bright_black(),
+            message_desc.bright_black()
+        );
+    } else {
+        println!(
+            "           {} {}",
+            "note:".bright_black(),
+            "Commit message would be built via interactive prompts".bright_black()
+        );
     }
 
     Ok(())

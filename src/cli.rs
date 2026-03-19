@@ -33,6 +33,10 @@ pub struct Cli {
     #[arg(short = 'c', global = true, value_name = "KEY=VAL")]
     pub config_override: Vec<String>,
 
+    /// Preview what commands would run without making any changes
+    #[arg(long, global = true)]
+    pub dry_run: bool,
+
     /// The parsed top-level command chosen by the user.
     #[command(subcommand)]
     pub command: Commands,
