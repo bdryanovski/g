@@ -6,9 +6,128 @@
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use crate::config;
 use crate::ui;
+
+// ─── Dry Run ──────────────────────────────────────────────────────────────────
+
+static DRY_RUN: AtomicBool = AtomicBool::new(false);
+static DRY_RUN_STEP: AtomicUsize = AtomicUsize::new(0);
+
+pub fn set_dry_run(enabled: bool) {
+    DRY_RUN.store(enabled, Ordering::SeqCst);
+    DRY_RUN_STEP.store(0, Ordering::SeqCst);
+}
+
+pub fn is_dry_run() -> bool {
+    DRY_RUN.load(Ordering::SeqCst)
+}
+
+fn next_step() -> usize {
+    DRY_RUN_STEP.fetch_add(1, Ordering::SeqCst) + 1
+}
+
+pub fn step_count() -> usize {
+    DRY_RUN_STEP.load(Ordering::SeqCst)
+}
+
+/// Execute a mutating git command. In dry-run mode, prints the planned step
+/// and returns `Ok("")` without executing anything.
+pub fn git_mutate(args: &[&str], explanation: &str) -> Result<String> {
+    if is_dry_run() {
+        print_dry_run_git(args, explanation);
+        return Ok(String::new());
+    }
+    git_output(args)
+}
+
+/// Log a non-git side effect (file write, API call, etc.) during dry-run.
+/// In normal mode this is a no-op.
+pub fn dry_run_action(action: &str, explanation: &str) {
+    if is_dry_run() {
+        let step = next_step();
+        let label = format!("Step {}", step);
+        println!();
+        println!(
+            "  {} {} {}",
+            label.cyan().bold(),
+            "▸".bright_black(),
+            action.yellow()
+        );
+        println!(
+            "  {}  {}",
+            " ".repeat(label.len()),
+            explanation.bright_black()
+        );
+    }
+}
+
+fn print_dry_run_git(args: &[&str], explanation: &str) {
+    let step = next_step();
+    let label = format!("Step {}", step);
+    let cmd = format!("git {}", args.join(" "));
+    println!();
+    println!(
+        "  {} {} {}",
+        label.cyan().bold(),
+        "▸".bright_black(),
+        cmd.yellow()
+    );
+    println!(
+        "  {}  {}",
+        " ".repeat(label.len()),
+        explanation.bright_black()
+    );
+}
+
+pub fn dry_run_banner() {
+    println!();
+    println!(
+        "  {} {}",
+        "⚡".yellow().bold(),
+        "DRY RUN — showing what would happen without making changes"
+            .bold()
+            .white()
+    );
+    println!(
+        "  {}",
+        "───────────────────────────────────────────────────────────────"
+            .bright_black()
+    );
+}
+
+pub fn dry_run_footer() {
+    let steps = step_count();
+    println!();
+    println!(
+        "  {}",
+        "───────────────────────────────────────────────────────────────"
+            .bright_black()
+    );
+    if steps > 0 {
+        println!(
+            "  {} {} operation{} would be performed",
+            "✓".green().bold(),
+            steps.to_string().yellow().bold(),
+            if steps == 1 { "" } else { "s" }
+        );
+        println!(
+            "  {}  {}",
+            " ".bright_black(),
+            "Re-run without --dry-run to execute.".bright_black()
+        );
+    } else {
+        println!(
+            "  {} {}",
+            "ℹ".cyan(),
+            "This command has no mutating operations to preview."
+                .bright_black()
+        );
+    }
+    println!();
+}
 
 // ─── Git Executable ───────────────────────────────────────────────────────────
 
@@ -53,6 +172,12 @@ pub fn passthrough(args: &[String]) -> Result<()> {
             new_args.extend_from_slice(&args[1..]);
             return passthrough(&new_args);
         }
+    }
+
+    if is_dry_run() {
+        let str_args: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        print_dry_run_git(&str_args, "Passthrough — forwarded to git as-is");
+        return Ok(());
     }
 
     let status = Command::new(git_exe())

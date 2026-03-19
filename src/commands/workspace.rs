@@ -280,15 +280,23 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
     // Check if the branch already exists.
     let branch_exists = gitcmd::git_output(&["rev-parse", "--verify", branch_name]).is_ok();
 
-    let pb = ui::spinner(&format!("Creating worktree for branch {}", branch_name));
-
     let result = if branch_exists {
-        gitcmd::git_output(&["worktree", "add", &wt_path_str, branch_name])
+        gitcmd::git_mutate(
+            &["worktree", "add", &wt_path_str, branch_name],
+            &format!(
+                "Create worktree for existing branch '{}' at {}",
+                branch_name, wt_path_str
+            ),
+        )
     } else {
-        gitcmd::git_output(&["worktree", "add", "-b", branch_name, &wt_path_str])
+        gitcmd::git_mutate(
+            &["worktree", "add", "-b", branch_name, &wt_path_str],
+            &format!(
+                "Create new branch '{}' and worktree at {}",
+                branch_name, wt_path_str
+            ),
+        )
     };
-
-    pb.finish_and_clear();
 
     result.with_context(|| {
         format!(
@@ -298,36 +306,45 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
         )
     })?;
 
-    // Record metadata so `list` and `status` can show friendly names.
-    let now = Utc::now();
-    store.workspaces.push(Workspace {
-        name: name.to_string(),
-        description: description.map(str::to_string),
-        path: wt_path_str.clone(),
-        branch: branch_name.to_string(),
-        created_at: now,
-    });
+    if !gitcmd::is_dry_run() {
+        let now = Utc::now();
+        store.workspaces.push(Workspace {
+            name: name.to_string(),
+            description: description.map(str::to_string),
+            path: wt_path_str.clone(),
+            branch: branch_name.to_string(),
+            created_at: now,
+        });
+        save_store(&store)?;
 
-    save_store(&store)?;
+        println!();
+        ui::print_success(&format!(
+            "Created workspace {} on branch {}",
+            name.green().bold(),
+            branch_name.cyan()
+        ));
+        println!(
+            "     {} {}",
+            "path:".bright_black(),
+            wt_path_str.cyan().underline()
+        );
+        println!();
+        println!(
+            "  {} {}",
+            "tip:".bright_black(),
+            format!("g workspace switch {}  to open a shell there", name).bright_black()
+        );
+        println!();
+    } else {
+        gitcmd::dry_run_action(
+            "Save workspace metadata",
+            &format!(
+                "Register workspace '{}' on branch '{}' in workspaces.toml",
+                name, branch_name
+            ),
+        );
+    }
 
-    println!();
-    ui::print_success(&format!(
-        "Created workspace {} on branch {}",
-        name.green().bold(),
-        branch_name.cyan()
-    ));
-    println!(
-        "     {} {}",
-        "path:".bright_black(),
-        wt_path_str.cyan().underline()
-    );
-    println!();
-    println!(
-        "  {} {}",
-        "tip:".bright_black(),
-        format!("g workspace switch {}  to open a shell there", name).bright_black()
-    );
-    println!();
     Ok(())
 }
 
@@ -417,20 +434,27 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
     let workspace = &store.workspaces[idx];
     let wt_path = &workspace.path;
 
-    let pb = ui::spinner(&format!("Removing worktree {}", name));
-
     let mut args = vec!["worktree", "remove"];
     if force {
         args.push("--force");
     }
     args.push(wt_path);
 
-    let result = gitcmd::git_output(&args);
-    pb.finish_and_clear();
+    let force_note = if force { " (forced)" } else { "" };
+    let result = gitcmd::git_mutate(
+        &args,
+        &format!(
+            "Remove worktree directory at {}{}",
+            wt_path, force_note
+        ),
+    );
 
     match result {
         Ok(_) => {}
         Err(e) => {
+            if gitcmd::is_dry_run() {
+                return Err(e);
+            }
             let msg = format!("{}", e);
             if msg.contains("dirty") || msg.contains("untracked") {
                 bail!(
@@ -440,7 +464,6 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
             }
             if !Path::new(wt_path).exists() {
                 ui::print_warning("Worktree directory already removed; cleaning up metadata.");
-                // If the folder is gone, ask git to forget the worktree entry.
                 gitcmd::git_output(&["worktree", "prune"]).ok();
             } else {
                 return Err(e).context("Failed to remove worktree");
@@ -448,12 +471,19 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
         }
     }
 
-    store.workspaces.remove(idx);
-    save_store(&store)?;
+    if !gitcmd::is_dry_run() {
+        store.workspaces.remove(idx);
+        save_store(&store)?;
 
-    println!();
-    ui::print_success(&format!("Deleted workspace '{}'", name.red()));
-    println!();
+        println!();
+        ui::print_success(&format!("Deleted workspace '{}'", name.red()));
+        println!();
+    } else {
+        gitcmd::dry_run_action(
+            "Remove workspace metadata",
+            &format!("Delete workspace '{}' entry from workspaces.toml", name),
+        );
+    }
     Ok(())
 }
 
@@ -577,35 +607,60 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
         );
     }
 
-    let pb = ui::spinner(&format!("Moving worktree {} → {}", old, new));
+    if !gitcmd::is_dry_run() {
+        let pb = ui::spinner(&format!("Moving worktree {} → {}", old, new));
 
-    // Move the directory first.
-    fs::rename(&old_path, &new_path).with_context(|| {
-        format!(
-            "Failed to move '{}' to '{}'",
-            old_path.display(),
-            new_path.display()
-        )
-    })?;
+        fs::rename(&old_path, &new_path).with_context(|| {
+            format!(
+                "Failed to move '{}' to '{}'",
+                old_path.display(),
+                new_path.display()
+            )
+        })?;
 
-    // Repair git's internal worktree bookkeeping after the move.
-    gitcmd::git_output(&["worktree", "repair"])
-        .context("Failed to repair worktree tracking after move")?;
+        gitcmd::git_output(&["worktree", "repair"])
+            .context("Failed to repair worktree tracking after move")?;
 
-    pb.finish_and_clear();
+        pb.finish_and_clear();
 
-    ws.name = new.to_string();
-    ws.path = new_path.to_string_lossy().to_string();
-    save_store(&store)?;
+        ws.name = new.to_string();
+        ws.path = new_path.to_string_lossy().to_string();
+        save_store(&store)?;
 
-    println!();
-    ui::print_success(&format!("Renamed workspace '{}' → '{}'", old, new.green()));
-    println!(
-        "     {} {}",
-        "path:".bright_black(),
-        new_path.display().to_string().cyan().underline()
-    );
-    println!();
+        println!();
+        ui::print_success(&format!("Renamed workspace '{}' → '{}'", old, new.green()));
+        println!(
+            "     {} {}",
+            "path:".bright_black(),
+            new_path.display().to_string().cyan().underline()
+        );
+        println!();
+    } else {
+        gitcmd::dry_run_action(
+            &format!(
+                "mv {} {}",
+                old_path.display(),
+                new_path.display()
+            ),
+            &format!(
+                "Move worktree directory from '{}' to '{}'",
+                old_path.display(),
+                new_path.display()
+            ),
+        );
+        gitcmd::git_mutate(
+            &["worktree", "repair"],
+            "Repair git worktree tracking after the directory move",
+        )?;
+        gitcmd::dry_run_action(
+            "Update workspace metadata",
+            &format!(
+                "Rename workspace '{}' → '{}' in workspaces.toml",
+                old, new
+            ),
+        );
+    }
+
     Ok(())
 }
 
