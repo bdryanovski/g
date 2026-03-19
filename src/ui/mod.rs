@@ -271,7 +271,10 @@ pub struct Table {
 impl Table {
     /// Create a new table with the provided header labels.
     pub fn new(headers: Vec<&str>) -> Self {
-        let col_widths = headers.iter().map(|h| h.len()).collect();
+        let col_widths = headers
+            .iter()
+            .map(|h| console::measure_text_width(h))
+            .collect();
         Self {
             headers: headers.into_iter().map(String::from).collect(),
             rows: vec![],
@@ -282,10 +285,9 @@ impl Table {
     /// Add a row to the table (updates column widths).
     pub fn add_row(&mut self, row: Vec<String>) {
         for (i, cell) in row.iter().enumerate() {
-            // strip ANSI codes for width calculation
-            let visible_len = strip_ansi(cell).len();
+            let visible_width = console::measure_text_width(cell);
             if i < self.col_widths.len() {
-                self.col_widths[i] = self.col_widths[i].max(visible_len);
+                self.col_widths[i] = self.col_widths[i].max(visible_width);
             }
         }
         self.rows.push(row);
@@ -293,18 +295,19 @@ impl Table {
 
     /// Print the table to stdout.
     pub fn print(&self) {
+        let pad_cell = |cell: &str, col: usize| -> String {
+            let visible_width = console::measure_text_width(cell);
+            let target = self.col_widths.get(col).copied().unwrap_or(0);
+            let padding = target.saturating_sub(visible_width);
+            format!("{}{}", cell, " ".repeat(padding))
+        };
+
         // Header
         let header_cells: Vec<String> = self
             .headers
             .iter()
             .enumerate()
-            .map(|(i, h)| {
-                format!(
-                    "{:<width$}",
-                    h.bold().bright_white().to_string(),
-                    width = self.col_widths[i]
-                )
-            })
+            .map(|(i, h)| pad_cell(&h.bold().bright_white().to_string(), i))
             .collect();
         println!("  {}", header_cells.join("  "));
 
@@ -321,38 +324,11 @@ impl Table {
             let cells: Vec<String> = row
                 .iter()
                 .enumerate()
-                .map(|(i, cell)| {
-                    let visible_len = strip_ansi(cell).len();
-                    let padding = self
-                        .col_widths
-                        .get(i)
-                        .copied()
-                        .unwrap_or(0)
-                        .saturating_sub(visible_len);
-                    format!("{}{}", cell, " ".repeat(padding))
-                })
+                .map(|(i, cell)| pad_cell(cell, i))
                 .collect();
             println!("  {}", cells.join("  "));
         }
     }
-}
-
-/// Strip ANSI escape codes for length calculation.
-pub fn strip_ansi(s: &str) -> String {
-    let mut result = String::new();
-    let mut in_escape = false;
-    for ch in s.chars() {
-        if ch == '\x1b' {
-            in_escape = true;
-        } else if in_escape {
-            if ch == 'm' {
-                in_escape = false;
-            }
-        } else {
-            result.push(ch);
-        }
-    }
-    result
 }
 
 // ─── Branch Ahead/Behind ─────────────────────────────────────────────────────
@@ -444,39 +420,38 @@ impl CommitEntry {
         // Hash
         write!(out, " {} ", color_hash(&self.hash)).ok();
 
-        // Subject (truncated)
-        let subject = if self.subject.len() > max_subject {
-            format!("{}…", &self.subject[..max_subject - 1])
-        } else {
-            self.subject.clone()
-        };
-        write!(
-            out,
-            "{:<width$}",
-            color_subject(&subject),
-            width = max_subject + 10
-        )
-        .ok();
+        // Subject (truncated + padded to fixed display width)
+        let subject = truncate(&self.subject, max_subject);
+        let colored_subject = color_subject(&subject);
+        let subject_width = console::measure_text_width(&colored_subject);
+        let subject_pad = max_subject.saturating_sub(subject_width);
+        write!(out, "{}{}", colored_subject, " ".repeat(subject_pad)).ok();
 
-        // Author
-        write!(out, "  {:<20}", color_author(&truncate(&self.author, 20))).ok();
+        // Author (truncated + padded to fixed display width)
+        let author_max = 20;
+        let author = truncate(&self.author, author_max);
+        let colored_author = color_author(&author);
+        let author_width = console::measure_text_width(&colored_author);
+        let author_pad = author_max.saturating_sub(author_width);
+        write!(out, "  {}{}", colored_author, " ".repeat(author_pad)).ok();
 
         // Date
         write!(out, "  {}", color_date(&self.date)).ok();
 
         // Refs
         if !self.refs.trim().is_empty() {
-            write!(out, "{}", format_refs(&self.refs)).ok();
+            write!(out, " {}", format_refs(&self.refs)).ok();
         }
 
         out
     }
 }
 
-/// Truncate a string to a maximum length, adding an ellipsis if needed.
+/// Truncate a string to a maximum display width, adding an ellipsis if needed.
 fn truncate(s: &str, max: usize) -> String {
-    if s.len() > max {
-        format!("{}…", &s[..max - 1])
+    if console::measure_text_width(s) > max {
+        let truncated = console::truncate_str(s, max.saturating_sub(1), "");
+        format!("{}…", truncated)
     } else {
         s.to_string()
     }
