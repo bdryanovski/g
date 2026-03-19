@@ -82,6 +82,12 @@ fn run() -> Result<()> {
             .map_err(|e| anyhow::anyhow!("Cannot change directory to '{}': {}", dir, e))?;
     }
 
+    let dry_run = cli.dry_run;
+    if dry_run {
+        commands::git::set_dry_run(true);
+        commands::git::dry_run_banner();
+    }
+
     // Dispatch by top-level command.
     match cli.command {
         // ─── Workspace ────────────────────────────────────────────────────────
@@ -150,6 +156,10 @@ fn run() -> Result<()> {
             }
             commands::git::passthrough(&args)?
         }
+    }
+
+    if dry_run {
+        commands::git::dry_run_footer();
     }
 
     Ok(())
