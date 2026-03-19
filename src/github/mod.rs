@@ -231,8 +231,8 @@ fn generate_pr_body(head: &str, base: &str) -> String {
         body.push('\n');
     }
 
-    body.push_str("\n---\n");
-    body.push_str("*Created with [g](https://github.com/your-org/g) — stacked PR workflow*\n");
+    // body.push_str("\n---\n");
+    // body.push_str("*Created with [g](https://github.com/your-org/g) — stacked PR workflow*\n");
     body
 }
 
