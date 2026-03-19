@@ -294,6 +294,8 @@ pub fn details() -> Result<()> {
     let stack = current_stack(&store)?.clone();
     let current_branch = gitcmd::current_branch().unwrap_or_default();
 
+    let open_prs = fetch_open_prs_for_details();
+
     println!();
     println!(
         "  {} {}  {}",
@@ -323,19 +325,42 @@ pub fn details() -> Result<()> {
 
         print!("  {} {} {}", connector.bright_black(), marker, name_colored);
 
-        if let Some(pr_url) = &branch.pr_url {
-            let pr_num = branch
-                .pr_number
-                .map(|n| format!(" #{}", n))
-                .unwrap_or_default();
-            print!("  {}{}", "PR".bright_black(), pr_num.cyan());
-            print!("  {}", pr_url.bright_black().underline());
-        }
-
         if is_current {
-            print!("  {}", "← you are here".bright_black());
+            print!("  {}", "(current)".green().dimmed());
         }
         println!();
+
+        let branch_time = gitcmd::git_output_lossy(&["log", "-1", "--format=%ar", &branch.name]);
+        if !branch_time.is_empty() {
+            println!(
+                "  {}     {}",
+                pipe.bright_black(),
+                branch_time.trim().bright_black()
+            );
+        }
+
+        let live_pr = open_prs.as_ref().and_then(|prs| prs.get(&branch.name));
+        if let Some(pr) = live_pr {
+            println!(
+                "  {}     {} {}  {}",
+                pipe.bright_black(),
+                "PR".bright_black(),
+                format!("#{}", pr.number).cyan(),
+                pr.html_url.bright_black().underline()
+            );
+        } else if let Some(pr_url) = &branch.pr_url {
+            let pr_num = branch
+                .pr_number
+                .map(|n| format!("#{}", n))
+                .unwrap_or_default();
+            println!(
+                "  {}     {} {}  {}",
+                pipe.bright_black(),
+                "PR".bright_black(),
+                pr_num.cyan(),
+                pr_url.bright_black().underline()
+            );
+        }
 
         let base = if i == 0 {
             &stack.root
@@ -345,13 +370,30 @@ pub fn details() -> Result<()> {
 
         if i > 0 || branch.name != stack.root {
             let range = format!("{}..{}", base, branch.name);
-            let commits = gitcmd::git_output_lossy(&["log", "--format=%h %s", "--reverse", &range]);
+            let commits = gitcmd::git_output_lossy(&[
+                "log",
+                "--format=%h%x1f%s%x1f%an%x1f%ar",
+                "--reverse",
+                &range,
+            ]);
 
             if !commits.is_empty() {
+                println!("  {}", pipe.bright_black());
                 for commit_line in commits.lines() {
-                    if let Some((hash, subject)) = commit_line.split_once(' ') {
+                    let parts: Vec<&str> = commit_line.split('\x1f').collect();
+                    if parts.len() >= 4 {
                         println!(
-                            "  {}     {} {}",
+                            "  {}     {} - {}  {}",
+                            pipe.bright_black(),
+                            parts[0].yellow().dimmed(),
+                            parts[1].bright_black(),
+                            format!("({}, {})", parts[2], parts[3])
+                                .bright_black()
+                                .dimmed()
+                        );
+                    } else if let Some((hash, subject)) = commit_line.split_once(' ') {
+                        println!(
+                            "  {}     {} - {}",
                             pipe.bright_black(),
                             hash.yellow().dimmed(),
                             subject.bright_black()
@@ -374,6 +416,16 @@ pub fn details() -> Result<()> {
 
     println!();
     Ok(())
+}
+
+/// Try to fetch open PRs from GitHub for display in stack details.
+/// Returns None silently if no token is configured or the API call fails,
+/// so `details()` can always run without blocking on network errors.
+fn fetch_open_prs_for_details() -> Option<std::collections::HashMap<String, github::PrInfo>> {
+    let cfg = config::load().ok()?;
+    let token = get_github_token(&cfg).ok()?;
+    let (owner, repo_name) = github::detect_repo().ok()?;
+    github::list_open_prs(&token, &cfg.github.api_base, &owner, &repo_name).ok()
 }
 
 pub fn switch_stack(name: &str) -> Result<()> {
