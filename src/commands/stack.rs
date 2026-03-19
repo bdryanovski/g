@@ -144,29 +144,39 @@ pub fn new_stack(name: &str) -> Result<()> {
         bail!("Stack '{}' already exists in this repository.", name);
     }
 
-    let now = Utc::now();
-    stacks.push(Stack {
-        name: name.to_string(),
-        root: branch.clone(),
-        branches: vec![StackBranch {
-            name: branch.clone(),
-            pr_number: None,
-            pr_url: None,
-            description: None,
-        }],
-        created_at: now,
-        updated_at: now,
-    });
+    if !gitcmd::is_dry_run() {
+        let now = Utc::now();
+        stacks.push(Stack {
+            name: name.to_string(),
+            root: branch.clone(),
+            branches: vec![StackBranch {
+                name: branch.clone(),
+                pr_number: None,
+                pr_url: None,
+                description: None,
+            }],
+            created_at: now,
+            updated_at: now,
+        });
 
-    save_store(&store)?;
+        save_store(&store)?;
 
-    println!();
-    ui::print_success(&format!(
-        "Created stack {} rooted at {}",
-        name.cyan().bold(),
-        branch.green().bold()
-    ));
-    println!();
+        println!();
+        ui::print_success(&format!(
+            "Created stack {} rooted at {}",
+            name.cyan().bold(),
+            branch.green().bold()
+        ));
+        println!();
+    } else {
+        gitcmd::dry_run_action(
+            "Create stack metadata",
+            &format!(
+                "Register stack '{}' rooted at branch '{}' in stacks.toml",
+                name, branch
+            ),
+        );
+    }
     Ok(())
 }
 
@@ -185,33 +195,48 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
         (stack.name.clone(), pos)
     };
 
-    gitcmd::git_output(&["checkout", "-b", branch_name])
-        .with_context(|| format!("Failed to create branch '{}'", branch_name))?;
+    gitcmd::git_mutate(
+        &["checkout", "-b", branch_name],
+        &format!("Create new branch '{}' from current HEAD and switch to it", branch_name),
+    )
+    .with_context(|| format!("Failed to create branch '{}'", branch_name))?;
 
-    let stacks = repo_stacks_mut(&mut store, &repo);
-    let stack = stacks
-        .iter_mut()
-        .find(|s| s.name == stack_name)
-        .with_context(|| format!("Stack '{}' disappeared", stack_name))?;
+    if !gitcmd::is_dry_run() {
+        let stacks = repo_stacks_mut(&mut store, &repo);
+        let stack = stacks
+            .iter_mut()
+            .find(|s| s.name == stack_name)
+            .with_context(|| format!("Stack '{}' disappeared", stack_name))?;
 
-    stack.branches.insert(
-        current_pos + 1,
-        StackBranch {
-            name: branch_name.to_string(),
-            pr_number: None,
-            pr_url: None,
-            description: None,
-        },
-    );
-    stack.updated_at = Utc::now();
-    save_store(&store)?;
+        stack.branches.insert(
+            current_pos + 1,
+            StackBranch {
+                name: branch_name.to_string(),
+                pr_number: None,
+                pr_url: None,
+                description: None,
+            },
+        );
+        stack.updated_at = Utc::now();
+        save_store(&store)?;
 
-    println!();
-    ui::print_success(&format!(
-        "Created branch {} and added to stack",
-        branch_name.green().bold()
-    ));
-    println!();
+        println!();
+        ui::print_success(&format!(
+            "Created branch {} and added to stack",
+            branch_name.green().bold()
+        ));
+        println!();
+    } else {
+        gitcmd::dry_run_action(
+            "Update stack metadata",
+            &format!(
+                "Insert '{}' into stack '{}' at position {}",
+                branch_name,
+                stack_name,
+                current_pos + 1
+            ),
+        );
+    }
     Ok(())
 }
 
@@ -294,6 +319,8 @@ pub fn details() -> Result<()> {
     let stack = current_stack(&store)?.clone();
     let current_branch = gitcmd::current_branch().unwrap_or_default();
 
+    let open_prs = fetch_open_prs_for_details();
+
     println!();
     println!(
         "  {} {}  {}",
@@ -323,19 +350,42 @@ pub fn details() -> Result<()> {
 
         print!("  {} {} {}", connector.bright_black(), marker, name_colored);
 
-        if let Some(pr_url) = &branch.pr_url {
-            let pr_num = branch
-                .pr_number
-                .map(|n| format!(" #{}", n))
-                .unwrap_or_default();
-            print!("  {}{}", "PR".bright_black(), pr_num.cyan());
-            print!("  {}", pr_url.bright_black().underline());
-        }
-
         if is_current {
-            print!("  {}", "← you are here".bright_black());
+            print!("  {}", "(current)".green().dimmed());
         }
         println!();
+
+        let branch_time = gitcmd::git_output_lossy(&["log", "-1", "--format=%ar", &branch.name]);
+        if !branch_time.is_empty() {
+            println!(
+                "  {}     {}",
+                pipe.bright_black(),
+                branch_time.trim().bright_black()
+            );
+        }
+
+        let live_pr = open_prs.as_ref().and_then(|prs| prs.get(&branch.name));
+        if let Some(pr) = live_pr {
+            println!(
+                "  {}     {} {}  {}",
+                pipe.bright_black(),
+                "PR".bright_black(),
+                format!("#{}", pr.number).cyan(),
+                pr.html_url.bright_black().underline()
+            );
+        } else if let Some(pr_url) = &branch.pr_url {
+            let pr_num = branch
+                .pr_number
+                .map(|n| format!("#{}", n))
+                .unwrap_or_default();
+            println!(
+                "  {}     {} {}  {}",
+                pipe.bright_black(),
+                "PR".bright_black(),
+                pr_num.cyan(),
+                pr_url.bright_black().underline()
+            );
+        }
 
         let base = if i == 0 {
             &stack.root
@@ -345,13 +395,30 @@ pub fn details() -> Result<()> {
 
         if i > 0 || branch.name != stack.root {
             let range = format!("{}..{}", base, branch.name);
-            let commits = gitcmd::git_output_lossy(&["log", "--format=%h %s", "--reverse", &range]);
+            let commits = gitcmd::git_output_lossy(&[
+                "log",
+                "--format=%h%x1f%s%x1f%an%x1f%ar",
+                "--reverse",
+                &range,
+            ]);
 
             if !commits.is_empty() {
+                println!("  {}", pipe.bright_black());
                 for commit_line in commits.lines() {
-                    if let Some((hash, subject)) = commit_line.split_once(' ') {
+                    let parts: Vec<&str> = commit_line.split('\x1f').collect();
+                    if parts.len() >= 4 {
                         println!(
-                            "  {}     {} {}",
+                            "  {}     {} - {}  {}",
+                            pipe.bright_black(),
+                            parts[0].yellow().dimmed(),
+                            parts[1].bright_black(),
+                            format!("({}, {})", parts[2], parts[3])
+                                .bright_black()
+                                .dimmed()
+                        );
+                    } else if let Some((hash, subject)) = commit_line.split_once(' ') {
+                        println!(
+                            "  {}     {} - {}",
                             pipe.bright_black(),
                             hash.yellow().dimmed(),
                             subject.bright_black()
@@ -374,6 +441,16 @@ pub fn details() -> Result<()> {
 
     println!();
     Ok(())
+}
+
+/// Try to fetch open PRs from GitHub for display in stack details.
+/// Returns None silently if no token is configured or the API call fails,
+/// so `details()` can always run without blocking on network errors.
+fn fetch_open_prs_for_details() -> Option<std::collections::HashMap<String, github::PrInfo>> {
+    let cfg = config::load().ok()?;
+    let token = get_github_token(&cfg).ok()?;
+    let (owner, repo_name) = github::detect_repo().ok()?;
+    github::list_open_prs(&token, &cfg.github.api_base, &owner, &repo_name).ok()
 }
 
 pub fn switch_stack(name: &str) -> Result<()> {
@@ -399,7 +476,7 @@ pub fn switch_stack(name: &str) -> Result<()> {
         .with_context(|| format!("Stack '{}' has no branches.", name))?;
 
     let current = gitcmd::current_branch().unwrap_or_default();
-    if current == top_branch.name {
+    if current == top_branch.name && !gitcmd::is_dry_run() {
         println!();
         ui::print_info(&format!(
             "Already on stack {} (branch {})",
@@ -410,18 +487,24 @@ pub fn switch_stack(name: &str) -> Result<()> {
         return Ok(());
     }
 
-    let pb = ui::spinner(&format!("Switching to stack {}", stack.name.cyan()));
-    gitcmd::git_output(&["checkout", &top_branch.name])
-        .with_context(|| format!("Failed to checkout branch '{}'", top_branch.name))?;
-    pb.finish_and_clear();
+    gitcmd::git_mutate(
+        &["checkout", &top_branch.name],
+        &format!(
+            "Switch to top branch '{}' of stack '{}'",
+            top_branch.name, stack.name
+        ),
+    )
+    .with_context(|| format!("Failed to checkout branch '{}'", top_branch.name))?;
 
-    println!();
-    ui::print_success(&format!(
-        "Switched to stack {} → branch {}",
-        stack.name.cyan().bold(),
-        top_branch.name.green().bold()
-    ));
-    println!();
+    if !gitcmd::is_dry_run() {
+        println!();
+        ui::print_success(&format!(
+            "Switched to stack {} → branch {}",
+            stack.name.cyan().bold(),
+            top_branch.name.green().bold()
+        ));
+        println!();
+    }
     Ok(())
 }
 
@@ -459,72 +542,67 @@ pub fn absorb() -> Result<()> {
     };
     let absorbed_branch = current_branch.clone();
 
-    println!();
-    println!(
-        "  {} Merging {} into {}",
-        "→".cyan(),
-        absorbed_branch.green().bold(),
-        target_branch.cyan().bold()
-    );
+    gitcmd::git_mutate(
+        &["checkout", &target_branch],
+        &format!("Switch to target branch '{}' for merge", target_branch),
+    )
+    .with_context(|| format!("Failed to checkout '{}'", target_branch))?;
 
-    let pb = ui::spinner(&format!("Checking out {}", target_branch));
-    gitcmd::git_output(&["checkout", &target_branch])
-        .with_context(|| format!("Failed to checkout '{}'", target_branch))?;
-    pb.finish_and_clear();
-
-    let pb = ui::spinner(&format!(
-        "Merging {} into {}",
-        absorbed_branch, target_branch
-    ));
-    let merge_result = gitcmd::git_output(&["merge", "--no-ff", &absorbed_branch]);
-    pb.finish_and_clear();
-
-    match merge_result {
-        Ok(_) => {}
-        Err(e) => {
-            let msg = format!("{}", e);
-            if msg.contains("CONFLICT") || msg.contains("conflict") {
-                ui::print_warning("Merge conflicts detected. Resolve them, then:");
-                println!("    {} git add <files>", "1.".bright_black());
-                println!("    {} git commit", "2.".bright_black());
-                println!(
-                    "    {} Manually remove '{}' from the stack with: g stack remove {}",
-                    "3.".bright_black(),
-                    absorbed_branch,
-                    absorbed_branch
-                );
-                println!();
-                return Ok(());
-            }
+    gitcmd::git_mutate(
+        &["merge", "--no-ff", &absorbed_branch],
+        &format!(
+            "Merge '{}' into '{}' with a merge commit (--no-ff)",
+            absorbed_branch, target_branch
+        ),
+    )
+    .with_context(|| {
+        if !gitcmd::is_dry_run() {
             let _ = gitcmd::git_output(&["merge", "--abort"]);
             let _ = gitcmd::git_output(&["checkout", &absorbed_branch]);
-            return Err(e).context("Failed to merge branches");
         }
+        "Failed to merge branches".to_string()
+    })?;
+
+    gitcmd::git_mutate(
+        &["branch", "-d", &absorbed_branch],
+        &format!(
+            "Delete the absorbed branch '{}' (safe delete, only if fully merged)",
+            absorbed_branch
+        ),
+    )?;
+
+    if !gitcmd::is_dry_run() {
+        let remaining_count = {
+            let stacks = repo_stacks_mut(&mut store, &repo);
+            let stack = stacks.iter_mut().find(|s| s.name == stack_name).unwrap();
+            stack.branches.remove(pos);
+            stack.updated_at = Utc::now();
+            stack.branches.len()
+        };
+        save_store(&store)?;
+
+        println!();
+        ui::print_success(&format!(
+            "Absorbed {} into {}",
+            absorbed_branch.green().bold(),
+            target_branch.cyan().bold()
+        ));
+        println!(
+            "     {} Stack now has {} branch{}",
+            "".bright_black(),
+            remaining_count.to_string().yellow(),
+            if remaining_count == 1 { "" } else { "es" }
+        );
+        println!();
+    } else {
+        gitcmd::dry_run_action(
+            "Update stack metadata",
+            &format!(
+                "Remove '{}' from stack '{}' in stacks.toml",
+                absorbed_branch, stack_name
+            ),
+        );
     }
-
-    let _ = gitcmd::git_output(&["branch", "-d", &absorbed_branch]);
-
-    let remaining_count = {
-        let stacks = repo_stacks_mut(&mut store, &repo);
-        let stack = stacks.iter_mut().find(|s| s.name == stack_name).unwrap();
-        stack.branches.remove(pos);
-        stack.updated_at = Utc::now();
-        stack.branches.len()
-    };
-    save_store(&store)?;
-
-    ui::print_success(&format!(
-        "Absorbed {} into {}",
-        absorbed_branch.green().bold(),
-        target_branch.cyan().bold()
-    ));
-    println!(
-        "     {} Stack now has {} branch{}",
-        "".bright_black(),
-        remaining_count.to_string().yellow(),
-        if remaining_count == 1 { "" } else { "es" }
-    );
-    println!();
     Ok(())
 }
 
@@ -546,22 +624,29 @@ pub fn sync(no_interactive: bool) -> Result<()> {
         let base = stack.branches[i - 1].name.clone();
         let branch = stack.branches[i].name.clone();
 
-        let pb = ui::spinner(&format!("Rebasing {} onto {}", branch.green(), base.cyan()));
+        gitcmd::git_mutate(
+            &["checkout", &branch],
+            &format!("Switch to branch '{}' to prepare for rebase", branch),
+        )
+        .with_context(|| format!("Failed to checkout '{}'", branch))?;
 
-        gitcmd::git_output(&["checkout", &branch])
-            .with_context(|| format!("Failed to checkout '{}'", branch))?;
-
-        let result = gitcmd::git_output(&["rebase", &base]);
-
-        pb.finish_and_clear();
+        let result = gitcmd::git_mutate(
+            &["rebase", &base],
+            &format!(
+                "Rebase '{}' onto '{}' to incorporate latest changes from below",
+                branch, base
+            ),
+        );
 
         match result {
             Ok(_) => {
-                ui::print_success(&format!(
-                    "{} rebased onto {}",
-                    branch.green().bold(),
-                    base.cyan()
-                ));
+                if !gitcmd::is_dry_run() {
+                    ui::print_success(&format!(
+                        "{} rebased onto {}",
+                        branch.green().bold(),
+                        base.cyan()
+                    ));
+                }
             }
             Err(e) => {
                 if no_interactive {
@@ -590,11 +675,16 @@ pub fn sync(no_interactive: bool) -> Result<()> {
         }
     }
 
-    let _ = gitcmd::git_output(&["checkout", &saved_branch]);
+    gitcmd::git_mutate(
+        &["checkout", &saved_branch],
+        &format!("Return to original branch '{}'", saved_branch),
+    )?;
 
-    println!();
-    ui::print_success("Stack sync complete!");
-    println!();
+    if !gitcmd::is_dry_run() {
+        println!();
+        ui::print_success("Stack sync complete!");
+        println!();
+    }
     Ok(())
 }
 
@@ -610,9 +700,10 @@ pub fn push(force: bool) -> Result<()> {
     );
     println!();
 
+    let force_note = if force { " with --force-with-lease" } else { "" };
+
     for branch_entry in &stack.branches {
         let branch = &branch_entry.name;
-        let pb = ui::spinner(&format!("Pushing {}", branch.green()));
 
         let push_args: Vec<&str> = if force {
             vec!["push", "origin", branch, "--force-with-lease"]
@@ -620,11 +711,17 @@ pub fn push(force: bool) -> Result<()> {
             vec!["push", "origin", branch]
         };
 
-        let result = gitcmd::git_output(&push_args);
-        pb.finish_and_clear();
+        let result = gitcmd::git_mutate(
+            &push_args,
+            &format!("Push branch '{}' to origin{}", branch, force_note),
+        );
 
         match result {
-            Ok(_) => ui::print_success(&format!("Pushed {}", branch.green().bold())),
+            Ok(_) => {
+                if !gitcmd::is_dry_run() {
+                    ui::print_success(&format!("Pushed {}", branch.green().bold()));
+                }
+            }
             Err(e) => {
                 ui::print_error(&format!("Failed to push {}: {}", branch.red(), e));
                 if !force {
@@ -648,7 +745,6 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
     let stack = current_stack(&store)?.clone();
     let cfg = config::load()?;
 
-    let token = get_github_token(&cfg)?;
     let (owner, repo_name) = github::detect_repo()?;
 
     println!();
@@ -660,6 +756,40 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
         repo_name.bright_white()
     );
     println!();
+
+    if gitcmd::is_dry_run() {
+        for i in 1..stack.branches.len() {
+            let base = stack.branches[i - 1].name.clone();
+            let branch = stack.branches[i].name.clone();
+            let has_pr = stack.branches[i].pr_number.is_some();
+
+            if has_pr {
+                gitcmd::dry_run_action(
+                    &format!("GitHub API: check/update PR for '{}'", branch),
+                    &format!(
+                        "Verify existing PR for '{}' → '{}' has correct base, update if needed",
+                        branch, base
+                    ),
+                );
+            } else {
+                let draft_note = if draft { " as draft" } else { "" };
+                gitcmd::dry_run_action(
+                    &format!("GitHub API: create PR '{}' → '{}'", branch, base),
+                    &format!(
+                        "Open a new pull request{} from '{}' into '{}' on {}/{}",
+                        draft_note, branch, base, owner, repo_name
+                    ),
+                );
+            }
+        }
+        gitcmd::dry_run_action(
+            "Save PR metadata",
+            "Update stacks.toml with PR numbers and URLs",
+        );
+        return Ok(());
+    }
+
+    let token = get_github_token(&cfg)?;
 
     for i in 1..stack.branches.len() {
         let base = stack.branches[i - 1].name.clone();
@@ -777,10 +907,19 @@ pub fn remove_branch(branch: &str) -> Result<()> {
         .position(|b| b.name == branch)
         .with_context(|| format!("Branch '{}' not in stack", branch))?;
 
-    stack.branches.remove(pos);
-    save_store(&store)?;
-
-    ui::print_success(&format!("Removed '{}' from stack", branch.yellow()));
+    if !gitcmd::is_dry_run() {
+        stack.branches.remove(pos);
+        save_store(&store)?;
+        ui::print_success(&format!("Removed '{}' from stack", branch.yellow()));
+    } else {
+        gitcmd::dry_run_action(
+            "Update stack metadata",
+            &format!(
+                "Remove branch '{}' (position {}) from stack in stacks.toml — git branch is not deleted",
+                branch, pos
+            ),
+        );
+    }
     Ok(())
 }
 
@@ -798,18 +937,33 @@ pub fn delete_stack(name: &str, delete_branches: bool) -> Result<()> {
 
     if delete_branches {
         for branch in &stack.branches {
-            if let Err(e) = gitcmd::git_output(&["branch", "-d", &branch.name]) {
-                ui::print_warning(&format!(
-                    "Could not delete branch '{}': {}",
-                    branch.name, e
-                ));
+            let result = gitcmd::git_mutate(
+                &["branch", "-d", &branch.name],
+                &format!(
+                    "Delete branch '{}' (safe delete, only if fully merged)",
+                    branch.name
+                ),
+            );
+            if !gitcmd::is_dry_run() {
+                if let Err(e) = result {
+                    ui::print_warning(&format!(
+                        "Could not delete branch '{}': {}",
+                        branch.name, e
+                    ));
+                }
             }
         }
     }
 
-    stacks.retain(|s| s.name != name);
-    save_store(&store)?;
-
-    ui::print_success(&format!("Deleted stack '{}'", name.red()));
+    if !gitcmd::is_dry_run() {
+        stacks.retain(|s| s.name != name);
+        save_store(&store)?;
+        ui::print_success(&format!("Deleted stack '{}'", name.red()));
+    } else {
+        gitcmd::dry_run_action(
+            "Delete stack metadata",
+            &format!("Remove stack '{}' from stacks.toml", name),
+        );
+    }
     Ok(())
 }
