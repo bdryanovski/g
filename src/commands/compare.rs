@@ -30,11 +30,17 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
         head.green().bold()
     );
 
-    // Optionally fetch first to reduce stale comparisons.
     if cfg.general.auto_fetch {
-        let pb = ui::spinner("Fetching remotes…");
-        let _ = gitcmd::git_output(&["fetch", "--all", "--quiet"]);
-        pb.finish_and_clear();
+        if !gitcmd::is_dry_run() {
+            let pb = ui::spinner("Fetching remotes…");
+            let _ = gitcmd::git_output(&["fetch", "--all", "--quiet"]);
+            pb.finish_and_clear();
+        } else {
+            let _ = gitcmd::git_mutate(
+                &["fetch", "--all", "--quiet"],
+                "Fetch latest refs from all remotes before comparing",
+            );
+        }
     }
 
     // Count commits ahead/behind.
