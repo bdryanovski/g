@@ -92,6 +92,7 @@ fn current_stack(store: &StackStore) -> Result<&Stack> {
 // ─── Commands ─────────────────────────────────────────────────────────────────
 
 /// Initialize a new stack rooted at the current branch
+/// This only create the stack but don't switch to it ? this is strange
 pub fn new_stack(name: &str) -> Result<()> {
     let mut store = load_store()?;
     let branch = gitcmd::current_branch()?;
