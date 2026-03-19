@@ -259,6 +259,252 @@ pub fn view() -> Result<()> {
     list()
 }
 
+/// Show the current stack with commits listed under each branch.
+pub fn details() -> Result<()> {
+    let store = load_store()?;
+    let stack = current_stack(&store)?.clone();
+    let current_branch = gitcmd::current_branch().unwrap_or_default();
+
+    println!();
+    println!(
+        "  {} {}  {}",
+        "Stack:".bright_black(),
+        stack.name.cyan().bold(),
+        format!("(root: {})", stack.root).bright_black()
+    );
+    println!();
+
+    let last_branch = stack.branches.len().saturating_sub(1);
+
+    for (i, branch) in stack.branches.iter().enumerate() {
+        let is_current = branch.name == current_branch;
+        let connector = if i == last_branch { "└──" } else { "├──" };
+        let pipe = if i == last_branch { " " } else { "│" };
+
+        let marker = if is_current {
+            "◉".green().bold().to_string()
+        } else {
+            "◯".bright_black().to_string()
+        };
+        let name_colored = if is_current {
+            branch.name.green().bold().to_string()
+        } else {
+            branch.name.white().to_string()
+        };
+
+        print!("  {} {} {}", connector.bright_black(), marker, name_colored);
+
+        if let Some(pr_url) = &branch.pr_url {
+            let pr_num = branch.pr_number
+                .map(|n| format!(" #{}", n))
+                .unwrap_or_default();
+            print!("  {}{}", "PR".bright_black(), pr_num.cyan());
+            print!("  {}", pr_url.bright_black().underline());
+        }
+
+        if is_current {
+            print!("  {}", "← you are here".bright_black());
+        }
+        println!();
+
+        // Show commits for this branch relative to the branch below (or root)
+        let base = if i == 0 {
+            &stack.root
+        } else {
+            &stack.branches[i - 1].name
+        };
+
+        // For the root branch itself, show its commits relative to the stack root
+        // (which is itself), so skip it — there's nothing to show.
+        if i > 0 || branch.name != stack.root {
+            let range = format!("{}..{}", base, branch.name);
+            let commits = gitcmd::git_output_lossy(&[
+                "log",
+                "--format=%h %s",
+                "--reverse",
+                &range,
+            ]);
+
+            if !commits.is_empty() {
+                for commit_line in commits.lines() {
+                    if let Some((hash, subject)) = commit_line.split_once(' ') {
+                        println!(
+                            "  {}     {} {}",
+                            pipe.bright_black(),
+                            hash.yellow().dimmed(),
+                            subject.bright_black()
+                        );
+                    }
+                }
+            } else {
+                println!(
+                    "  {}     {}",
+                    pipe.bright_black(),
+                    "(no commits)".bright_black()
+                );
+            }
+        }
+
+        if i < last_branch {
+            println!("  {}   {}", "│".bright_black(), "│".bright_black());
+        }
+    }
+
+    println!();
+    Ok(())
+}
+
+/// Switch to a different stack by checking out its top branch.
+pub fn switch_stack(name: &str) -> Result<()> {
+    let store = load_store()?;
+
+    let stack = store
+        .stacks
+        .iter()
+        .find(|s| s.name == name || s.name.contains(name))
+        .with_context(|| format!("Stack '{}' not found. Run `vcli stack list` to see all stacks.", name))?;
+
+    let top_branch = stack
+        .branches
+        .last()
+        .with_context(|| format!("Stack '{}' has no branches.", name))?;
+
+    let current = gitcmd::current_branch().unwrap_or_default();
+    if current == top_branch.name {
+        println!();
+        ui::print_info(&format!(
+            "Already on stack {} (branch {})",
+            stack.name.cyan().bold(),
+            top_branch.name.green().bold()
+        ));
+        println!();
+        return Ok(());
+    }
+
+    let pb = ui::spinner(&format!("Switching to stack {}", stack.name.cyan()));
+    gitcmd::git_output(&["checkout", &top_branch.name])
+        .with_context(|| format!("Failed to checkout branch '{}'", top_branch.name))?;
+    pb.finish_and_clear();
+
+    println!();
+    ui::print_success(&format!(
+        "Switched to stack {} → branch {}",
+        stack.name.cyan().bold(),
+        top_branch.name.green().bold()
+    ));
+    println!();
+    Ok(())
+}
+
+/// Merge the current branch into the one below it in the stack, removing the current branch.
+pub fn absorb() -> Result<()> {
+    let mut store = load_store()?;
+    let current_branch = gitcmd::current_branch()?;
+
+    // Find which stack and position
+    let stack_name = store
+        .branch_to_stack
+        .get(&current_branch)
+        .cloned()
+        .with_context(|| format!("Branch '{}' is not part of any stack.", current_branch))?;
+
+    let stack = store
+        .stacks
+        .iter()
+        .find(|s| s.name == stack_name)
+        .with_context(|| format!("Stack '{}' not found.", stack_name))?;
+
+    let pos = stack
+        .branches
+        .iter()
+        .position(|b| b.name == current_branch)
+        .with_context(|| format!("Branch '{}' not found in stack.", current_branch))?;
+
+    if pos == 0 {
+        println!();
+        ui::print_warning("This is the bottom branch of the stack — nothing below to absorb into.");
+        println!();
+        return Ok(());
+    }
+
+    let target_branch = stack.branches[pos - 1].name.clone();
+    let absorbed_branch = current_branch.clone();
+
+    println!();
+    println!(
+        "  {} Merging {} into {}",
+        "→".cyan(),
+        absorbed_branch.green().bold(),
+        target_branch.cyan().bold()
+    );
+
+    // Checkout the target (lower) branch
+    let pb = ui::spinner(&format!("Checking out {}", target_branch));
+    gitcmd::git_output(&["checkout", &target_branch])
+        .with_context(|| format!("Failed to checkout '{}'", target_branch))?;
+    pb.finish_and_clear();
+
+    // Merge the current branch into the target
+    let pb = ui::spinner(&format!("Merging {} into {}", absorbed_branch, target_branch));
+    let merge_result = gitcmd::git_output(&["merge", "--no-ff", &absorbed_branch]);
+    pb.finish_and_clear();
+
+    match merge_result {
+        Ok(_) => {}
+        Err(e) => {
+            let msg = format!("{}", e);
+            if msg.contains("CONFLICT") || msg.contains("conflict") {
+                ui::print_warning("Merge conflicts detected. Resolve them, then:");
+                println!("    {} git add <files>", "1.".bright_black());
+                println!("    {} git commit", "2.".bright_black());
+                println!(
+                    "    {} Manually remove '{}' from the stack with: vcli stack remove {}",
+                    "3.".bright_black(),
+                    absorbed_branch,
+                    absorbed_branch
+                );
+                println!();
+                return Ok(());
+            }
+            // Abort the merge and restore state
+            let _ = gitcmd::git_output(&["merge", "--abort"]);
+            let _ = gitcmd::git_output(&["checkout", &absorbed_branch]);
+            return Err(e).context("Failed to merge branches");
+        }
+    }
+
+    // Delete the absorbed branch
+    let _ = gitcmd::git_output(&["branch", "-d", &absorbed_branch]);
+
+    // Update the store: remove the absorbed branch, fix the lookup map
+    let remaining_count = {
+        let stack = store
+            .stacks
+            .iter_mut()
+            .find(|s| s.name == stack_name)
+            .unwrap();
+        stack.branches.remove(pos);
+        stack.updated_at = Utc::now();
+        stack.branches.len()
+    };
+    store.branch_to_stack.remove(&absorbed_branch);
+    save_store(&store)?;
+
+    ui::print_success(&format!(
+        "Absorbed {} into {}",
+        absorbed_branch.green().bold(),
+        target_branch.cyan().bold()
+    ));
+    println!(
+        "     {} Stack now has {} branch{}",
+        "".bright_black(),
+        remaining_count.to_string().yellow(),
+        if remaining_count == 1 { "" } else { "es" }
+    );
+    println!();
+    Ok(())
+}
+
 /// Sync all branches in the stack (rebase each on the one below)
 pub fn sync(no_interactive: bool) -> Result<()> {
     let store = load_store()?;
