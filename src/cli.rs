@@ -149,6 +149,18 @@ pub enum StackCommands {
     /// Show the current stack as a tree
     View,
 
+    /// Show the current stack with commits for each branch
+    Details,
+
+    /// Switch to a different stack (checks out its top branch)
+    Switch {
+        /// Stack name to switch to
+        name: String,
+    },
+
+    /// Merge the current branch into the one below it in the stack
+    Absorb,
+
     /// Sync all stack branches (rebase each on the one below)
     Sync {
         /// Abort if any conflict is found instead of pausing
