@@ -76,17 +76,25 @@ fn save_store(store: &StackStore) -> Result<()> {
 /// Look up the stack for the current git branch.
 fn current_stack(store: &StackStore) -> Result<&Stack> {
     let branch = gitcmd::current_branch()?;
-    let stack_name = store.branch_to_stack.get(&branch).with_context(|| {
-        format!(
-            "Branch '{}' is not part of any stack. Use `g stack new <name>` to create one.",
-            branch
-        )
-    })?;
+
+    // Try the fast lookup map first
+    if let Some(stack_name) = store.branch_to_stack.get(&branch) {
+        if let Some(stack) = store.stacks.iter().find(|s| &s.name == stack_name) {
+            return Ok(stack);
+        }
+    }
+
+    // Fall back to searching all stacks' branch lists directly
     store
         .stacks
         .iter()
-        .find(|s| &s.name == stack_name)
-        .with_context(|| format!("Stack '{}' not found in store.", stack_name))
+        .find(|s| s.branches.iter().any(|b| b.name == branch))
+        .with_context(|| {
+            format!(
+                "Branch '{}' is not part of any stack. Use `vcli stack new <name>` to create one.",
+                branch
+            )
+        })
 }
 
 // ─── Commands ─────────────────────────────────────────────────────────────────
