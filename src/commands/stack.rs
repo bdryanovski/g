@@ -45,16 +45,6 @@ pub struct StackStore {
     pub repositories: HashMap<String, RepoStacks>,
 }
 
-// Legacy format for migration
-#[derive(Deserialize)]
-struct LegacyStackStore {
-    #[serde(default)]
-    stacks: Vec<Stack>,
-    #[serde(default)]
-    #[allow(dead_code)]
-    branch_to_stack: HashMap<String, String>,
-}
-
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
 fn load_store() -> Result<StackStore> {
@@ -63,32 +53,7 @@ fn load_store() -> Result<StackStore> {
         return Ok(StackStore::default());
     }
     let raw = fs::read_to_string(&path).context("Failed to read stacks file")?;
-
-    // Try new format first
-    if let Ok(store) = toml::from_str::<StackStore>(&raw) {
-        if !store.repositories.is_empty() {
-            return Ok(store);
-        }
-    }
-
-    // Try legacy flat format and migrate
-    if let Ok(legacy) = toml::from_str::<LegacyStackStore>(&raw) {
-        if !legacy.stacks.is_empty() {
-            let repo = repo_id().unwrap_or_else(|_| "unknown".into());
-            let mut store = StackStore::default();
-            store.repositories.insert(
-                repo,
-                RepoStacks {
-                    stacks: legacy.stacks,
-                },
-            );
-            save_store(&store)?;
-            ui::print_info("Migrated stacks.toml to repo-scoped format.");
-            return Ok(store);
-        }
-    }
-
-    Ok(StackStore::default())
+    toml::from_str(&raw).context("Failed to parse stacks file")
 }
 
 fn save_store(store: &StackStore) -> Result<()> {
