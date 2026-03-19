@@ -1,20 +1,13 @@
 //! Stacked PR workflow management.
 //!
-//! Tutorial overview:
-//! - A "stack" is an ordered list of branches where each branch depends on the one below.
-//! - We persist stacks in a TOML file (`stacks.toml`) alongside a lookup map from branch → stack.
-//! - Commands here manage both git state (checkout, rebase, push) and metadata (PR numbers/URLs).
-//!
-//! Rust concepts used here:
-//! - `Option` to represent optional PR numbers/URLs.
-//! - Borrowing vs owning: we read from the store immutably, then mutate after git commands.
-//! - Iterators with `position`, `find`, and `enumerate` to navigate branches.
-//! - Error handling with `anyhow::Context` to add messages to low-level failures.
+//! Stacks are persisted in `stacks.toml`, keyed by repository path so multiple
+//! repos can share the same global config directory without collisions.
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 
 use crate::commands::git as gitcmd;
@@ -24,20 +17,15 @@ use crate::ui;
 
 // ─── Data Structures ─────────────────────────────────────────────────────────
 
-/// Persistent representation of a stack of branches.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Stack {
-    /// User-facing name for the stack
     pub name: String,
-    /// The base branch this stack is built on (e.g., "main")
     pub root: String,
-    /// Ordered branches from bottom (closest to root) to top
     pub branches: Vec<StackBranch>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-/// Per-branch metadata within a stack.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StackBranch {
     pub name: String,
@@ -46,72 +34,153 @@ pub struct StackBranch {
     pub description: Option<String>,
 }
 
-/// Storage format for all stacks plus a fast lookup map.
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct RepoStacks {
+    pub stacks: Vec<Stack>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct StackStore {
-    pub stacks: Vec<Stack>,
-    /// Maps a branch name to which stack it belongs
-    pub branch_to_stack: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    pub repositories: HashMap<String, RepoStacks>,
+}
+
+// Legacy format for migration
+#[derive(Deserialize)]
+struct LegacyStackStore {
+    #[serde(default)]
+    stacks: Vec<Stack>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    branch_to_stack: HashMap<String, String>,
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
-/// Load stacks from disk (or return empty store if missing).
 fn load_store() -> Result<StackStore> {
     let path = config::stacks_path()?;
     if !path.exists() {
         return Ok(StackStore::default());
     }
     let raw = fs::read_to_string(&path).context("Failed to read stacks file")?;
-    toml::from_str(&raw).context("Failed to parse stacks file")
+
+    // Try new format first
+    if let Ok(store) = toml::from_str::<StackStore>(&raw) {
+        if !store.repositories.is_empty() {
+            return Ok(store);
+        }
+    }
+
+    // Try legacy flat format and migrate
+    if let Ok(legacy) = toml::from_str::<LegacyStackStore>(&raw) {
+        if !legacy.stacks.is_empty() {
+            let repo = repo_id().unwrap_or_else(|_| "unknown".into());
+            let mut store = StackStore::default();
+            store.repositories.insert(
+                repo,
+                RepoStacks {
+                    stacks: legacy.stacks,
+                },
+            );
+            save_store(&store)?;
+            ui::print_info("Migrated stacks.toml to repo-scoped format.");
+            return Ok(store);
+        }
+    }
+
+    Ok(StackStore::default())
 }
 
-/// Persist stack store to disk.
 fn save_store(store: &StackStore) -> Result<()> {
     let path = config::stacks_path()?;
     let raw = toml::to_string_pretty(store).context("Failed to serialize stacks")?;
     fs::write(&path, raw).context("Failed to save stacks file")
 }
 
-/// Look up the stack for the current git branch.
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+fn repo_id() -> Result<String> {
+    gitcmd::repo_root()
+}
+
+fn repo_stacks<'a>(store: &'a StackStore, repo: &str) -> Option<&'a Vec<Stack>> {
+    store.repositories.get(repo).map(|r| &r.stacks)
+}
+
+fn repo_stacks_mut<'a>(store: &'a mut StackStore, repo: &str) -> &'a mut Vec<Stack> {
+    &mut store
+        .repositories
+        .entry(repo.to_string())
+        .or_default()
+        .stacks
+}
+
 fn current_stack(store: &StackStore) -> Result<&Stack> {
+    let repo = repo_id()?;
     let branch = gitcmd::current_branch()?;
 
-    // Try the fast lookup map first
-    if let Some(stack_name) = store.branch_to_stack.get(&branch) {
-        if let Some(stack) = store.stacks.iter().find(|s| &s.name == stack_name) {
-            return Ok(stack);
-        }
-    }
+    let stacks = repo_stacks(store, &repo).with_context(|| {
+        "No stacks in this repository. Use `g stack new <name>` to create one.".to_string()
+    })?;
 
-    // Fall back to searching all stacks' branch lists directly
-    store
-        .stacks
+    stacks
         .iter()
         .find(|s| s.branches.iter().any(|b| b.name == branch))
         .with_context(|| {
             format!(
-                "Branch '{}' is not part of any stack. Use `vcli stack new <name>` to create one.",
+                "Branch '{}' is not part of any stack. Use `g stack new <name>` to create one.",
                 branch
             )
         })
 }
 
+fn find_stack_for_branch<'a>(stacks: &'a [Stack], branch: &str) -> Option<&'a Stack> {
+    stacks
+        .iter()
+        .find(|s| s.branches.iter().any(|b| b.name == branch))
+}
+
+fn get_github_token(cfg: &config::Config) -> Result<String> {
+    if let Ok(t) = std::env::var("GITHUB_TOKEN") {
+        return Ok(t);
+    }
+    cfg.github
+        .token
+        .clone()
+        .filter(|t| !t.is_empty())
+        .with_context(|| {
+            "GitHub token not found. Set GITHUB_TOKEN env var or add `token` to [github] in config."
+                .to_string()
+        })
+}
+
+fn open_url(url: &str) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    std::process::Command::new("open").arg(url).spawn()?;
+    #[cfg(target_os = "linux")]
+    std::process::Command::new("xdg-open").arg(url).spawn()?;
+    #[cfg(target_os = "windows")]
+    std::process::Command::new("cmd")
+        .args(["/C", "start", url])
+        .spawn()?;
+    Ok(())
+}
+
 // ─── Commands ─────────────────────────────────────────────────────────────────
 
-/// Initialize a new stack rooted at the current branch
-/// This only create the stack but don't switch to it ? this is strange
 pub fn new_stack(name: &str) -> Result<()> {
     let mut store = load_store()?;
+    let repo = repo_id()?;
     let branch = gitcmd::current_branch()?;
 
-    if store.stacks.iter().any(|s| s.name == name) {
-        bail!("Stack '{}' already exists.", name);
+    let stacks = repo_stacks_mut(&mut store, &repo);
+
+    if stacks.iter().any(|s| s.name == name) {
+        bail!("Stack '{}' already exists in this repository.", name);
     }
 
-    // Seed the stack with the current branch as the root (index 0).
     let now = Utc::now();
-    let stack = Stack {
+    stacks.push(Stack {
         name: name.to_string(),
         root: branch.clone(),
         branches: vec![StackBranch {
@@ -122,12 +191,8 @@ pub fn new_stack(name: &str) -> Result<()> {
         }],
         created_at: now,
         updated_at: now,
-    };
+    });
 
-    store
-        .branch_to_stack
-        .insert(branch.clone(), name.to_string());
-    store.stacks.push(stack);
     save_store(&store)?;
 
     println!();
@@ -140,12 +205,11 @@ pub fn new_stack(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Add a new branch on top of the current stack position
 pub fn add_branch(branch_name: &str) -> Result<()> {
     let mut store = load_store()?;
+    let repo = repo_id()?;
     let current_branch = gitcmd::current_branch()?;
 
-    // Read-only pass: get stack name and position so we can mutate after git ops.
     let (stack_name, current_pos) = {
         let stack = current_stack(&store)?;
         let pos = stack
@@ -156,13 +220,11 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
         (stack.name.clone(), pos)
     };
 
-    // Create the git branch.
     gitcmd::git_output(&["checkout", "-b", branch_name])
         .with_context(|| format!("Failed to create branch '{}'", branch_name))?;
 
-    // Mutable pass: update the store.
-    let stack = store
-        .stacks
+    let stacks = repo_stacks_mut(&mut store, &repo);
+    let stack = stacks
         .iter_mut()
         .find(|s| s.name == stack_name)
         .with_context(|| format!("Stack '{}' disappeared", stack_name))?;
@@ -177,9 +239,6 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
         },
     );
     stack.updated_at = Utc::now();
-    store
-        .branch_to_stack
-        .insert(branch_name.to_string(), stack_name);
     save_store(&store)?;
 
     println!();
@@ -191,24 +250,27 @@ pub fn add_branch(branch_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// List all stacks and show the current branch position.
 pub fn list() -> Result<()> {
     let store = load_store()?;
+    let repo = repo_id()?;
     let current_branch = gitcmd::current_branch().unwrap_or_default();
 
-    if store.stacks.is_empty() {
-        println!();
-        println!("  {}", "No stacks yet.".bright_black());
-        println!(
-            "  {} {}",
-            "tip:".bright_black(),
-            "g stack new <name>  to create a stack from the current branch".bright_black()
-        );
-        println!();
-        return Ok(());
-    }
+    let stacks = match repo_stacks(&store, &repo) {
+        Some(s) if !s.is_empty() => s,
+        _ => {
+            println!();
+            println!("  {}", "No stacks yet.".bright_black());
+            println!(
+                "  {} {}",
+                "tip:".bright_black(),
+                "g stack new <name>  to create a stack from the current branch".bright_black()
+            );
+            println!();
+            return Ok(());
+        }
+    };
 
-    for stack in &store.stacks {
+    for stack in stacks {
         println!();
         println!(
             "  {} {}  {}",
@@ -221,11 +283,7 @@ pub fn list() -> Result<()> {
         let last = stack.branches.len().saturating_sub(1);
         for (i, branch) in stack.branches.iter().enumerate() {
             let is_current = branch.name == current_branch;
-            let connector = if i == last {
-                "  └──"
-            } else {
-                "  ├──"
-            };
+            let connector = if i == last { "  └──" } else { "  ├──" };
             let marker = if is_current {
                 "◉".green().bold().to_string()
             } else {
@@ -262,12 +320,10 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 
-/// Alias for `list()` to present stacks as a tree.
 pub fn view() -> Result<()> {
     list()
 }
 
-/// Show the current stack with commits listed under each branch.
 pub fn details() -> Result<()> {
     let store = load_store()?;
     let stack = current_stack(&store)?.clone();
@@ -303,7 +359,8 @@ pub fn details() -> Result<()> {
         print!("  {} {} {}", connector.bright_black(), marker, name_colored);
 
         if let Some(pr_url) = &branch.pr_url {
-            let pr_num = branch.pr_number
+            let pr_num = branch
+                .pr_number
                 .map(|n| format!(" #{}", n))
                 .unwrap_or_default();
             print!("  {}{}", "PR".bright_black(), pr_num.cyan());
@@ -315,23 +372,15 @@ pub fn details() -> Result<()> {
         }
         println!();
 
-        // Show commits for this branch relative to the branch below (or root)
         let base = if i == 0 {
             &stack.root
         } else {
             &stack.branches[i - 1].name
         };
 
-        // For the root branch itself, show its commits relative to the stack root
-        // (which is itself), so skip it — there's nothing to show.
         if i > 0 || branch.name != stack.root {
             let range = format!("{}..{}", base, branch.name);
-            let commits = gitcmd::git_output_lossy(&[
-                "log",
-                "--format=%h %s",
-                "--reverse",
-                &range,
-            ]);
+            let commits = gitcmd::git_output_lossy(&["log", "--format=%h %s", "--reverse", &range]);
 
             if !commits.is_empty() {
                 for commit_line in commits.lines() {
@@ -362,15 +411,22 @@ pub fn details() -> Result<()> {
     Ok(())
 }
 
-/// Switch to a different stack by checking out its top branch.
 pub fn switch_stack(name: &str) -> Result<()> {
     let store = load_store()?;
+    let repo = repo_id()?;
 
-    let stack = store
-        .stacks
+    let stacks = repo_stacks(&store, &repo)
+        .with_context(|| "No stacks in this repository.".to_string())?;
+
+    let stack = stacks
         .iter()
         .find(|s| s.name == name || s.name.contains(name))
-        .with_context(|| format!("Stack '{}' not found. Run `vcli stack list` to see all stacks.", name))?;
+        .with_context(|| {
+            format!(
+                "Stack '{}' not found. Run `g stack list` to see all stacks.",
+                name
+            )
+        })?;
 
     let top_branch = stack
         .branches
@@ -404,38 +460,38 @@ pub fn switch_stack(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Merge the current branch into the one below it in the stack, removing the current branch.
 pub fn absorb() -> Result<()> {
     let mut store = load_store()?;
+    let repo = repo_id()?;
     let current_branch = gitcmd::current_branch()?;
 
-    // Find which stack and position
-    let stack_name = store
-        .branch_to_stack
-        .get(&current_branch)
-        .cloned()
-        .with_context(|| format!("Branch '{}' is not part of any stack.", current_branch))?;
-
-    let stack = store
-        .stacks
-        .iter()
-        .find(|s| s.name == stack_name)
-        .with_context(|| format!("Stack '{}' not found.", stack_name))?;
-
-    let pos = stack
-        .branches
-        .iter()
-        .position(|b| b.name == current_branch)
-        .with_context(|| format!("Branch '{}' not found in stack.", current_branch))?;
+    let (stack_name, pos) = {
+        let stacks = repo_stacks(&store, &repo)
+            .with_context(|| "No stacks in this repository.".to_string())?;
+        let stack = find_stack_for_branch(stacks, &current_branch)
+            .with_context(|| format!("Branch '{}' is not part of any stack.", current_branch))?;
+        let pos = stack
+            .branches
+            .iter()
+            .position(|b| b.name == current_branch)
+            .unwrap();
+        (stack.name.clone(), pos)
+    };
 
     if pos == 0 {
         println!();
-        ui::print_warning("This is the bottom branch of the stack — nothing below to absorb into.");
+        ui::print_warning(
+            "This is the bottom branch of the stack — nothing below to absorb into.",
+        );
         println!();
         return Ok(());
     }
 
-    let target_branch = stack.branches[pos - 1].name.clone();
+    let target_branch = {
+        let stacks = repo_stacks(&store, &repo).unwrap();
+        let stack = stacks.iter().find(|s| s.name == stack_name).unwrap();
+        stack.branches[pos - 1].name.clone()
+    };
     let absorbed_branch = current_branch.clone();
 
     println!();
@@ -446,14 +502,15 @@ pub fn absorb() -> Result<()> {
         target_branch.cyan().bold()
     );
 
-    // Checkout the target (lower) branch
     let pb = ui::spinner(&format!("Checking out {}", target_branch));
     gitcmd::git_output(&["checkout", &target_branch])
         .with_context(|| format!("Failed to checkout '{}'", target_branch))?;
     pb.finish_and_clear();
 
-    // Merge the current branch into the target
-    let pb = ui::spinner(&format!("Merging {} into {}", absorbed_branch, target_branch));
+    let pb = ui::spinner(&format!(
+        "Merging {} into {}",
+        absorbed_branch, target_branch
+    ));
     let merge_result = gitcmd::git_output(&["merge", "--no-ff", &absorbed_branch]);
     pb.finish_and_clear();
 
@@ -466,7 +523,7 @@ pub fn absorb() -> Result<()> {
                 println!("    {} git add <files>", "1.".bright_black());
                 println!("    {} git commit", "2.".bright_black());
                 println!(
-                    "    {} Manually remove '{}' from the stack with: vcli stack remove {}",
+                    "    {} Manually remove '{}' from the stack with: g stack remove {}",
                     "3.".bright_black(),
                     absorbed_branch,
                     absorbed_branch
@@ -474,28 +531,21 @@ pub fn absorb() -> Result<()> {
                 println!();
                 return Ok(());
             }
-            // Abort the merge and restore state
             let _ = gitcmd::git_output(&["merge", "--abort"]);
             let _ = gitcmd::git_output(&["checkout", &absorbed_branch]);
             return Err(e).context("Failed to merge branches");
         }
     }
 
-    // Delete the absorbed branch
     let _ = gitcmd::git_output(&["branch", "-d", &absorbed_branch]);
 
-    // Update the store: remove the absorbed branch, fix the lookup map
     let remaining_count = {
-        let stack = store
-            .stacks
-            .iter_mut()
-            .find(|s| s.name == stack_name)
-            .unwrap();
+        let stacks = repo_stacks_mut(&mut store, &repo);
+        let stack = stacks.iter_mut().find(|s| s.name == stack_name).unwrap();
         stack.branches.remove(pos);
         stack.updated_at = Utc::now();
         stack.branches.len()
     };
-    store.branch_to_stack.remove(&absorbed_branch);
     save_store(&store)?;
 
     ui::print_success(&format!(
@@ -513,7 +563,6 @@ pub fn absorb() -> Result<()> {
     Ok(())
 }
 
-/// Sync all branches in the stack (rebase each on the one below)
 pub fn sync(no_interactive: bool) -> Result<()> {
     let store = load_store()?;
     let stack = current_stack(&store)?.clone();
@@ -551,7 +600,6 @@ pub fn sync(no_interactive: bool) -> Result<()> {
             }
             Err(e) => {
                 if no_interactive {
-                    // Abort and bail
                     let _ = gitcmd::git_output(&["rebase", "--abort"]);
                     bail!(
                         "Conflict rebasing '{}' onto '{}': {}\nRun without --no-interactive to resolve manually.",
@@ -577,7 +625,6 @@ pub fn sync(no_interactive: bool) -> Result<()> {
         }
     }
 
-    // Return to original branch (best-effort).
     let _ = gitcmd::git_output(&["checkout", &saved_branch]);
 
     println!();
@@ -586,7 +633,6 @@ pub fn sync(no_interactive: bool) -> Result<()> {
     Ok(())
 }
 
-/// Force-push all branches in the stack to their remotes.
 pub fn push(force: bool) -> Result<()> {
     let store = load_store()?;
     let stack = current_stack(&store)?.clone();
@@ -631,14 +677,14 @@ pub fn push(force: bool) -> Result<()> {
     Ok(())
 }
 
-/// Create or update GitHub PRs for all branches in the stack.
 pub fn create_prs(open: bool, draft: bool) -> Result<()> {
     let mut store = load_store()?;
+    let repo = repo_id()?;
     let stack = current_stack(&store)?.clone();
     let cfg = config::load()?;
 
     let token = get_github_token(&cfg)?;
-    let (owner, repo) = github::detect_repo()?;
+    let (owner, repo_name) = github::detect_repo()?;
 
     println!();
     println!(
@@ -646,11 +692,10 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
         "Creating PRs for stack:".bold().white(),
         stack.name.cyan().bold(),
         owner.bright_white(),
-        repo.bright_white()
+        repo_name.bright_white()
     );
     println!();
 
-    // Skip the root branch (index 0), create PRs for branches 1..n.
     for i in 1..stack.branches.len() {
         let base = stack.branches[i - 1].name.clone();
         let branch = stack.branches[i].name.clone();
@@ -661,8 +706,8 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
             base.cyan()
         ));
 
-        // Check if PR already exists for this branch.
-        let existing = github::find_pr(&token, &cfg.github.api_base, &owner, &repo, &branch)?;
+        let existing =
+            github::find_pr(&token, &cfg.github.api_base, &owner, &repo_name, &branch)?;
 
         let result: Result<crate::github::PrInfo, anyhow::Error> = if let Some(pr) = existing {
             if pr.base_ref != base {
@@ -676,7 +721,7 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                     &token,
                     &cfg.github.api_base,
                     &owner,
-                    &repo,
+                    &repo_name,
                     pr.number,
                     &base,
                 )?;
@@ -697,7 +742,7 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                 &token,
                 &cfg.github.api_base,
                 &owner,
-                &repo,
+                &repo_name,
                 &title,
                 &branch,
                 &base,
@@ -723,9 +768,8 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                     pr.html_url.bright_black().underline()
                 ));
 
-                // Store PR info back in stack.
-                let stack_mut = store.stacks.iter_mut().find(|s| s.name == stack.name);
-                if let Some(s) = stack_mut {
+                let stacks = repo_stacks_mut(&mut store, &repo);
+                if let Some(s) = stacks.iter_mut().find(|s| s.name == stack.name) {
                     if let Some(b) = s.branches.iter_mut().find(|b| b.name == branch) {
                         b.pr_number = Some(pr.number);
                         b.pr_url = Some(pr.html_url.clone());
@@ -737,7 +781,11 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
                 }
             }
             Err(e) => {
-                ui::print_error(&format!("Failed to create PR for {}: {}", branch.red(), e));
+                ui::print_error(&format!(
+                    "Failed to create PR for {}: {}",
+                    branch.red(),
+                    e
+                ));
             }
         }
     }
@@ -747,22 +795,16 @@ pub fn create_prs(open: bool, draft: bool) -> Result<()> {
     Ok(())
 }
 
-/// Remove a branch from its stack (does not delete the git branch).
 pub fn remove_branch(branch: &str) -> Result<()> {
     let mut store = load_store()?;
+    let repo = repo_id()?;
 
-    // Find which stack owns this branch
-    let stack_name = store
-        .branch_to_stack
-        .get(branch)
-        .cloned()
-        .with_context(|| format!("Branch '{}' is not part of any stack", branch))?;
+    let stacks = repo_stacks_mut(&mut store, &repo);
 
-    let stack = store
-        .stacks
+    let stack = stacks
         .iter_mut()
-        .find(|s| s.name == stack_name)
-        .with_context(|| format!("Stack '{}' not found", stack_name))?;
+        .find(|s| s.branches.iter().any(|b| b.name == branch))
+        .with_context(|| format!("Branch '{}' is not part of any stack", branch))?;
 
     let pos = stack
         .branches
@@ -771,19 +813,19 @@ pub fn remove_branch(branch: &str) -> Result<()> {
         .with_context(|| format!("Branch '{}' not in stack", branch))?;
 
     stack.branches.remove(pos);
-    store.branch_to_stack.remove(branch);
     save_store(&store)?;
 
     ui::print_success(&format!("Removed '{}' from stack", branch.yellow()));
     Ok(())
 }
 
-/// Delete a stack, optionally deleting its git branches.
 pub fn delete_stack(name: &str, delete_branches: bool) -> Result<()> {
     let mut store = load_store()?;
+    let repo = repo_id()?;
 
-    let stack = store
-        .stacks
+    let stacks = repo_stacks_mut(&mut store, &repo);
+
+    let stack = stacks
         .iter()
         .find(|s| s.name == name)
         .cloned()
@@ -792,51 +834,17 @@ pub fn delete_stack(name: &str, delete_branches: bool) -> Result<()> {
     if delete_branches {
         for branch in &stack.branches {
             if let Err(e) = gitcmd::git_output(&["branch", "-d", &branch.name]) {
-                ui::print_warning(&format!("Could not delete branch '{}': {}", branch.name, e));
+                ui::print_warning(&format!(
+                    "Could not delete branch '{}': {}",
+                    branch.name, e
+                ));
             }
         }
     }
 
-    for branch in &stack.branches {
-        store.branch_to_stack.remove(&branch.name);
-    }
-    store.stacks.retain(|s| s.name != name);
+    stacks.retain(|s| s.name != name);
     save_store(&store)?;
 
     ui::print_success(&format!("Deleted stack '{}'", name.red()));
     Ok(())
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/// Resolve a GitHub token, preferring the environment variable if set.
-fn get_github_token(cfg: &config::Config) -> Result<String> {
-    // Prefer GITHUB_TOKEN env var
-    if let Ok(t) = std::env::var("GITHUB_TOKEN") {
-        return Ok(t);
-    }
-    cfg.github
-        .token
-        .clone()
-        .filter(|t| !t.is_empty())
-        .with_context(|| {
-            "GitHub token not found. Set GITHUB_TOKEN env var or add `token` to [github] in ~/.config/g/config.toml".to_string()
-        })
-}
-
-/// Open a URL with the system handler (best-effort).
-fn open_url(url: &str) -> Result<()> {
-    #[cfg(target_os = "macos")]
-    std::process::Command::new("open").arg(url).spawn()?;
-    #[cfg(target_os = "linux")]
-    std::process::Command::new("xdg-open").arg(url).spawn()?;
-    #[cfg(target_os = "windows")]
-    std::process::Command::new("cmd")
-        .args(["/C", "start", url])
-        .spawn()?;
-    Ok(())
-}
-
-// TODO(stack): Persist per-branch status (CI state, review state) for richer UX.
-// TODO(stack): Add `stack rebase --onto` to control rebase base explicitly.
-// TODO(stack): Improve conflict handling by offering to open a merge tool.
