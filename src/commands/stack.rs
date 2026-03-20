@@ -1,17 +1,31 @@
 //! Stacked PR workflow management.
 //!
-//! Stacks are persisted in `stacks.toml`, keyed by repository path so multiple
-//! repos can share the same global config directory without collisions.
+//! Tutorial overview:
+//! - This module implements the "Stacked Pull Requests" workflow. It tracks
+//!   ordered lists of branches (stacks) in a local `stacks.toml` file.
+//! - Key operations include `new` (start a stack), `add` (append a branch),
+//!   `sync` (rebase the whole chain), and `pr` (create/update chained PRs
+//!   using the GitHub API).
+//! - It ensures each PR in a stack targets the branch immediately below it,
+//!   allowing for small, reviewable changes that build on each other.
+//!
+//! Rust concepts used here:
+//! - `HashMap` with custom keys (repository paths) for global-yet-isolated state.
+//! - `Vec<StackBranch>` to represent the ordered, linear nature of a stack.
+//! - `chrono` for handling UTC timestamps.
+//! - Multi-step git operations involving multiple branches and rebases.
+//! - Silenceable network calls (PR fetching) to prevent blocking the UI.
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
+
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 
 use crate::commands::git as gitcmd;
-use crate::config;
+...
 use crate::github;
 use crate::ui;
 

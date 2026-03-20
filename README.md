@@ -48,6 +48,14 @@ g branch
 g show HEAD
 ```
 
+### Global Flags
+
+`g` supports several global flags that can be used with any command:
+
+- `-C <path>`: Run as if `g` was started in `<path>` instead of the current working directory.
+- `-c <key=value>`: Override a configuration value for a single command execution.
+- `--dry-run`: Preview what commands would run (git commands, API calls, file changes) without making any actual changes.
+
 ---
 
 ## Commands
@@ -56,7 +64,7 @@ g show HEAD
 
 Beautiful colored commit log with graph, conventional commit type coloring, and ref decorations.
 
-```
+```bash
 g log                  # last 30 commits (configurable)
 g log -n 50
 g log --all
@@ -68,7 +76,7 @@ g log main..HEAD       # range
 
 Enhanced status with icons, staged/unstaged/untracked sections, ahead/behind tracking info.
 
-```
+```bash
 g status
 ```
 
@@ -76,7 +84,7 @@ g status
 
 Auto-detects and pipes through `delta` or `diff-so-fancy` if available.
 
-```
+```bash
 g diff
 g diff HEAD~3
 g diff main..feature-branch
@@ -86,7 +94,7 @@ g diff main..feature-branch
 
 Rich branch table with hash, last commit subject, author, date, and upstream tracking.
 
-```
+```bash
 g branch               # list all branches
 g branch -b new-feat   # create (passes through to git)
 g branch -d old-feat   # delete (passes through)
@@ -96,7 +104,7 @@ g branch -d old-feat   # delete (passes through)
 
 Beautiful commit header + diff.
 
-```
+```bash
 g show
 g show abc1234
 ```
@@ -123,6 +131,7 @@ Interactive step-by-step commit builder:
 g commit -a            # stage all + commit
 g commit --amend       # amend last commit
 g commit -m "feat: quick non-interactive"
+g commit --type fix --scope ui -m "fix alignment" # non-interactive
 ```
 
 ---
@@ -171,42 +180,14 @@ Stacked PRs let you break large changes into a series of small, reviewable PRs t
 
 ### Workflow
 
-```bash
-# 1. Start on main, create a stack
-git checkout main
-g stack new my-feature
-
-# 2. Add the first layer
-g stack add feature/auth-models
-
-# Make your changes, commit...
-g commit
-
-# 3. Add another layer on top
-g stack add feature/auth-api
-
-# More changes, commit...
-g commit
-
-# 4. View the stack
-g stack view
-# Stack: my-feature
-#
-#   ├── ◯ main
-#   │   │
-#   ├── ◯ feature/auth-models
-#   │   │
-#   └── ◉ feature/auth-api  ← you are here
-
-# 5. Push all branches
-g stack push
-
-# 6. Create GitHub PRs (each targeting the branch below)
-g stack pr --open
-
-# 7. If you amend feature/auth-models, sync the whole chain
-g stack sync
-```
+1. **Start on main, create a stack**: `g stack new my-feature`
+2. **Add a layer**: `g stack add feature/auth-models`
+3. **Commit changes**: `g commit`
+4. **Add another layer**: `g stack add feature/auth-api`
+5. **Commit more changes**: `g commit`
+6. **View the stack**: `g stack view` or `g stack details`
+7. **Sync changes**: If you update a middle branch, run `g stack sync` to propagate changes upwards.
+8. **Push and PR**: `g stack push` then `g stack pr --open`.
 
 ### Stack Commands
 
@@ -215,10 +196,13 @@ g stack new <name>        # create a new stack at current branch
 g stack add <branch>      # create and append a new branch to stack
 g stack list              # list all stacks
 g stack view              # tree view of current stack
+g stack details           # detailed view with commits and PR status
+g stack switch <name>     # switch to the top branch of a stack
 g stack sync              # rebase each branch onto the one below
-g stack push              # push all branches
+g stack absorb            # merge current branch into the one below and delete it
+g stack push              # push all branches in the stack
 g stack push --force      # force-push with lease
-g stack pr                # create/update GitHub PRs
+g stack pr                # create/update GitHub PRs (chaining them)
 g stack pr --draft        # as draft PRs
 g stack pr --open         # open PRs in browser after creating
 g stack remove <branch>   # remove a branch from the stack (doesn't delete it)
@@ -230,13 +214,15 @@ g stack delete <name> --branches  # also delete all git branches
 
 ## Branch Comparison
 
+Visualizes the difference between two branches.
+
 ```bash
 g compare                          # current branch vs main
 g compare feature/foo              # main vs feature/foo
 g compare main feature/foo         # explicit base and head
-g compare --stat                   # file stat only
-g compare --commits                # commits only
-g compare --diff                   # full diff
+g compare --stat                   # file stat only (bars and numbers)
+g compare --commits                # commits only (list of subjects)
+g compare --diff                   # full diff (through configured tool)
 ```
 
 ---
@@ -246,8 +232,9 @@ g compare --diff                   # full diff
 Config lives at `~/.config/g/config.toml`. Generated automatically on first run.
 
 ```bash
-g config          # show summary
-g config --path   # print path
+g config          # show summary and path
+g config <key>    # search for a specific key's value
+g config --path   # print path only
 g config --edit   # open in $EDITOR
 ```
 
@@ -304,6 +291,19 @@ paths = []
 
 ---
 
+## How it Works (Under the Hood)
+
+### Enhanced Passthrough
+`g` isn't a wrapper; it's an **augmentor**. When you run `g commit`, it runs the interactive builder. When you run `g rebase`, it simply passes it through to `git`. This means your existing muscle memory stays intact.
+
+### Workspace Isolation
+Unlike `git checkout`, `g workspace` uses `git worktree`. This means each workspace has its own `.git` file pointing back to the main repo, but a completely independent file system. No more `git stash` when you need to fix a bug on another branch!
+
+### Stack Management
+`g stack` maintains a small TOML file in your config directory that tracks the order of branches. When you `sync`, `g` perform a sequence of rebases. When you `pr`, it uses the GitHub API to set the `base` of each PR to the branch below it in the stack.
+
+---
+
 ## Diff Tools
 
 `g diff` auto-detects the best available tool:
@@ -339,7 +339,7 @@ g undo         # → git reset --soft HEAD~1
 
 ## Plugins
 
-Any binary named `g-<name>` in your `$PATH` becomes a `vcli <name>` command:
+Any binary named `g-<name>` in your `$PATH` becomes a `g <name>` command:
 
 ```bash
 # Create ~/bin/g-deploy (executable)
@@ -348,7 +348,7 @@ echo "deploying..."
 ```
 
 ```bash
-g deploy   # runs vcli-deploy
+g deploy   # runs g-deploy
 ```
 
 Or specify explicit paths in config:
@@ -412,3 +412,4 @@ src/
 ├── workspaces.toml   — Workspace metadata (names, descriptions)
 └── stacks.toml       — Stack store
 ```
+

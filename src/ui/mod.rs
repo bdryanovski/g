@@ -1,7 +1,20 @@
 //! Terminal UI helpers (colors, tables, formatting).
 //!
-//! These functions keep presentation logic in one place so the command
-//! modules can focus on business logic.
+//! Tutorial overview:
+//! - This module centralizes all presentation logic, ensuring a consistent
+//!   look and feel across all commands.
+//! - It provides high-level "widgets" like a flexible Table renderer,
+//!   spinners for long-running operations, and specialized color formatters
+//!   for git-specific data (hashes, branches, conventional commit subjects).
+//! - It abstracts away the complexity of ANSI color codes and Unicode icons,
+//!   providing a clean API for the rest of the application.
+//!
+//! Rust concepts used here:
+//! - Traits like `std::fmt::Write` for efficient string building.
+//! - `match` expressions for mapping status codes and commit types to icons/colors.
+//! - `indicatif` crate for progress bars and spinners.
+//! - `console` crate for measuring visible text width (ignoring ANSI codes).
+//! - `struct` with `impl` blocks for stateful UI components like `Table`.
 
 use colored::Colorize;
 use std::fmt::Write as FmtWrite;

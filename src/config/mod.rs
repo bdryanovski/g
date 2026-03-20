@@ -1,10 +1,23 @@
 //! Configuration types and config file I/O.
 //!
-//! This module defines the user-facing configuration schema and helpers
-//! to load/save TOML files under `~/.config/g`.
+//! Tutorial overview:
+//! - This module defines the persistent configuration for the CLI, stored
+//!   in `~/.config/g/config.toml`.
+//! - It uses `serde` and `toml` to map Rust structs directly to a human-readable
+//!   file format.
+//! - It handles everything from UI preferences (colors, icons) to git-specific
+//!   settings (default branch, custom diff tools) and user-defined aliases.
+//!
+//! Rust concepts used here:
+//! - `#[derive(Serialize, Deserialize)]` to automatically generate conversion
+//!   code for TOML.
+//! - `HashMap<String, String>` for dynamic key-value storage (used for aliases).
+//! - `Default` trait implementation for providing sensible "out-of-the-box" settings.
+//! - `fs::create_dir_all` and `fs::write` for managing local filesystem state.
+//! - `anyhow::Context` to provide more helpful error messages during file I/O.
 
 use anyhow::{Context, Result};
-use dirs::home_dir;
+...
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
