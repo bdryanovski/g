@@ -1,6 +1,19 @@
 //! Minimal GitHub API wrapper for stacked PRs.
 //!
-//! Uses `ureq` for HTTP and parses only the fields needed by g.
+//! Tutorial overview:
+//! - This module handles all communication with GitHub's REST API.
+//! - It focuses on the operations needed for "Stacked PRs": detecting the
+//!   repository owner/name from git remotes, finding existing PRs, and
+//!   creating or updating PRs to point at the correct "base" branch.
+//! - It uses `ureq` for simple, synchronous HTTP requests and `serde_json`
+//!   for handling JSON payloads.
+//!
+//! Rust concepts used here:
+//! - `Result<(String, String)>` for returning multiple values on success.
+//! - String manipulation (`trim_start_matches`, `splitn`) for parsing git remote URLs.
+//! - Custom `struct` (PrInfo) for grouping related API data.
+//! - `loop` with `break` for handling paginated API responses.
+//! - JSON macro `json!` for constructing request bodies ergonomically.
 
 use anyhow::{bail, Context, Result};
 use std::collections::HashMap;

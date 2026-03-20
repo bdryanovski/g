@@ -1,10 +1,23 @@
 //! Git command helpers and enhanced output modes.
 //!
-//! This module wraps `git` CLI invocations and adds rich UI for log, status,
-//! diff, branch, and show commands.
+//! Tutorial overview:
+//! - This module is the "engine room" of the CLI. It handles all interaction
+//!   with the underlying `git` binary.
+//! - It provides high-level wrappers for common git tasks (getting the current
+//!   branch, finding the repo root) and complex "enhanced" versions of standard
+//!   commands like `log`, `status`, and `branch`.
+//! - It also implements a "dry-run" system using atomic flags to preview
+//!   destructive actions without executing them.
+//!
+//! Rust concepts used here:
+//! - `std::process::Command` for spawning and interacting with external processes.
+//! - `AtomicBool` and `AtomicUsize` for thread-safe global state (dry-run mode).
+//! - `String::from_utf8_lossy` for handling potentially non-UTF8 output from git.
+//! - `match` and `if let` for robust error handling and optional value extraction.
+//! - `static` variables for program-wide configuration flags.
 
 use anyhow::{bail, Context, Result};
-use colored::Colorize;
+...
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
@@ -233,15 +246,25 @@ pub fn is_inside_git_repo() -> bool {
 // ─── Enhanced Log ─────────────────────────────────────────────────────────────
 
 /// Parse and pretty-print git log with beautiful colors.
+///
+/// This works by:
+/// 1. Building a custom `git log` format string using special control characters
+///    (\x01 as field separator, \x02 as record separator).
+/// 2. Appending `--graph` and other user arguments.
+/// 3. Running git and capturing the output.
+/// 4. Parsing the output line-by-line:
+///    - If a line contains a record (\x02), we split it into fields (hash, subject, etc.)
+///      and render them using our custom `ui::CommitEntry` formatter.
+///    - Any leading characters before the record are treated as the ASCII graph art.
 pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
 
-    // Separator we use between field in our format
-    const SEP: &str = "\x01";
-    const REC: &str = "\x02";
+    // Special ASCII control characters to avoid collisions with commit message content.
+    const SEP: &str = "\x01"; // Start of Heading (used as field separator)
+    const REC: &str = "\x02"; // Start of Text (used as record separator)
 
-    // Build format string: record_sep + hash + sep + short_hash + sep + subject + sep
-    // + author_name + sep + rel_date + sep + refs + record_sep
+    // Build format string: record_sep + full_hash + sep + short_hash + sep + subject + sep
+    // + author_name + sep + rel_date + sep + ref_names + record_sep
     let fmt = format!(
         "{}%H{}%h{}%s{}%an{}%ar{}%D{}",
         REC, SEP, SEP, SEP, SEP, SEP, REC
@@ -249,6 +272,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
 
     let mut args = vec!["log".to_string(), format!("--pretty=format:{}", fmt)];
 
+    // Automatically add --graph if enabled in config and not overridden by user.
     let has_graph = cfg.ui.show_graph && !extra_args.contains(&"--no-graph".to_string());
     if has_graph
         && !extra_args

@@ -1,4 +1,17 @@
 //! Compare two branches with commit stats, file stats, and optional diffs.
+//!
+//! Tutorial overview:
+//! - This module handles the `g compare` command.
+//! - It determines the base and head branches, optionally fetches from remotes,
+//!   and calculates ahead/behind counts using `git rev-list`.
+//! - It then displays those differences as a list of commits, a file-level
+//!   summary (diffstat), or a full diff.
+//!
+//! Rust concepts used here:
+//! - `unwrap_or_else` for providing defaults when an Option is None.
+//! - String formatting with `format!` for complex CLI output.
+//! - Iterators (`map`, `collect`, `join`) for processing multi-line git output.
+//! - Module delegation (calling `enhanced_diff` from `gitcmd`).
 
 use anyhow::Result;
 use colored::Colorize;
