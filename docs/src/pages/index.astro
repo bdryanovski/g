@@ -1,0 +1,263 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import TerminalDemo from "@/components/react/TerminalDemo";
+
+const base = import.meta.env.BASE_URL;
+const github =
+  import.meta.env.PUBLIC_GITHUB_REPO_URL ?? "https://github.com/YOUR_ORG/vcli";
+---
+
+<Layout
+  title="g — Git, upgraded"
+  description="A beautiful Rust Git CLI with stacked PRs, workspaces, and enhanced log & diff. Passthrough-compatible with git."
+>
+  <header
+    style="border-bottom:1px solid var(--border); backdrop-filter: blur(12px); background: rgba(7,8,13,0.72); position: sticky; top: 0; z-index: 40;"
+  >
+    <div
+      class="wrap"
+      style="display:flex; align-items:center; justify-content: space-between; gap: 1rem; padding: 1rem 0; flex-wrap: wrap;"
+    >
+      <span style="font-weight: 800; letter-spacing: -0.04em; font-size: 1.35rem;">g</span>
+      <nav aria-label="Primary" style="display:flex; gap: 1.25rem; align-items:center; flex-wrap: wrap;">
+        <a href="#features" style="color: var(--muted);">Features</a>
+        <a href="#install" style="color: var(--muted);">Install</a>
+        <a href={`${base}docs/introduction/`} style="color: var(--muted);">Documentation</a>
+        <a href={github} style="color: var(--muted);" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap hero" style="padding: 4.5rem 0 3rem;">
+      <div class="hero-grid">
+        <div>
+          <p
+            class="eyebrow"
+            style="margin: 0 0 1rem; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600;"
+          >
+            Version CLI
+          </p>
+          <h1
+            style="margin: 0 0 1rem; font-size: clamp(2.4rem, 4vw, 3.25rem); line-height: 1.08; letter-spacing: -0.04em;"
+          >
+            Git, with <span class="grad">clarity</span> built in.
+          </h1>
+          <p style="margin: 0 0 1.75rem; font-size: 1.15rem; color: var(--muted); max-width: 34rem;">
+            <strong style="color: var(--text);">g</strong> is a Rust CLI that keeps every
+            <code>git</code> command working as you expect — then levels up log, diff, status, and branch
+            output, adds stacked PR workflows, and makes parallel worktrees feel first-class.
+          </p>
+          <div style="display:flex; flex-wrap: wrap; gap: 0.75rem;">
+            <a class="btn btn-primary" href={`${base}docs/introduction/`}>Read the docs</a>
+            <a class="btn btn-ghost" href="#install">Install with Cargo</a>
+          </div>
+        </div>
+        <div class="hero-demo">
+          <TerminalDemo client:load />
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="wrap" style="padding: 2rem 0 3.5rem;">
+      <h2 style="font-size: 1.75rem; letter-spacing: -0.03em; margin: 0 0 0.5rem;">Built for daily driver workflows</h2>
+      <p style="margin: 0 0 2rem; color: var(--muted); max-width: 40rem;">
+        Four pillars — readable history, polished diffs, parallel workspaces, and stack-friendly PRs — without giving up raw
+        <code>git</code> when you need it.
+      </p>
+      <div class="feature-grid">
+        <article class="card">
+          <h3>Stacks</h3>
+          <p>
+            Model ordered branch chains, sync with rebase, push the whole ladder, and open <strong>chained GitHub PRs</strong> so
+            each review stays small and sequential.
+          </p>
+          <code>g stack new</code> · <code>g stack sync</code> · <code>g stack pr</code>
+        </article>
+        <article class="card">
+          <h3>Workspaces</h3>
+          <p>
+            Spin up <strong>sibling worktrees</strong> with friendly names, switch into a subshell per workspace, and skip the
+            stash/checkout dance when context-switching.
+          </p>
+          <code>g workspace create</code> · <code>g workspace list</code> · <code>g workspace switch</code>
+        </article>
+        <article class="card">
+          <h3>Log</h3>
+          <p>
+            Commit graph, decorations, and conventional-commit coloring so history scans fast in the terminal — still forwards
+            arguments to <code>git log</code>.
+          </p>
+          <code>g log</code> · <code>g log --all</code> · <code>g log main..HEAD</code>
+        </article>
+        <article class="card">
+          <h3>Diff</h3>
+          <p>
+            Pipe patches through <strong>delta</strong> or <strong>diff-so-fancy</strong> automatically, or pin your own diff tool in
+            config for consistent review sessions.
+          </p>
+          <code>g diff</code> · <code>g show</code> · <code>g compare --diff</code>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" style="padding: 0 0 3.5rem;">
+      <div class="band">
+        <div>
+          <h2 style="margin: 0 0 0.5rem; font-size: 1.5rem;">Documentation you can own</h2>
+          <p style="margin: 0; color: #b9bcc8;">
+            Guides live as Markdown under <code>docs/src/content/docs/</code>. Edit frontmatter and prose, run
+            <code>npm run dev</code> locally, and ship updates with the same GitHub Action that publishes the site.
+          </p>
+        </div>
+        <a class="btn btn-primary" href={`${base}docs/introduction/`}>Open documentation</a>
+      </div>
+    </section>
+
+    <section id="install" class="wrap" style="padding: 0 0 5rem;">
+      <h2 style="font-size: 1.75rem; letter-spacing: -0.03em; margin: 0 0 0.5rem;">Install</h2>
+      <p style="margin: 0 0 1.25rem; color: var(--muted); max-width: 42rem;">
+        <strong>g</strong> ships as a Cargo binary. Install from crates.io once published, or install directly from this repository
+        (the Rust crate lives at the repo root; the docs site in <code>docs/</code> is excluded from the package build).
+      </p>
+      <div class="install-grid">
+        <div class="card card-tight">
+          <h3 style="margin-top: 0;">Crates.io</h3>
+          <pre><code>cargo install g
+g --version</code></pre>
+          <p class="fineprint">Use the published crate name if it differs when you release.</p>
+        </div>
+        <div class="card card-tight">
+          <h3 style="margin-top: 0;">From source</h3>
+          <pre><code>git clone https://github.com/YOUR_ORG/vcli.git
+cd vcli
+cargo install --path .</code></pre>
+          <p class="fineprint">Ensure <code>~/.cargo/bin</code> is on your <code>PATH</code>.</p>
+        </div>
+      </div>
+      <p style="margin-top: 1.5rem; color: var(--muted); font-size: 0.95rem;">
+        For <code>g stack pr</code>, export <code>GITHUB_TOKEN</code> or set <code>[github].token</code> in
+        <code>~/.config/g/config.toml</code>.
+      </p>
+    </section>
+  </main>
+
+  <footer
+    style="border-top: 1px solid var(--border); padding: 2rem 0; color: var(--muted); font-size: 0.9rem;"
+  >
+    <div class="wrap" style="display:flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
+      <span>MIT · g · docs powered by Astro &amp; React</span>
+      <a href={github} rel="noopener noreferrer">Source</a>
+    </div>
+  </footer>
+
+  <style>
+    .grad {
+      background: linear-gradient(120deg, var(--accent), var(--accent-2), var(--accent-3));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .hero-demo {
+      padding: 1rem;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      box-shadow: var(--shadow);
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+    @media (max-width: 720px) {
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      padding: 1.35rem 1.5rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+    }
+    .card h3 {
+      margin: 0 0 0.65rem;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+    .card p {
+      margin: 0 0 0.85rem;
+      color: #b6b8c4;
+      font-size: 0.98rem;
+    }
+    .card code {
+      font-size: 0.78rem;
+    }
+    .card-tight pre {
+      margin: 0.75rem 0 0;
+    }
+    .fineprint {
+      margin: 0.65rem 0 0 !important;
+      font-size: 0.82rem !important;
+      color: var(--muted) !important;
+    }
+    .band {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 231, 255, 0.22);
+      background: linear-gradient(125deg, rgba(110, 231, 255, 0.1), rgba(167, 139, 250, 0.08));
+    }
+    .install-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+    @media (max-width: 720px) {
+      .install-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 1.2rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none !important;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      color: #07080d !important;
+      background: linear-gradient(120deg, #6ee7ff, #a78bfa);
+      box-shadow: 0 12px 40px rgba(110, 231, 255, 0.25);
+    }
+    .btn-ghost {
+      border: 1px solid var(--border);
+      color: var(--text) !important;
+      background: rgba(255, 255, 255, 0.04);
+    }
+  </style>
+</Layout>
