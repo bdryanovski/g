@@ -10,7 +10,6 @@
 //! - Each submodule is defined in its own file (e.g., `commands/commit.rs`).
 
 pub mod commit;
-...
 pub mod git;
 pub mod stack;
 pub mod workspace;
