@@ -1,0 +1,102 @@
+---
+title: Workspaces
+description: Git worktrees with friendly names, sibling directories, and metadata.
+order: 4
+---
+
+import { DocFlowWorktree } from "../../components/react/InlineFlowDiagrams";
+
+Workspaces wrap **`git worktree`**: each workspace is a **separate directory** with its own checkout. You keep multiple branches checked out at once without stashing or constantly switching branches.
+
+## Why worktrees
+
+| Without worktrees | With `g workspace` |
+|-------------------|---------------------|
+| `git stash`, `git switch`, context lost | Stay on your branch; open another path |
+| Clone the repo twice | One object database, multiple working trees |
+| Forget where the second clone lived | `g workspace list` shows paths + branches |
+
+<DocFlowWorktree
+  client:visible
+  caption="Animated: the main repo folder stays on `main`; `g workspace create` adds sibling directories that share the same Git object database but check out other branches."
+/>
+
+## Create
+
+**New branch** named after the workspace (default):
+
+```bash
+g workspace create feature-auth --description "OIDC + sessions"
+```
+
+**Existing branch**:
+
+```bash
+g workspace create hotfix -b fix/login-bug
+```
+
+**With explicit path** (if your CLI version supports flags—otherwise rely on default sibling naming):
+
+The default sibling layout uses the repo folder name + configured separator:
+
+```text
+~/projects/myapp           ← main repo
+~/projects/myapp--feature-auth
+```
+
+## List & inspect
+
+```bash
+g workspace list
+g workspace status
+```
+
+Example mental model of output:
+
+```text
+  ● myapp          main       ~/projects/myapp
+  ○ feature-auth   feat/auth  ~/projects/myapp--feature-auth
+```
+
+## Switch context
+
+Open a **subshell** in the workspace directory (exit with `exit` or Ctrl+D):
+
+```bash
+g workspace switch feature-auth
+pwd    # now inside the worktree
+g status
+```
+
+## Rename & remove
+
+```bash
+g workspace rename feature-auth auth-v2
+g workspace delete auth-v2
+g workspace delete auth-v2 --force   # when worktree has local changes you accept losing
+```
+
+## Configuration
+
+```toml
+[workspace]
+separator = "--"    # myapp--workspace-name
+```
+
+## Under the hood (plain Git)
+
+Roughly equivalent operations (names vary):
+
+```bash
+git worktree add ../myapp--feature-auth feat/auth-branch
+git worktree list
+git worktree remove ../myapp--feature-auth
+```
+
+`g` adds **metadata** (description, friendly labels) in `~/.config/g/` on top of what Git already stores.
+
+## Tips
+
+- Run **`g workspace status`** from **any** linked worktree to see which checkout you are in.
+- Prefer **one workspace per long-running branch** (feature, hotfix) instead of recloning.
+- See [Git flows](./git-flows/) for how worktrees complement **stack** workflows (e.g. fix `main` in a hotfix worktree while a feature stack stays open).

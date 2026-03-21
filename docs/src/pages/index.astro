@@ -7,34 +7,35 @@ const base = import.meta.env.BASE_URL;
 const github =
   import.meta.env.PUBLIC_GITHUB_REPO_URL ?? "https://github.com/YOUR_ORG/vcli";
 
+const uc = `${base}docs/use-cases/`;
 const plays = [
   {
-    title: "Stacked PR ladder",
-    desc: "Slice a feature into reviewable PRs, sync rebases, push and open chained GitHub PRs.",
-    tag: "Stack",
+    title: "Huge feature, tiny PRs",
+    desc: "You are weeks into one branch—split schema, API, and webhooks into a stack and chained PRs.",
+    tag: "Story",
     tagClass: "tag--violet",
-    href: `${base}docs/stacks/`,
+    href: `${uc}#split-a-huge-feature-into-stacked-prs`,
   },
   {
-    title: "Parallel worktrees",
-    desc: "Check out another branch in a sibling folder—no stash, no lost editor state.",
-    tag: "Workspace",
+    title: "Prod breaks mid-feature",
+    desc: "Pager fires while your tree is dirty—open a hotfix worktree, ship, delete, never stash your life.",
+    tag: "Story",
     tagClass: "tag--cyan",
-    href: `${base}docs/workspaces/`,
+    href: `${uc}#hotfix-production-without-abandoning-your-feature-branch`,
   },
   {
-    title: "Terminal-first review",
-    desc: "Graph + conventions in log; delta/diff-so-fancy on diff and show.",
-    tag: "Log / diff",
+    title: "Review without GitHub",
+    desc: "Lead a triage: compare commits and stats from the terminal before you open the big diff.",
+    tag: "Story",
     tagClass: "tag--lime",
-    href: `${base}docs/log-and-diff/`,
+    href: `${uc}#review-a-branch-without-opening-github-for-history`,
   },
   {
-    title: "Shared toolchain",
-    desc: "Aliases, diff tool, GitHub defaults—one config for the whole team.",
-    tag: "Config",
+    title: "Same diff for the team",
+    desc: "Pin delta once in config so every screenshot and local review matches.",
+    tag: "Story",
     tagClass: "tag--rose",
-    href: `${base}docs/configuration/`,
+    href: `${uc}#make-diffs-look-the-same-for-everyone-on-the-team`,
   },
 ];
 ---
@@ -77,7 +78,7 @@ const plays = [
       <div class="home-section-head">
         <h2 class="home-section-title">Use cases</h2>
         <p class="home-section-sub">
-          Pick a scenario—each card links to the manual. For full playbooks see <a href={`${base}docs/use-cases/`}>Use cases</a> in the docs.
+          Each card jumps to a <strong>story-style playbook</strong> (who you are, what to run, why). The full list lives in <a href={`${base}docs/use-cases/`}>Use cases</a>—including solo workflows, release prep, and stack repair.
         </p>
       </div>
       <div class="home-plays">

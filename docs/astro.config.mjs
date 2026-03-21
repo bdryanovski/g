@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
+import mdx from "@astrojs/mdx";
 
 const owner = process.env.GITHUB_REPOSITORY_OWNER ?? "";
 const repo = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "";
@@ -15,5 +16,5 @@ export default defineConfig({
   site,
   base,
   trailingSlash: "always",
-  integrations: [react()],
+  integrations: [react(), mdx()],
 });
