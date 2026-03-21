@@ -6,6 +6,8 @@ authors = ["Bozhidar Dryanovski"]
 description = "A beautiful, feature-rich Git CLI with stacked PRs, workspace management, and enhanced UX"
 repository = ""
 license = "MIT"
+# Docs site (Astro) lives in docs/ and must not ship with the crate.
+exclude = ["docs"]
 
 [[bin]]
 name = "g"
