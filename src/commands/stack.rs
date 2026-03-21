@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use std::fs;
 
 use crate::commands::git as gitcmd;
-...
+use crate::config;
 use crate::github;
 use crate::ui;
 

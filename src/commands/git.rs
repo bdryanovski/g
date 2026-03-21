@@ -17,7 +17,7 @@
 //! - `static` variables for program-wide configuration flags.
 
 use anyhow::{bail, Context, Result};
-...
+use colored::Colorize;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
