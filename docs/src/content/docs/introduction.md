@@ -23,6 +23,7 @@ Configuration lives in `~/.config/g/config.toml`. Workspace metadata and stack d
 
 ## Next steps
 
+- [Use cases](./use-cases/) — playbooks (stacks, worktrees, log/diff, team defaults).
 - [Installation](./installation/) — install from crates.io or from this repository with Cargo.
 - [Log & diff](./log-and-diff/) — enhanced history and patches.
 - [Workspaces](./workspaces/) — worktrees without context switching.

@@ -1,7 +1,7 @@
 ---
 title: Log & diff
 description: Enhanced history, graph, and diff tooling with delta and diff-so-fancy.
-order: 2
+order: 3
 ---
 
 ## Enhanced log
