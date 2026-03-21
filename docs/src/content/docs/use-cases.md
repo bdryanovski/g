@@ -1,54 +1,287 @@
 ---
 title: Use cases
-description: Real scenarios where g shines—map problems to commands and docs.
+description: Detailed, personal playbooks—who you are, what you’re trying to do, and exact commands.
 order: 1
 ---
 
-These playbooks mirror how teams actually work. Each links forward to deeper pages; mix and match as your workflow evolves.
+These are **workflow recipes** written as if you’re in the middle of a real day: a bit of context, a concrete goal, and **what to type** (and **why**). For animated diagrams next to the ideas, see [Git flows](./git-flows/), [Stacks](./stacks/), and [Workspaces](./workspaces/).
 
-## Ship a feature as stacked PRs
+---
 
-**Problem:** One big branch is hard to review; you want small PRs that depend on each other.
+## Split a huge feature into stacked PRs
 
-1. From your default branch: `g stack new auth-overhaul`
-2. Layer branches: `g stack add feat/auth-models`, then commit, then `g stack add feat/auth-api`
-3. Keep the chain honest after upstream moves: `g stack sync`
-4. Publish: `g stack push` then `g stack pr --open`
+**Who:** You ship backend or full-stack work. You have been on one branch for weeks and the diff has become unreviewable.
 
-**Why g:** Local stack metadata + GitHub API sets each PR’s base to the branch below. See [Stacks](./stacks/).
+**Goal:** Land **payment schema**, then **API**, then **webhooks** as separate PRs, each targeting the branch below until everything reaches `main`.
 
-## Work on two branches without stashing
+**What to do**
 
-**Problem:** You’re deep in a feature but need to fix `main` or review a coworker’s branch.
+1. Start from fresh `main`:
 
-1. `g workspace create hotfix-login -b fix/oauth` or create a new branch from current context
-2. `g workspace list` to see paths and branches
-3. `g workspace switch hotfix-login` for a subshell in that checkout
-4. Remove when done: `g workspace delete hotfix-login`
+   ```bash
+   git switch main && git pull
+   g stack new payments
+   ```
 
-**Why g:** Named worktrees as sibling directories—no checkout thrash. See [Workspaces](./workspaces/).
+2. First PR slice — only persistence / models:
 
-## Make `git log` scannable in reviews
+   ```bash
+   g stack add pay/db-schema
+   # implement, test, stage
+   g commit -a -m "feat(pay): add ledger tables"
+   ```
 
-**Problem:** Default `git log` is dense; you want graph + type coloring for conventional commits.
+3. Second slice — HTTP on top of that schema:
 
-- `g log` for the default enhanced view (limit and graph from config)
-- `g log main..HEAD` for what you’re about to merge
-- Pair with `g compare --commits` for branch deltas
+   ```bash
+   g stack add pay/api
+   g commit -a -m "feat(pay): expose REST endpoints"
+   ```
 
-**Why g:** Same arguments as `git log`, prettier output. See [Log & diff](./log-and-diff/).
+4. Optional third slice — async / webhooks / workers:
 
-## Standardize diff review for the team
+   ```bash
+   g stack add pay/webhooks
+   g commit -a -m "feat(pay): handle provider callbacks"
+   ```
 
-**Problem:** Everyone uses a different diff style in review.
+5. Inspect locally before GitHub:
 
-- Install [delta](https://github.com/dandavison/delta) or [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)
-- Set `diff.tool = "auto"` (default) or pin a tool in `~/.config/g/config.toml`
-- Use `g diff`, `g show`, and `g compare --diff` for consistent piping
+   ```bash
+   g stack view
+   g stack details
+   ```
 
-**Why g:** One config, all enhanced diff entry points. See [Log & diff](./log-and-diff/) and [Configuration](./configuration/).
+6. Push and open chained PRs (`GITHUB_TOKEN` required for `pr`):
+
+   ```bash
+   g stack push
+   g stack pr --draft
+   ```
+
+**When `main` moves** while you wait on review: run `g stack sync`, fix conflicts, `g stack push` again. More detail: [Stacks](./stacks/).
+
+---
+
+## Hotfix production without abandoning your feature branch
+
+**Who:** You are mid-feature on `feat/notifications` with a dirty tree. Something on `main` must be fixed now.
+
+**Goal:** Fix prod in **another directory**, same repo, without `git stash` gymnastics.
+
+**What to do**
+
+1. From a clean-enough moment at repo root (commit or stash if the *main* repo must be clean—worktree creation rules still follow Git):
+
+   ```bash
+   git switch main && git pull
+   g workspace create hotfix-oauth
+   ```
+
+   Or attach to an existing fix branch:
+
+   ```bash
+   g workspace create hotfix-oauth -b fix/oauth-token
+   ```
+
+2. Enter that checkout:
+
+   ```bash
+   g workspace switch hotfix-oauth
+   pwd
+   ```
+
+3. Fix, test, commit, push, open PR—same as always.
+
+4. Leave the subshell when done: `exit`.
+
+5. Your original folder is still on `feat/notifications` with your layout intact.
+
+6. After merge, remove the extra tree:
+
+   ```bash
+   g workspace delete hotfix-oauth
+   ```
+
+**Why it feels better:** separate `node_modules`, build artifacts, and editor roots; no “where did my stash go” Monday. [Workspaces](./workspaces/).
+
+---
+
+## Review a branch without opening GitHub for history
+
+**Who:** You lead review or you triage incoming work.
+
+**Goal:** Answer “what landed on `feature/flags` since `main`?” in the terminal, with a graph and readable subjects.
+
+**What to do**
+
+```bash
+g log main..feature/flags --oneline -n 30
+g compare --commits main feature/flags
+```
+
+Before a deep read, skim file churn:
+
+```bash
+g compare --stat main feature/flags
+```
+
+Full patch through your team diff tool:
+
+```bash
+g compare --diff main feature/flags
+```
+
+Tune limits and colors under `[ui]` and `[diff]` in config. [Log & diff](./log-and-diff/).
+
+---
+
+## Make diffs look the same for everyone on the team
+
+**Who:** You care about consistency in Slack screenshots and local review.
+
+**Goal:** One tool drives `g diff`, `g show`, and `g compare --diff`.
+
+**What to do**
+
+1. Install [delta](https://github.com/dandavison/delta) (or [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)).
+
+2. Pin it in `~/.config/g/config.toml`:
+
+   ```toml
+   [diff]
+   tool = "delta"
+   ```
+
+3. Verify:
+
+   ```bash
+   g diff HEAD~1
+   g show HEAD
+   ```
+
+4. Paste the snippet into your team onboarding doc. [Configuration](./configuration/).
+
+---
+
+## Solo maintainer: better UX without adopting stacks
+
+**Who:** It is just you; you may never run `g stack pr`.
+
+**Goal:** Nicer log/status/diff and optional conventional commits, still full `git` passthrough.
+
+**What to do**
+
+- Keep using `g pull`, `g push`, `g switch`, etc.—they forward to `git`.
+
+- Prefer `g log` and `g status` for daily reading.
+
+- Try interactive commit once:
+
+  ```bash
+  g commit
+  ```
+
+Stacks and worktrees stay optional until a problem actually hurts. [Introduction](./introduction/).
+
+---
+
+## Repair a stack after you amended or merged into a lower branch
+
+**Who:** You already use stacks. You rewrote `pay/db-schema` or merged `main` into it; `pay/api` still sits on the old parent.
+
+**Goal:** Let `g` rebase the chain in order instead of hand-rolling five `git rebase` commands.
+
+**What to do**
+
+```bash
+g stack details
+g --dry-run stack sync
+g stack sync
+# resolve conflicts per step, then:
+g stack push
+```
+
+Story-level picture: [Git flows](./git-flows/).
+
+---
+
+## Two long-running tracks at once without two clones
+
+**Who:** You owe **search** and **billing** in parallel; both take weeks.
+
+**Goal:** Two checkouts, one object database, names you will remember.
+
+**What to do**
+
+```bash
+git switch main && git pull
+g workspace create search-v2 --description "Elasticsearch rollout"
+g workspace create billing-ui -b feat/billing-shell
+g workspace list
+```
+
+Switch with `g workspace switch …` and `exit` when done. Delete a workspace when that line of work ships: `g workspace delete billing-ui`.
+
+---
+
+## Cut a release: sober diff against main
+
+**Who:** You are stabilising `release/1.4` against `main`.
+
+**Goal:** Commit list + file stats before tagging.
+
+**What to do**
+
+```bash
+g compare --commits main release/1.4
+g compare --stat main release/1.4
+g compare --diff main release/1.4   # optional full patch
+```
+
+---
+
+## Onboard a teammate who will use stacks on GitHub
+
+**Checklist you can forward**
+
+1. Install — [Installation](./installation/).
+
+2. Token:
+
+   ```bash
+   export GITHUB_TOKEN=ghp_…
+   ```
+
+3. Show config path and optional edit for default labels/reviewers:
+
+   ```bash
+   g config --path
+   g config --edit
+   ```
+
+4. Reading order: [Introduction](./introduction/) → [Git flows](./git-flows/) → this page’s **Split a huge feature** section.
+
+5. First exercise: dummy repo, `g stack new practice`, two `g stack add` layers, `g stack view`, tear down.
+
+---
+
+## Quick lookup: situation to command
+
+| I need to… | Start here |
+|------------|------------|
+| Split a giant PR | `g stack new` / `g stack add` / `g stack pr` |
+| Fix prod while coding a feature | `g workspace create` / `g workspace switch` |
+| Read branch history fast | `g log`, `g compare --commits` |
+| Unify diff appearance | `[diff] tool` in config |
+| Fix stack after amending mid-stack | `g stack sync` |
+| Preview destructive stuff | `g --dry-run …` |
+
+---
 
 ## Next
 
-- [Installation](./installation/) — Cargo install paths
-- [Introduction](./introduction/) — mental model and philosophy
+- [Installation](./installation/)  
+- [Introduction](./introduction/)  
+- [Git flows](./git-flows/)  
+- [Stacks](./stacks/) / [Workspaces](./workspaces/)  

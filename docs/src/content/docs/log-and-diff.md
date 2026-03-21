@@ -6,23 +6,39 @@ order: 3
 
 ## Enhanced log
 
-`g log` formats history for readability: graph, decorations, and conventional-commit styling (subject lines are easier to scan than raw `git log` defaults).
+`g log` formats history for readability: **graph**, **decorations**, and **conventional-commit** styling so subjects are easier to scan than raw `git log` defaults.
 
-Common invocations:
+### Everyday commands
 
 ```bash
-g log              # default limit from config (e.g. last 30 commits)
+g log                        # default limit from config (e.g. 30 commits)
 g log -n 50
+g log --oneline -n 20
 g log --all
-g log --no-graph   # disable ASCII graph
-g log main..HEAD   # range
+g log --no-graph             # disable ASCII graph
+g log main..HEAD             # what’s on current branch since it diverged from main
+g log -p -1                  # last commit with patch (still enhanced where applicable)
 ```
 
-Options after `g log` are forwarded to `git log`, so your existing muscle memory still applies.
+Everything after `g log` is passed through to **`git log`**, so flags you already know keep working.
 
-### Configuration
+### Read a feature branch before merge
 
-In `~/.config/g/config.toml`, the `[ui]` section controls defaults such as `log_limit` and `show_graph`. Tune date formats and colors there for a consistent look across commands.
+```bash
+g log origin/main..HEAD
+g log --stat origin/main..HEAD
+```
+
+### Configuration (`~/.config/g/config.toml`)
+
+```toml
+[ui]
+log_limit = 30
+show_graph = true
+date_format = "relative"   # relative | short | iso | rfc
+colors = true
+icons = true
+```
 
 ## Enhanced diff
 
@@ -30,14 +46,16 @@ In `~/.config/g/config.toml`, the `[ui]` section controls defaults such as `log_
 
 - [delta](https://github.com/dandavison/delta)
 - [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)
-- or a custom executable (including `vimdiff`)
+- A custom executable (including `vimdiff`)
 
-Examples:
+### Examples
 
 ```bash
 g diff
+g diff --staged
 g diff HEAD~3
-g diff main..feature-branch
+g diff main...feature-branch    # three-dot: merge-base comparison
+g diff main feature-branch -- path/to/file.rs
 ```
 
 ### Configure a diff tool
@@ -51,16 +69,60 @@ tool = "auto"   # default: pick best available
 # tool = "/path/to/my-diff"
 ```
 
-Install candidates (macOS Homebrew examples):
+### Install tools (examples)
 
 ```bash
+# macOS
 brew install git-delta
 brew install diff-so-fancy
+
+# Many distros package delta as git-delta or delta
 ```
 
 ## Related commands
 
-- **`g show`** — commit header plus patch, styled like `g diff`.
-- **`g status`** — icon-rich working tree summary with tracking hints.
-- **`g branch`** — table of branches with last commit metadata.
-- **`g compare`** — compare two branches with `--stat`, `--commits`, or `--diff` modes.
+### `g show`
+
+Single commit: header + patch, same diff tooling as `g diff`.
+
+```bash
+g show
+g show abc1234
+g show HEAD~2 --stat
+```
+
+### `g status`
+
+Working tree with icons, grouped sections, and tracking hints.
+
+```bash
+g status
+g status -sb
+```
+
+### `g branch`
+
+Table of branches with last commit, author, date, upstream.
+
+```bash
+g branch
+g branch -vv
+```
+
+### `g compare`
+
+Compare two branches without merging—pick a view mode:
+
+```bash
+g compare                          # current vs default branch
+g compare main feature/foo
+g compare --stat                   # file-level bars / counts
+g compare --commits                # commit subjects only
+g compare --diff                   # full diff through configured tool
+```
+
+## Troubleshooting
+
+- **No colors** — check `NO_COLOR` env; set `[ui] colors = true` in config.
+- **Plain diff** — tool not found; install `delta` or set `diff.tool` explicitly.
+- **Pager** — if output is truncated, configure `general.pager` in config (see main README).

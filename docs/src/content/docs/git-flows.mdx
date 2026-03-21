@@ -1,0 +1,117 @@
+---
+title: Git flows
+description: How stacked branches, worktrees, and stack sync relate to plain Git—with inline animated figures.
+order: 6
+---
+
+import { DocFlowStack, DocFlowWorktree, DocFlowSync } from "../../components/react/InlineFlowDiagrams";
+
+This page walks through three ideas **`g` makes explicit**: **stack order**, **worktree layout**, and **stack sync**. The figures below are simplified—your real `git log --graph` may be wider—but the **relationships** are what the tool tracks.
+
+## Stacked PRs = linear branch chain
+
+In a stack, each feature branch is based on the **previous** branch in the list, not always on `main`:
+
+```text
+main  ←── PR #1 targets main
+  ↑
+feat/models  ←── PR #2 targets feat/models
+  ↑
+feat/api     ←── HEAD, PR #3 targets feat/api
+```
+
+Git itself only knows parent commits; **`g stack`** adds a local ordered list (per repo) so commands like `g stack sync` know which branch to rebase onto which, and `g stack pr` can tell GitHub each PR’s **base** branch.
+
+<DocFlowStack
+  client:visible
+  caption="Same idea as the diagram above: one vertical spine from main to HEAD. PR bases follow that order."
+/>
+
+### Example session
+
+```bash
+git switch main
+git pull
+g stack new payments
+g stack add pay/db-migration
+# … edit, test …
+g commit   # or: git commit
+g stack add pay/api
+# … more work …
+g commit
+g stack view
+g stack push
+g stack pr --draft
+```
+
+### Inspect without changing anything
+
+```bash
+g stack details
+g stack list
+```
+
+## Worktrees = one repo, many directories
+
+A **workspace** is a `git worktree`: same `.git` data, different working tree on disk. Typical layout (default separator `--`):
+
+```text
+~/proj/
+  myapp/                 ← primary checkout (e.g. main)
+  myapp--feature-auth/   ← another branch checked out here
+```
+
+<DocFlowWorktree
+  client:visible
+  caption="One shared object store fans out into multiple working directories—no second clone, no losing your place on the original branch."
+/>
+
+Under the hood, `g` still calls `git worktree add` (and friends). You benefit from **named** entries and metadata in `~/.config/g/` for descriptions and tooling.
+
+```bash
+g workspace create feature-auth --description "OIDC work"
+g workspace list
+g workspace status        # from inside any worktree
+g workspace switch feature-auth
+# … shell is now in the worktree directory; exit to leave …
+```
+
+## Stack sync = rebase the chain
+
+When **`main` moves** or you **rewrite** a lower branch in the stack, upper branches may still “point” at old parents. `g stack sync` walks the stack order and **rebases each branch onto the one below** (conceptually the same as doing repeated `git rebase` by hand, with guardrails).
+
+<DocFlowSync
+  client:visible
+  caption="Sync is the moment the graph snaps back to a straight stack: messy tips first, then `g stack sync`, then a clean spine ready to push."
+/>
+
+Typical recovery after upstream changed:
+
+```bash
+git switch main
+git pull
+g stack switch payments    # jump to stack tip or a branch in the stack
+g stack sync
+# resolve conflicts if prompted, then continue the stack operation as instructed
+g stack push
+```
+
+Use **`g --dry-run`** before a big sync to see which git commands would run:
+
+```bash
+g --dry-run stack sync
+```
+
+## How this maps to vanilla Git
+
+| Idea | Plain Git | With `g` |
+|------|-----------|----------|
+| Second checkout | `git worktree add ../path branch` | `g workspace create …` |
+| Stacked branches | You remember order; manual `git rebase` | `g stack sync` |
+| PR base branch | Set in GitHub UI / API | `g stack pr` |
+
+## See also
+
+- [Stacks](./stacks/) — full command table and flags
+- [Workspaces](./workspaces/) — create, rename, delete, force
+- [Use cases](./use-cases/) — short playbooks

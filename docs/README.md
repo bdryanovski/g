@@ -14,7 +14,7 @@ Visit `http://localhost:4321`.
 
 ## Edit documentation
 
-Markdown sources are in `src/content/docs/`. Each file has frontmatter:
+Sources live in `src/content/docs/`. Use **`.md`** for prose-only pages or **`.mdx`** when you need React islands (see below). Frontmatter:
 
 ```yaml
 ---
@@ -24,9 +24,13 @@ order: 0
 ---
 ```
 
-Lower `order` values appear earlier in the sidebar. Add new `.md` files there; Astro regenerates routes under `/docs/<slug>/`.
+Lower `order` values appear earlier in the sidebar. Routes are `/docs/<slug>/`.
 
 The docs chrome groups pages under **Start** / **Workflows** / **Reference** in `src/layouts/DocsLayout.astro` (update the `groups` array when you add pages). Playbooks live in `use-cases.md` and in the “When teams reach for g” strip on every doc page.
+
+**Inline flow animations:** `src/components/react/InlineFlowDiagrams.tsx` exports `DocFlowStack`, `DocFlowWorktree`, and `DocFlowSync`. Import them in `.mdx` and place them next to the relevant section, e.g. `<DocFlowStack client:visible caption="…" />`. Styles: `src/styles/flow-diagrams.css` (loaded from `DocsLayout.astro`). Example pages: `stacks.mdx`, `workspaces.mdx`, `git-flows.mdx`.
+
+The site uses **`@astrojs/mdx`** (see `astro.config.mjs`).
 
 ## GitHub link in the header
 

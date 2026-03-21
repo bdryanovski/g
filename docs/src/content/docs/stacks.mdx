@@ -1,0 +1,112 @@
+---
+title: Stacks
+description: Stacked branches, sync, push, and chained GitHub pull requests.
+order: 5
+---
+
+import { DocFlowStack, DocFlowSync } from "../../components/react/InlineFlowDiagrams";
+
+**Stacks** model a **linear chain** of branches: each branch builds on the one below. That maps to **stacked PRs** on GitHub, where PR *N* targets the branch under it—not always `main`.
+
+## Mental model
+
+```text
+  feat/api      ← HEAD (top of stack)
+     │
+  feat/models
+     │
+    main
+```
+
+- **`g stack new`** records a named stack starting from your **current** branch (usually `main` after a pull).
+- **`g stack add`** creates a new branch **on top of** your current branch and appends it to the stack.
+- **`g stack sync`** rebases each branch onto the branch **below** in order.
+- **`g stack pr`** creates or updates GitHub PRs with **bases** chained to match the stack.
+
+Local state (branch order, optional PR numbers) lives under `~/.config/g/` (e.g. `stacks.toml`), **per repository path**.
+
+<DocFlowStack
+  client:visible
+  caption="Animated: commits sit on a single vertical spine. The line grows from main upward; each node is a branch tip. That is the shape `g stack` assumes when syncing and opening PRs."
+/>
+
+## Typical workflow
+
+```bash
+git switch main && git pull
+g stack new auth-overhaul
+g stack add feat/auth-models
+# … implement schema …
+g commit -a -m "feat(auth): add user model"
+
+g stack add feat/auth-api
+# … implement HTTP handlers …
+g commit -a -m "feat(auth): add login API"
+
+g stack view
+g stack details
+g stack push
+g stack pr --open
+```
+
+### Draft PRs and browser
+
+```bash
+g stack pr --draft
+g stack pr --open --draft
+```
+
+## Command reference
+
+| Command | Purpose |
+|--------|---------|
+| `g stack new <name>` | Start a stack from the current branch |
+| `g stack add <branch>` | Create and append a branch |
+| `g stack list` | List stacks for this repo |
+| `g stack view` | Tree view of current stack |
+| `g stack details` | Commits / PR-oriented detail view |
+| `g stack switch <name>` | Jump to top branch of a stack by stack name |
+| `g stack sync` | Rebase each branch onto the one below |
+| `g stack absorb` | Merge current branch into below and collapse |
+| `g stack push` | Push all branches (`--force` with lease when needed) |
+| `g stack pr` | Create or update chained PRs via GitHub API |
+| `g stack remove <branch>` | Remove branch from stack metadata only |
+| `g stack delete <name>` | Drop stack record (`--branches` to delete git branches too) |
+| `g stack up` / `g stack down` | Reorder stack in the local list |
+
+## Sync after upstream changes
+
+When `main` or a lower branch in the stack moves, tips may stop lining up. **`g stack sync`** walks the stack and rebases each layer onto the one below until the spine is straight again.
+
+<DocFlowSync
+  client:visible
+  caption="Before sync, branch tips point in different directions; after `g stack sync`, the same three commits form one vertical line—the model `g` uses for chained PRs."
+/>
+
+```bash
+git switch main
+git pull
+g stack switch auth-overhaul   # or: git switch feat/auth-api if it’s in the stack
+g stack sync
+```
+
+If a rebase stops on conflicts, resolve files, `git add`, then continue with whatever `g` / `git` prompts suggest (usually `git rebase --continue`).
+
+## Safety: dry run
+
+Preview mutating operations without changing the repo or calling write APIs:
+
+```bash
+g --dry-run stack sync
+g --dry-run stack push
+```
+
+## Requirements
+
+- **`GITHUB_TOKEN`** (or `[github].token` in config) for `g stack pr`
+- Remote and repo detection must match what the GitHub module expects (see repository README)
+
+## Related
+
+- [Git flows](./git-flows/) — same ideas with a full narrative
+- [Workspaces](./workspaces/) — parallel checkouts while you work through a stack

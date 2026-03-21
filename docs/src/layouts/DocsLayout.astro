@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import AppHeader from "@/components/AppHeader.astro";
+import "@/styles/flow-diagrams.css";
 import { getCollection } from "astro:content";
 
 interface Props {
@@ -38,37 +39,39 @@ const groups: { label: string; slug: string }[][] = [
     { label: "Log & diff", slug: "log-and-diff" },
     { label: "Workspaces", slug: "workspaces" },
     { label: "Stacks", slug: "stacks" },
+    { label: "Git flows", slug: "git-flows" },
   ],
   [{ label: "Configuration", slug: "configuration" }],
 ];
 
+const uc = `${base}docs/use-cases/`;
 const useCaseChips = [
   {
-    title: "Stacked reviews",
-    blurb: "Chain small PRs with sync + push + pr.",
-    href: `${base}docs/stacks/`,
-    tag: "Stack",
+    title: "Stacked PR story",
+    blurb: "Huge branch → pay/db-schema, pay/api, pay/webhooks.",
+    href: `${uc}#split-a-huge-feature-into-stacked-prs`,
+    tag: "Playbook",
     tagClass: "tag--violet",
   },
   {
-    title: "Parallel branches",
-    blurb: "Worktrees instead of stash dance.",
-    href: `${base}docs/workspaces/`,
-    tag: "Workspace",
+    title: "Hotfix worktree",
+    blurb: "Prod fix without leaving your feature checkout.",
+    href: `${uc}#hotfix-production-without-abandoning-your-feature-branch`,
+    tag: "Playbook",
     tagClass: "tag--cyan",
   },
   {
-    title: "Readable history",
-    blurb: "Graph + conventions in the terminal.",
-    href: `${base}docs/log-and-diff/`,
-    tag: "Log",
+    title: "Triage a branch",
+    blurb: "Log + compare from the shell.",
+    href: `${uc}#review-a-branch-without-opening-github-for-history`,
+    tag: "Playbook",
     tagClass: "tag--lime",
   },
   {
-    title: "Team defaults",
-    blurb: "Aliases, diff tools, GitHub labels.",
-    href: `${base}docs/configuration/`,
-    tag: "Config",
+    title: "Unify diffs",
+    blurb: "One delta config for the team.",
+    href: `${uc}#make-diffs-look-the-same-for-everyone-on-the-team`,
+    tag: "Playbook",
     tagClass: "tag--rose",
   },
 ];
@@ -89,9 +92,9 @@ const useCaseChips = [
 
     <section class="doc-usecases" aria-labelledby="doc-usecases-heading">
       <div class="doc-usecases-head">
-        <h2 id="doc-usecases-heading" class="doc-usecases-title">When teams reach for <strong>g</strong></h2>
+        <h2 id="doc-usecases-heading" class="doc-usecases-title">Playbooks for <strong>g</strong></h2>
         <p class="doc-usecases-sub">
-          Opinionated workflows—pick a playbook and jump to the guide.
+          Story-style workflows—solo, team, and on-call. Jump into the full <a href={`${base}docs/use-cases/`}>Use cases</a> page anytime.
         </p>
       </div>
       <div class="doc-usecases-grid">

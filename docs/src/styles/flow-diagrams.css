@@ -1,0 +1,491 @@
+/* Inline documentation flow diagrams (used by InlineFlowDiagrams.tsx) */
+.doc-flow {
+  margin: 1.75rem 0;
+}
+
+.doc-flow.gfv {
+  margin: 1.75rem 0;
+  padding: 1.1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 245, 255, 0.2);
+  background: linear-gradient(145deg, rgba(0, 245, 255, 0.06), rgba(192, 132, 252, 0.05), rgba(5, 6, 14, 0.92));
+  box-shadow: 0 0 40px rgba(0, 245, 255, 0.06);
+}
+
+.doc-flow-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.doc-flow-legend {
+  margin: 0;
+  flex: 1;
+  min-width: 12rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #9aa0b4;
+  font-weight: 500;
+}
+
+.doc-flow-canvas {
+  min-height: 0;
+}
+
+.gfv-replay {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #c8cad8;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gfv-replay:hover {
+  color: #fff;
+  border-color: rgba(0, 245, 255, 0.5);
+  transform: scale(1.03);
+}
+
+.gfv-replay:active {
+  transform: scale(0.97);
+}
+
+.gfv-svg {
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.gfv-svg--sm {
+  max-width: 220px;
+  margin: 0;
+}
+
+/* Stack spine */
+.gfv-stack-seg {
+  stroke-dasharray: 70;
+  stroke-dashoffset: 70;
+  animation: gfv-draw-line 0.62s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.gfv-stack-seg--1 {
+  animation-delay: 0.2s;
+}
+
+.gfv-stack-seg--2 {
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation-delay: 0.72s;
+  animation-duration: 0.52s;
+}
+
+@keyframes gfv-draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.gfv-stack-node-wrap {
+  opacity: 0;
+  animation: gfv-node-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.gfv-stack-n1 {
+  animation-delay: 0.04s;
+}
+
+.gfv-stack-n2 {
+  animation-delay: 0.78s;
+}
+
+.gfv-stack-n3 {
+  animation-delay: 1.32s;
+}
+
+@keyframes gfv-node-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.gfv-node {
+  fill: #0a0c16;
+  stroke: #00f5ff;
+  stroke-width: 2.5;
+}
+
+.gfv-node--violet {
+  stroke: #d8b4fe;
+}
+
+.gfv-node--rose {
+  stroke: #fda4af;
+}
+
+.gfv-lbl--stack {
+  opacity: 0;
+  animation: gfv-fade-slide 0.4s ease forwards;
+}
+
+.gfv-lbl--s1 {
+  animation-delay: 0.14s;
+}
+
+.gfv-lbl--s2 {
+  animation-delay: 0.88s;
+}
+
+.gfv-lbl--s3 {
+  animation-delay: 1.42s;
+}
+
+@keyframes gfv-fade-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.gfv-cap--fade {
+  opacity: 0;
+  animation: gfv-fade-in 0.55s ease 1.58s forwards;
+}
+
+@keyframes gfv-fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Worktree */
+.gfv-wt-main {
+  transform-origin: 220px 46px;
+  animation: gfv-wt-main-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes gfv-wt-main-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.gfv-wt-path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: gfv-draw-line 0.45s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.gfv-wt-path--a {
+  animation-delay: 0.45s;
+}
+
+.gfv-wt-path--b {
+  animation-delay: 0.68s;
+}
+
+.gfv-wt-path--c {
+  animation-delay: 0.78s;
+}
+
+.gfv-wt-leaf {
+  opacity: 0;
+  animation: gfv-wt-leaf-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.gfv-wt-leaf--L {
+  animation-delay: 0.95s;
+  transform-origin: 120px 146px;
+}
+
+.gfv-wt-leaf--R {
+  animation-delay: 1.08s;
+  transform-origin: 320px 146px;
+}
+
+@keyframes gfv-wt-leaf-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Sync */
+.gfv-sync {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gfv-sync-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
+
+@media (max-width: 520px) {
+  .gfv-sync-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gfv-sync-before--play {
+  animation: gfv-sync-row-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gfv-sync-after--play {
+  animation: gfv-sync-row-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 1.35s both;
+}
+
+@keyframes gfv-sync-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.gfv-sync-messy {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: gfv-draw-line 0.9s cubic-bezier(0.33, 1, 0.68, 1) 0.15s forwards;
+}
+
+.gfv-sync-dot {
+  opacity: 0;
+  animation: gfv-dot-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.gfv-sync-dot--d1 {
+  animation-delay: 0.42s;
+}
+
+.gfv-sync-dot--d2 {
+  animation-delay: 0.55s;
+}
+
+.gfv-sync-dot--dim {
+  fill: #52525b;
+}
+
+@keyframes gfv-dot-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.gfv-sync-arrow {
+  text-align: center;
+  padding: 0.25rem 0 0.35rem;
+  min-height: 2rem;
+}
+
+.gfv-sync-arrow--play {
+  animation: gfv-arrow-row 2.4s ease-in-out infinite;
+}
+
+@keyframes gfv-arrow-row {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+.gfv-sync-cmd {
+  display: inline-block;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(105deg, rgba(0, 245, 255, 0.15), rgba(192, 132, 252, 0.12));
+  border: 1px solid rgba(0, 245, 255, 0.35);
+  box-shadow: 0 0 24px rgba(0, 245, 255, 0.12);
+}
+
+.gfv-sync-cmd-inner {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: linear-gradient(90deg, #5ff4ff, #e9d5ff, #fda4af);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gfv-shimmer 2.5s linear infinite;
+}
+
+@keyframes gfv-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.gfv-sync-clean {
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+  animation: gfv-draw-line 0.75s cubic-bezier(0.33, 1, 0.68, 1) 1.45s forwards;
+}
+
+.gfv-sync-pop {
+  opacity: 0;
+  transform-origin: center;
+  animation: gfv-sync-node 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.gfv-sync-pop--1 {
+  animation-delay: 1.55s;
+}
+
+.gfv-sync-pop--2 {
+  animation-delay: 1.85s;
+}
+
+.gfv-sync-pop--3 {
+  animation-delay: 2.1s;
+}
+
+@keyframes gfv-sync-node {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.gfv-sync-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7088;
+}
+
+.gfv-sync-hint {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: #8b90a4;
+  margin-top: -0.2rem;
+}
+
+.gfv-lbl {
+  fill: #d1d4e4;
+  font-size: 13px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.gfv-cap {
+  fill: #7c8194;
+  font-size: 11px;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.gfv-box {
+  fill: rgba(12, 14, 24, 0.92);
+  stroke-width: 2;
+}
+
+.gfv-box-main {
+  stroke: #00f5ff;
+  filter: drop-shadow(0 0 6px rgba(0, 245, 255, 0.25));
+}
+
+.gfv-box-wt {
+  stroke: #d8b4fe;
+  filter: drop-shadow(0 0 5px rgba(192, 132, 252, 0.2));
+}
+
+.gfv-boxtxt {
+  fill: #e8eaf4;
+  font-size: 13px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.gfv-sub {
+  fill: #8b90a4;
+  font-size: 11px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Reduced motion */
+.gfv--reduced .gfv-stack-seg,
+.gfv--reduced .gfv-wt-path,
+.gfv--reduced .gfv-sync-messy,
+.gfv--reduced .gfv-sync-clean {
+  stroke-dashoffset: 0 !important;
+  animation: none !important;
+}
+
+.gfv--reduced .gfv-stack-node-wrap,
+.gfv--reduced .gfv-wt-main,
+.gfv--reduced .gfv-wt-leaf,
+.gfv--reduced .gfv-lbl--stack,
+.gfv--reduced .gfv-cap--fade,
+.gfv--reduced .gfv-sync-dot,
+.gfv--reduced .gfv-sync-pop {
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+.gfv--reduced .gfv-sync-before--play,
+.gfv--reduced .gfv-sync-after--play {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.gfv--reduced .gfv-sync-arrow--play {
+  animation: none !important;
+}
+
+.gfv--reduced .gfv-sync-cmd-inner {
+  animation: none !important;
+  color: #7df9ff;
+  background: none;
+  -webkit-text-fill-color: #7df9ff;
+}
