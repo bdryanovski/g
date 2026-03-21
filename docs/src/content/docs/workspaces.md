@@ -1,7 +1,7 @@
 ---
 title: Workspaces
 description: Git worktrees with friendly names, sibling directories, and metadata.
-order: 3
+order: 4
 ---
 
 Workspaces wrap **`git worktree`**: each workspace is a **separate directory** with its own checkout. You keep multiple branches checked out at once without stashing or constantly switching branches.

@@ -1,0 +1,27 @@
+---
+interface Props {
+  base: string;
+  github: string;
+}
+
+const { base, github } = Astro.props;
+---
+
+<header class="topbar">
+  <div class="wrap-wide topbar-inner">
+    <a href={`${base}`} class="brand-block">
+      <span class="brand-mark">g</span>
+      <span class="brand-text">
+        <span class="brand-name">Version CLI</span>
+        <span class="brand-tag">Git · stacks · worktrees</span>
+      </span>
+    </a>
+    <nav class="nav-cluster" aria-label="Primary">
+      <a class="nav-link" href={`${base}#use-cases`}>Use cases</a>
+      <a class="nav-link" href={`${base}#features`}>Capabilities</a>
+      <a class="nav-link" href={`${base}#install`}>Install</a>
+      <a class="nav-link nav-link--accent" href={`${base}docs/introduction/`}>Documentation</a>
+      <a class="nav-link" href={github} rel="noopener noreferrer">GitHub</a>
+    </nav>
+  </div>
+</header>

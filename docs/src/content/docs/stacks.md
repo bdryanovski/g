@@ -1,7 +1,7 @@
 ---
 title: Stacks
 description: Stacked branches, sync, push, and chained GitHub pull requests.
-order: 4
+order: 5
 ---
 
 **Stacks** model a linear chain of branches: each branch builds on the one below. That maps cleanly to **stacked PRs** on GitHub, where each PR targets the branch under it instead of always targeting `main`.

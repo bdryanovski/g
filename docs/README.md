@@ -26,6 +26,8 @@ order: 0
 
 Lower `order` values appear earlier in the sidebar. Add new `.md` files there; Astro regenerates routes under `/docs/<slug>/`.
 
+The docs chrome groups pages under **Start** / **Workflows** / **Reference** in `src/layouts/DocsLayout.astro` (update the `groups` array when you add pages). Playbooks live in `use-cases.md` and in the “When teams reach for g” strip on every doc page.
+
 ## GitHub link in the header
 
 Set at build time:

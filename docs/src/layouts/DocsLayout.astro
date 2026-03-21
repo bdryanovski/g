@@ -1,5 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import AppHeader from "@/components/AppHeader.astro";
 import { getCollection } from "astro:content";
 
 interface Props {
@@ -13,108 +14,462 @@ const all = await getCollection("docs");
 const nav = [...all].sort(
   (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
 );
+
 const base = import.meta.env.BASE_URL;
 const github =
   import.meta.env.PUBLIC_GITHUB_REPO_URL ?? "https://github.com/YOUR_ORG/vcli";
+
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+const baseNorm = base.replace(/\/$/, "");
+let pathAfterBase = pathname;
+if (baseNorm && pathname.startsWith(baseNorm)) {
+  pathAfterBase = pathname.slice(baseNorm.length) || "/";
+}
+const docMatch = pathAfterBase.match(/^\/docs\/([^/]+)/);
+const currentSlug = docMatch?.[1] ?? "";
+
+const groups: { label: string; slug: string }[][] = [
+  [
+    { label: "Introduction", slug: "introduction" },
+    { label: "Use cases", slug: "use-cases" },
+    { label: "Installation", slug: "installation" },
+  ],
+  [
+    { label: "Log & diff", slug: "log-and-diff" },
+    { label: "Workspaces", slug: "workspaces" },
+    { label: "Stacks", slug: "stacks" },
+  ],
+  [{ label: "Configuration", slug: "configuration" }],
+];
+
+const useCaseChips = [
+  {
+    title: "Stacked reviews",
+    blurb: "Chain small PRs with sync + push + pr.",
+    href: `${base}docs/stacks/`,
+    tag: "Stack",
+    tagClass: "tag--violet",
+  },
+  {
+    title: "Parallel branches",
+    blurb: "Worktrees instead of stash dance.",
+    href: `${base}docs/workspaces/`,
+    tag: "Workspace",
+    tagClass: "tag--cyan",
+  },
+  {
+    title: "Readable history",
+    blurb: "Graph + conventions in the terminal.",
+    href: `${base}docs/log-and-diff/`,
+    tag: "Log",
+    tagClass: "tag--lime",
+  },
+  {
+    title: "Team defaults",
+    blurb: "Aliases, diff tools, GitHub labels.",
+    href: `${base}docs/configuration/`,
+    tag: "Config",
+    tagClass: "tag--rose",
+  },
+];
 ---
 
 <Layout title={`${title} · g docs`} description={description}>
-  <a href="#main" class="sr-only">Skip to content</a>
-  <header
-    style="border-bottom:1px solid var(--border); backdrop-filter: blur(12px); background: rgba(7,8,13,0.75); position: sticky; top: 0; z-index: 40;"
-  >
-    <div
-      class="wrap"
-      style="display:flex; align-items:center; justify-content: space-between; gap: 1rem; padding: 1rem 0; flex-wrap: wrap;"
-    >
-      <a
-        href={`${base}`}
-        style="font-weight: 700; letter-spacing: -0.02em; color: var(--text); text-decoration: none;"
-      >
-        g
-      </a>
-      <nav aria-label="Primary" style="display:flex; gap: 1.25rem; align-items:center; flex-wrap: wrap;">
-        <a href={`${base}#features`} style="color: var(--muted);">Features</a>
-        <a href={`${base}#install`} style="color: var(--muted);">Install</a>
-        <a href={`${base}docs/introduction/`} style="color: var(--muted);">Documentation</a>
-        <a href={github} style="color: var(--muted);" rel="noopener noreferrer">
-          GitHub
-        </a>
-      </nav>
-    </div>
-  </header>
+  <a href="#doc-main" class="sr-only">Skip to content</a>
+  <AppHeader base={base} github={github} />
 
-  <div class="wrap docs-shell" id="main">
-    <aside style="position: sticky; top: 5.5rem; align-self: start;">
-      <p style="margin: 0 0 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);">
-        Documentation
-      </p>
-      <nav aria-label="Docs" style="display:flex; flex-direction: column; gap: 0.35rem;">
+  <div class="wrap-wide docs-page docs-page--fill" id="doc-main">
+    <nav class="doc-breadcrumb" aria-label="Breadcrumb">
+      <a href={`${base}`}>Home</a>
+      <span class="doc-breadcrumb-sep" aria-hidden="true">/</span>
+      <a href={`${base}docs/introduction/`}>Docs</a>
+      <span class="doc-breadcrumb-sep" aria-hidden="true">/</span>
+      <span class="doc-breadcrumb-current">{title}</span>
+    </nav>
+
+    <section class="doc-usecases" aria-labelledby="doc-usecases-heading">
+      <div class="doc-usecases-head">
+        <h2 id="doc-usecases-heading" class="doc-usecases-title">When teams reach for <strong>g</strong></h2>
+        <p class="doc-usecases-sub">
+          Opinionated workflows—pick a playbook and jump to the guide.
+        </p>
+      </div>
+      <div class="doc-usecases-grid">
         {
-          nav.map((entry) => {
-            const href = `${base}docs/${entry.slug}/`;
-            return (
-              <a
-                href={href}
-                style="color: var(--muted); font-size: 0.95rem; padding: 0.25rem 0;"
-              >
-                {entry.data.title}
-              </a>
-            );
-          })
+          useCaseChips.map((uc) => (
+            <a href={uc.href} class="doc-usecase-card">
+              <span class:list={["tag", uc.tagClass]}>{uc.tag}</span>
+              <span class="doc-usecase-title">{uc.title}</span>
+              <span class="doc-usecase-blurb">{uc.blurb}</span>
+            </a>
+          ))
         }
-      </nav>
-    </aside>
-    <article
-      class="prose"
-      style="min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem 2.25rem; box-shadow: var(--shadow);"
-    >
-      <h1 style="margin-top: 0; font-size: 2rem; letter-spacing: -0.03em;">{title}</h1>
-      <slot />
-    </article>
+      </div>
+    </section>
+
+    <div class="docs-shell">
+      <aside class="doc-sidebar">
+        <p class="doc-sidebar-label">Manual</p>
+        {
+          groups.map((items, gi) => (
+            <div class="doc-nav-group">
+              <p class="doc-nav-group-title">
+                {gi === 0 ? "Start" : gi === 1 ? "Workflows" : "Reference"}
+              </p>
+              <nav class="doc-nav-list" aria-label={`${gi === 0 ? "Start" : gi === 1 ? "Workflows" : "Reference"} pages`}>
+                {items.map(({ label, slug }) => {
+                  const href = `${base}docs/${slug}/`;
+                  const active = currentSlug === slug;
+                  return (
+                    <a
+                      href={href}
+                      class:list={["docnav-link", active && "docnav-link--active"]}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {label}
+                    </a>
+                  );
+                })}
+              </nav>
+            </div>
+          ))
+        }
+      </aside>
+
+      <article class="doc-article prose">
+        <header class="doc-article-head">
+          <h1 class="doc-article-title">{title}</h1>
+          {
+            description && (
+              <p class="doc-article-lede">{description}</p>
+            )
+          }
+        </header>
+        <div class="doc-article-body">
+          <slot />
+        </div>
+      </article>
+    </div>
   </div>
 
-  <style is:global>
-    .prose h2 {
-      margin-top: 2rem;
-      font-size: 1.35rem;
+  <footer class="doc-footer">
+    <div class="wrap-wide doc-footer-inner">
+      <span>MIT · g · documentation</span>
+      <a href={github} rel="noopener noreferrer">Source</a>
+    </div>
+  </footer>
+
+  <style>
+    .docs-page {
+      padding: 1.25rem 0 4rem;
+    }
+
+    .docs-page--fill {
+      flex: 1;
+    }
+
+    .doc-breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .doc-breadcrumb a {
+      color: var(--muted);
+      text-decoration: none !important;
+    }
+
+    .doc-breadcrumb a:hover {
+      color: var(--accent);
+    }
+
+    .doc-breadcrumb-sep {
+      opacity: 0.45;
+      user-select: none;
+    }
+
+    .doc-breadcrumb-current {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .doc-usecases {
+      margin-bottom: 2rem;
+      padding: 1.35rem 1.5rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(
+        135deg,
+        rgba(0, 245, 255, 0.06),
+        rgba(192, 132, 252, 0.05),
+        rgba(251, 113, 133, 0.04)
+      );
+      box-shadow: var(--shadow-glow);
+      backdrop-filter: blur(12px);
+    }
+
+    .doc-usecases-head {
+      margin-bottom: 1.1rem;
+    }
+
+    .doc-usecases-title {
+      margin: 0 0 0.35rem;
+      font-size: 1.05rem;
+      font-weight: 600;
       letter-spacing: -0.02em;
     }
-    .prose h3 {
-      margin-top: 1.5rem;
-      font-size: 1.1rem;
+
+    .doc-usecases-title strong {
+      color: var(--accent);
+      font-weight: 700;
     }
-    .prose p,
-    .prose li {
-      color: #c4c6d4;
+
+    .doc-usecases-sub {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--muted);
     }
-    .prose table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
+
+    .doc-usecases-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
     }
-    .prose th,
-    .prose td {
+
+    @media (max-width: 1024px) {
+      .doc-usecases-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .doc-usecases-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .doc-usecase-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.45rem;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
-      padding: 0.5rem 0.65rem;
-      text-align: left;
+      background: rgba(4, 5, 12, 0.45);
+      text-decoration: none !important;
+      transition:
+        border-color 0.15s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
     }
-    .prose th {
-      background: var(--bg-elevated);
+
+    .doc-usecase-card:hover {
+      border-color: rgba(0, 245, 255, 0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
     }
+
+    .doc-usecase-title {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .doc-usecase-blurb {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
     .docs-shell {
       display: grid;
-      grid-template-columns: 240px 1fr;
-      gap: 2.5rem;
-      padding: 2.5rem 0 4rem;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 2rem;
+      align-items: start;
     }
-    @media (max-width: 860px) {
+
+    @media (max-width: 900px) {
       .docs-shell {
         grid-template-columns: 1fr;
       }
-      aside {
-        position: static !important;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 5.25rem;
+      padding: 1.15rem 1.1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-sidebar);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    @media (max-width: 900px) {
+      .doc-sidebar {
+        position: static;
       }
+    }
+
+    .doc-sidebar-label {
+      margin: 0 0 1rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .doc-nav-group {
+      margin-bottom: 1.15rem;
+    }
+
+    .doc-nav-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .doc-nav-group-title {
+      margin: 0 0 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7088;
+    }
+
+    .doc-nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .docnav-link {
+      display: block;
+      padding: 0.45rem 0.55rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #a8adbf;
+      text-decoration: none !important;
+      border: 1px solid transparent;
+      transition:
+        background 0.12s ease,
+        color 0.12s ease,
+        border-color 0.12s ease;
+    }
+
+    .docnav-link:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .docnav-link--active {
+      color: var(--text);
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent-2-dim));
+      border-color: rgba(0, 245, 255, 0.22);
+    }
+
+    .doc-article {
+      min-width: 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .doc-article-head {
+      padding: 1.75rem 2rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(0, 245, 255, 0.04), transparent);
+    }
+
+    .doc-article-title {
+      margin: 0;
+      font-size: clamp(1.65rem, 3vw, 2.1rem);
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    .doc-article-lede {
+      margin: 0.65rem 0 0;
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 52ch;
+    }
+
+    .doc-article-body {
+      padding: 1.75rem 2rem 2.25rem;
+    }
+
+  </style>
+
+  <style is:global>
+    .doc-article.prose h2 {
+      margin-top: 2.25rem;
+      font-size: 1.28rem;
+      letter-spacing: -0.025em;
+      color: #fff;
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-left: -0.1rem;
+    }
+
+    .doc-article.prose h2:first-child {
+      margin-top: 0;
+    }
+
+    .doc-article.prose h3 {
+      margin-top: 1.5rem;
+      font-size: 1.05rem;
+      color: #e6e8f2;
+    }
+
+    .doc-article.prose p,
+    .doc-article.prose li {
+      color: #b4b8ca;
+    }
+
+    .doc-article.prose a {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .doc-article.prose strong {
+      color: #e8eaf4;
+    }
+
+    .doc-article.prose table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .doc-article.prose th,
+    .doc-article.prose td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+    }
+
+    .doc-article.prose th {
+      background: var(--bg-elevated);
+      color: #d8dae8;
+    }
+
+    .doc-article.prose blockquote {
+      margin: 1.25rem 0;
+      padding: 0.65rem 1rem;
+      border-left: 3px solid var(--accent-2);
+      background: rgba(192, 132, 252, 0.06);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: #c2c6d6;
     }
   </style>
 </Layout>

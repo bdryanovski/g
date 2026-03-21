@@ -164,18 +164,20 @@ export default function TerminalDemo() {
           border-radius: 999px;
           transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
-        .td-tab:hover { color: #e8e9ef; border-color: rgba(110,231,255,0.35); }
+        .td-tab:hover { color: #f4f4f8; border-color: rgba(0,245,255,0.45); }
         .td-tab-on {
-          color: #07080d;
-          background: linear-gradient(120deg, #6ee7ff, #a78bfa);
+          color: #050508;
+          background: linear-gradient(115deg, #00f5ff, #c084fc, #fb7185);
+          background-size: 160% 160%;
           border-color: transparent;
           font-weight: 600;
+          box-shadow: 0 0 20px rgba(0,245,255,0.25);
         }
         .td-shell {
           border-radius: 14px;
-          border: 1px solid rgba(255,255,255,0.1);
-          background: linear-gradient(165deg, rgba(12,13,20,0.95), rgba(8,9,14,0.98));
-          box-shadow: 0 28px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+          border: 1px solid rgba(0,245,255,0.12);
+          background: linear-gradient(165deg, rgba(10,12,22,0.96), rgba(5,6,12,0.99));
+          box-shadow: 0 28px 90px rgba(0,0,0,0.55), 0 0 40px rgba(192,132,252,0.06), inset 0 1px 0 rgba(255,255,255,0.05);
           overflow: hidden;
         }
         .td-chrome {
@@ -193,7 +195,7 @@ export default function TerminalDemo() {
           text-transform: uppercase; color: #6b6d7a;
         }
         .td-body { padding: 1rem 1.1rem 1.25rem; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.82rem; line-height: 1.55; }
-        .td-prompt { color: #6ee7ff; margin-right: 0.25rem; }
+        .td-prompt { color: #00f5ff; margin-right: 0.25rem; text-shadow: 0 0 12px rgba(0,245,255,0.35); }
         .td-cmd { color: #e8e9ef; white-space: pre-wrap; word-break: break-all; }
         .td-out { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.08); }
         .td-pre {

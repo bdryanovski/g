@@ -1,7 +1,7 @@
 ---
 title: Installation
 description: Install g with Cargo from crates.io or from source, plus GitHub token setup.
-order: 1
+order: 2
 ---
 
 ## Requirements

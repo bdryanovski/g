@@ -1,7 +1,7 @@
 ---
 title: Configuration
 description: config.toml structure, aliases, plugins, and environment variables.
-order: 5
+order: 6
 ---
 
 Configuration is read from **`~/.config/g/config.toml`**. It is created with defaults on first use.
