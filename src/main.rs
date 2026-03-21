@@ -123,6 +123,8 @@ fn run() -> Result<()> {
             StackCommands::Delete { name, branches } => {
                 commands::stack::delete_stack(&name, branches)?
             }
+            StackCommands::Up => commands::stack::move_up()?,
+            StackCommands::Down => commands::stack::move_down()?,
         },
 
         // ─── Commit ───────────────────────────────────────────────────────────

@@ -981,3 +981,88 @@ pub fn delete_stack(name: &str, delete_branches: bool) -> Result<()> {
     }
     Ok(())
 }
+
+
+pub fn move_up () -> Result<()> {
+    let mut store = load_store()?;
+    let repo = repo_id()?;
+    let current_branch = gitcmd::current_branch()?;
+
+    let stacks = repo_stacks_mut(&mut store, &repo);
+    if stacks.is_empty() {
+        bail!("No stacks in this repository.");
+    }
+
+    let stack = stacks
+        .iter_mut()
+        .find(|s| s.branches.iter().any(|b| b.name == current_branch))
+        .with_context(|| format!("Branch '{}' is not part of any stack.", current_branch))?;
+
+    let pos = stack
+        .branches
+        .iter()
+        .position(|b| b.name == current_branch)
+        .with_context(|| format!("Branch '{}' not in stack", current_branch))?;
+
+    if pos == 0 {
+        println!();
+        ui::print_warning(
+            "This is the bottom branch of the stack — cannot move up.",
+        );
+        println!();
+        return Ok(());
+    }
+
+    stack.branches.swap(pos, pos - 1);
+    save_store(&store)?;
+
+    println!();
+    ui::print_success(&format!(
+        "Moved '{}' up in the stack order",
+        current_branch.green().bold()
+    ));
+    println!();
+    Ok(())
+}
+
+pub fn move_down () -> Result<()> {
+    let mut store = load_store()?;
+    let repo = repo_id()?;
+    let current_branch = gitcmd::current_branch()?;
+
+    let stacks = repo_stacks_mut(&mut store, &repo);
+    if stacks.is_empty() {
+        bail!("No stacks in this repository.");
+    }
+
+    let stack = stacks
+        .iter_mut()
+        .find(|s| s.branches.iter().any(|b| b.name == current_branch))
+        .with_context(|| format!("Branch '{}' is not part of any stack.", current_branch))?;
+
+    let pos = stack
+        .branches
+        .iter()
+        .position(|b| b.name == current_branch)
+        .with_context(|| format!("Branch '{}' not in stack", current_branch))?;
+
+    if pos == stack.branches.len() - 1 {
+        println!();
+        ui::print_warning(
+            "This is the top branch of the stack — cannot move down.",
+        );
+        println!();
+        return Ok(());
+    }
+
+    stack.branches.swap(pos, pos + 1);
+    save_store(&store)?;
+
+    println!();
+    ui::print_success(&format!(
+        "Moved '{}' down in the stack order",
+        current_branch.green().bold()
+    ));
+    println!();
+    Ok(())
+}

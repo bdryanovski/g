@@ -203,9 +203,11 @@ pub enum StackCommands {
         #[arg(long)]
         branches: bool,
     },
-}
 
-// ─── Commit ───────────────────────────────────────────────────────────────────
+    /// Move a stack up or down in the stack list (affects display order and PR ordering)
+    Up,
+    Down,
+}
 
 /// Arguments for the interactive and non-interactive commit flow.
 #[derive(Args)]
