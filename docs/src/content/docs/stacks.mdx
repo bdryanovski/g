@@ -21,6 +21,8 @@ import { DocFlowStack, DocFlowSync } from "../../components/react/InlineFlowDiag
 - **`g stack new`** records a named stack starting from your **current** branch (usually `main` after a pull).
 - **`g stack add`** creates a new branch **on top of** your current branch and appends it to the stack.
 - **`g stack sync`** rebases each branch onto the branch **below** in order.
+- **`g stack squash`** turns the **current** branch into **one** commit on top of its base (the branch below, or `[general].default_branch` on the bottom branch), then **rebases every branch above** in the stack.
+- **`g stack fold`** **merges** the current branch into its **parent** (branch below), preserves full history (fast-forward when possible), **drops** the folded branch ref, **rebases** branches above onto the new spine, and checks out the **parent** by default (`--keep` keeps the **current** branch name instead).
 - **`g stack pr`** creates or updates GitHub PRs with **bases** chained to match the stack.
 
 Local state (branch order, optional PR numbers) lives under `~/.config/g/` (e.g. `stacks.toml`), **per repository path**.
@@ -67,7 +69,9 @@ g stack pr --open --draft
 | `g stack details` | Commits / PR-oriented detail view |
 | `g stack switch <name>` | Jump to top branch of a stack by stack name |
 | `g stack sync` | Rebase each branch onto the one below |
-| `g stack absorb` | Merge current branch into below and collapse |
+| `g stack squash` | Squash current branch to one commit; restack above (`-m` / `--message`, `--no-interactive`) |
+| `g stack fold` | Merge current into parent, delete folded ref, restack above (`--keep`, `--no-interactive`) |
+| `g stack absorb` | Merge current into below with `--no-ff`; remove from stack (does not restack upstack) |
 | `g stack push` | Push all branches (`--force` with lease when needed) |
 | `g stack pr` | Create or update chained PRs via GitHub API |
 | `g stack remove <branch>` | Remove branch from stack metadata only |
@@ -92,12 +96,50 @@ g stack sync
 
 If a rebase stops on conflicts, resolve files, `git add`, then continue with whatever `g` / `git` prompts suggest (usually `git rebase --continue`).
 
+## Fold (merge layers without losing history)
+
+Use **`g stack fold`** when you want the **parent** branch to contain everything that was on the **current** branch, **keep all commits** (no squash), and move **upstack** branches onto the combined spine—similar to collapsing two layers of a stack while preserving the graph.
+
+- **Default**: merge **into the parent** and **delete** the current branch ref; stack metadata and checkout follow the **parent** name.
+- **`--keep`**: merge the **parent into the current branch**, delete the **parent** ref, and keep the **current** branch name on the combined history (stack root updates if the parent was the root).
+
+Unlike **`g stack absorb`**, fold uses a normal merge (fast-forward when Git allows, so logs can stay linear) and **rebases branches above** the folded branch. Absorb always creates a merge commit (`--no-ff`) and does not walk upstack.
+
+```bash
+g stack fold
+g stack fold --keep
+g --dry-run stack fold
+```
+
+Requires a **clean** working tree.
+
+## Squash (single-commit branches)
+
+If you prefer **one commit per stacked branch** before review or push, check out the branch you want to flatten and run:
+
+```bash
+g stack squash
+```
+
+That **soft-resets** to the base (branch below in the stack, or your configured default branch on the **bottom** branch), **commits once** with either `-m` / `--message` or the **oldest** commit subject from the squashed range, then **rebases each branch above** onto the new tip—same idea as the upward part of `g stack sync`.
+
+```bash
+g stack squash -m "feat(auth): models and migrations"
+g --dry-run stack squash
+```
+
+Requires a **clean** working tree. If the base is not an **ancestor** of your branch (history drifted), run `g stack sync` first.
+
+For a **feature branch that is not in a stack**, use **`g branch squash`** instead ([log & diff](./log-and-diff/)): it uses `merge-base` against your upstream or `origin/<default>` and does not walk stack metadata.
+
 ## Safety: dry run
 
 Preview mutating operations without changing the repo or calling write APIs:
 
 ```bash
 g --dry-run stack sync
+g --dry-run stack squash
+g --dry-run stack fold
 g --dry-run stack push
 ```
 

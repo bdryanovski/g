@@ -275,6 +275,9 @@ g compare --diff main release/1.4   # optional full patch
 | Read branch history fast | `g log`, `g compare --commits` |
 | Unify diff appearance | `[diff] tool` in config |
 | Fix stack after amending mid-stack | `g stack sync` |
+| One commit per stacked branch | `g stack squash` (then `g stack push --force` if already pushed) |
+| Merge a stack layer into its parent (keep history) | `g stack fold` (`--keep` to keep the child branch name) |
+| One commit on a plain feature branch | `g branch squash` (set upstream or pass `--base`) |
 | Preview destructive stuff | `g --dry-run …` |
 
 ---

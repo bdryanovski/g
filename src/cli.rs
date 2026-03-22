@@ -68,8 +68,8 @@ pub enum Commands {
     /// Enhanced git diff using your configured diff tool
     Diff(GitPassArgs),
 
-    /// Enhanced branch listing with metadata
-    Branch(GitPassArgs),
+    /// Enhanced branch listing, `git branch` passthrough, or `branch squash`
+    Branch(BranchArgs),
 
     /// Enhanced git show
     Show(GitPassArgs),
@@ -164,6 +164,26 @@ pub enum StackCommands {
 
     /// Merge the current branch into the one below it in the stack
     Absorb,
+
+    /// Squash the current branch to one commit on top of its base, then rebase branches above
+    Squash {
+        /// Commit message for the squashed commit (default: oldest commit subject in the range)
+        #[arg(short, long)]
+        message: Option<String>,
+        /// Abort if any conflict is found instead of pausing
+        #[arg(long)]
+        no_interactive: bool,
+    },
+
+    /// Merge the current branch into its parent (preserving history), drop the extra ref, restack above
+    Fold {
+        /// Keep the current branch name as the combined branch (remove the parent ref from the stack)
+        #[arg(long)]
+        keep: bool,
+        /// Abort if merge/rebase hits conflicts instead of pausing for resolution
+        #[arg(long)]
+        no_interactive: bool,
+    },
 
     /// Sync all stack branches (rebase each on the one below)
     Sync {
@@ -274,6 +294,31 @@ pub struct GitPassArgs {
     /// Extra arguments forwarded to git
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub args: Vec<String>,
+}
+
+// ─── Branch ───────────────────────────────────────────────────────────────────
+
+/// `g branch` with optional `squash` subcommand; other tokens go to list / `git branch` passthrough.
+#[derive(Args)]
+pub struct BranchArgs {
+    #[command(subcommand)]
+    pub cmd: Option<BranchSquashCmd>,
+    /// When no `squash` subcommand: forwarded to enhanced list or `git branch`
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    pub rest: Vec<String>,
+}
+
+#[derive(Subcommand)]
+pub enum BranchSquashCmd {
+    /// Collapse all commits on the current branch into one (from merge-base with base)
+    Squash {
+        /// Commit message (default: oldest subject in the squashed range)
+        #[arg(short, long)]
+        message: Option<String>,
+        /// Ref to merge against when finding the fork point (`git merge-base HEAD <base>`)
+        #[arg(short = 'b', long)]
+        base: Option<String>,
+    },
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────

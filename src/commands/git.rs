@@ -5,7 +5,8 @@
 //!   with the underlying `git` binary.
 //! - It provides high-level wrappers for common git tasks (getting the current
 //!   branch, finding the repo root) and complex "enhanced" versions of standard
-//!   commands like `log`, `status`, and `branch`.
+//!   commands like `log`, `status`, and `branch`, plus `branch squash` for
+//!   single-commit feature branches.
 //! - It also implements a "dry-run" system using atomic flags to preview
 //!   destructive actions without executing them.
 //!
@@ -162,6 +163,32 @@ pub fn git_output(args: &[&str]) -> Result<String> {
         let stderr = String::from_utf8_lossy(&out.stderr).trim().to_string();
         bail!("{}", stderr)
     }
+}
+
+/// True when `ancestor` is an ancestor of `descendant` (reachable from `descendant`).
+pub fn is_ancestor(ancestor: &str, descendant: &str) -> Result<bool> {
+    let status = Command::new(git_exe())
+        .args(["merge-base", "--is-ancestor", ancestor, descendant])
+        .status()
+        .with_context(|| {
+            format!(
+                "Failed to run git merge-base --is-ancestor {} {}",
+                ancestor, descendant
+            )
+        })?;
+    if status.success() {
+        Ok(true)
+    } else if status.code() == Some(1) {
+        Ok(false)
+    } else {
+        bail!("git merge-base --is-ancestor exited with {:?}", status);
+    }
+}
+
+/// Whether `git status --porcelain` is empty (no staged or unstaged changes).
+pub fn working_tree_clean() -> Result<bool> {
+    let s = git_output(&["status", "--porcelain"])?;
+    Ok(s.is_empty())
 }
 
 /// Run git and return stdout even on non-zero exit.
@@ -591,6 +618,122 @@ fn passthrough_with_subcommand(sub: &str, extra: &[String]) -> Result<()> {
 
 // ─── Enhanced Branch ─────────────────────────────────────────────────────────
 
+/// True if `refspec` resolves to an object (`git rev-parse -q --verify`).
+fn git_ref_exists(refspec: &str) -> bool {
+    Command::new(git_exe())
+        .args(["rev-parse", "-q", "--verify", refspec])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn resolve_branch_squash_mainline(user_base: Option<&str>) -> Result<String> {
+    if let Some(b) = user_base {
+        git_output(&["rev-parse", "--verify", b])
+            .with_context(|| format!("Base ref '{}' is not a valid object", b))?;
+        return Ok(b.to_string());
+    }
+    if git_ref_exists("@{upstream}") {
+        return Ok("@{upstream}".to_string());
+    }
+    let db = default_branch();
+    let origin_db = format!("origin/{}", db);
+    if git_ref_exists(&origin_db) {
+        return Ok(origin_db);
+    }
+    if git_ref_exists(&db) {
+        return Ok(db);
+    }
+    bail!(
+        "Could not determine squash base. Pass --base <ref>, set upstream with \
+         `git branch -u <remote>/<branch>`, or ensure `{}` or `{}` exists.",
+        origin_db,
+        db
+    );
+}
+
+/// Collapse all commits on the current branch into one commit (parent = merge-base with base).
+pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
+    if !working_tree_clean()? {
+        bail!("Working tree is not clean. Commit or stash changes before squashing.");
+    }
+    let branch = current_branch()?;
+    if branch == "HEAD" {
+        bail!("Detached HEAD; checkout a branch first.");
+    }
+    let mainline = resolve_branch_squash_mainline(base)?;
+    let fork = git_output(&["merge-base", "HEAD", &mainline]).with_context(|| {
+        format!(
+            "Could not compute merge-base with '{}'. Try a different --base.",
+            mainline
+        )
+    })?;
+
+    let range = format!("{}..HEAD", fork);
+    let count: u32 = git_output(&["rev-list", "--count", &range])?
+        .parse()
+        .unwrap_or(0);
+    if count == 0 {
+        bail!(
+            "No commits to squash on this branch relative to merge-base with '{}'.",
+            mainline
+        );
+    }
+
+    let commit_msg = if let Some(m) = message {
+        m.to_string()
+    } else {
+        let oldest = git_output(&["log", &range, "--reverse", "--format=%s", "-1"])?;
+        if oldest.is_empty() {
+            format!("Squash branch `{}`", branch)
+        } else {
+            oldest
+        }
+    };
+
+    let fork_short = git_output(&["rev-parse", "--short", &fork]).unwrap_or(fork.clone());
+
+    println!();
+    println!(
+        "  {} {}",
+        "Squashing branch:".bold().white(),
+        branch.green().bold()
+    );
+    println!(
+        "  {} {} ({})",
+        "Merge-base with".bright_black(),
+        mainline.cyan(),
+        fork_short.cyan()
+    );
+    println!();
+
+    git_mutate(
+        &["reset", "--soft", &fork],
+        &format!(
+            "Soft-reset to merge-base with '{}' so all branch changes are staged once",
+            mainline
+        ),
+    )?;
+
+    git_mutate(
+        &["commit", "-m", &commit_msg],
+        "Create a single commit with the squashed changes",
+    )
+    .context("Failed to commit squashed changes")?;
+
+    if !is_dry_run() {
+        println!();
+        ui::print_success(&format!(
+            "Squashed {} into one commit",
+            branch.green().bold()
+        ));
+        println!();
+    }
+    Ok(())
+}
+
 /// Branch listing with metadata and color, or passthrough for mutations.
 pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     // If extra args look like modifications (create/delete), just pass through
@@ -602,6 +745,8 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             || a == "--move"
             || a == "--copy"
             || a == "-c"
+            || a == "-b"
+            || a == "--create"
     });
 
     if mutating || !extra_args.is_empty() && !extra_args[0].starts_with('-') {
