@@ -26,7 +26,7 @@ use anyhow::Result;
 use clap::{error::ErrorKind, Parser};
 use colored::Colorize;
 
-use cli::{Cli, Commands, StackCommands, WorkspaceCommands};
+use cli::{BranchSquashCmd, Cli, Commands, StackCommands, WorkspaceCommands};
 
 /// Entry point that renders a friendly error chain and exits non-zero on failure.
 fn main() {
@@ -116,6 +116,14 @@ fn run() -> Result<()> {
             StackCommands::Details => commands::stack::details()?,
             StackCommands::Switch { name } => commands::stack::switch_stack(&name)?,
             StackCommands::Absorb => commands::stack::absorb()?,
+            StackCommands::Squash {
+                message,
+                no_interactive,
+            } => commands::stack::squash(message.as_deref(), no_interactive)?,
+            StackCommands::Fold {
+                keep,
+                no_interactive,
+            } => commands::stack::fold(keep, no_interactive)?,
             StackCommands::Sync { no_interactive } => commands::stack::sync(no_interactive)?,
             StackCommands::Push { force } => commands::stack::push(force)?,
             StackCommands::Pr { open, draft } => commands::stack::create_prs(open, draft)?,
@@ -137,7 +145,13 @@ fn run() -> Result<()> {
         Commands::Log(args) => commands::git::enhanced_log(&args.args)?,
         Commands::Status(args) => commands::git::enhanced_status(&args.args)?,
         Commands::Diff(args) => commands::git::enhanced_diff(&args.args)?,
-        Commands::Branch(args) => commands::git::enhanced_branch(&args.args)?,
+        Commands::Branch(args) => {
+            if let Some(BranchSquashCmd::Squash { message, base }) = args.cmd {
+                commands::git::branch_squash(message.as_deref(), base.as_deref())?;
+            } else {
+                commands::git::enhanced_branch(&args.rest)?;
+            }
+        },
         Commands::Show(args) => commands::git::enhanced_show(&args.args)?,
 
         // ─── Config ───────────────────────────────────────────────────────────

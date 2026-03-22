@@ -4,6 +4,8 @@
 //! - This module implements the "Stacked Pull Requests" workflow. It tracks
 //!   ordered lists of branches (stacks) in a local `stacks.toml` file.
 //! - Key operations include `new` (start a stack), `add` (append a branch),
+//!   `squash` (collapse the current branch to one commit and restack above),
+//!   `fold` (merge the current branch into its parent and restack above),
 //!   `sync` (rebase the whole chain), and `pr` (create/update chained PRs
 //!   using the GitHub API).
 //! - It ensures each PR in a stack targets the branch immediately below it,
@@ -616,6 +618,439 @@ pub fn absorb() -> Result<()> {
                 absorbed_branch, stack_name
             ),
         );
+    }
+    Ok(())
+}
+
+/// Rebase `stack.branches[i]` onto `stack.branches[i - 1]` for `i in start..stack.branches.len()`.
+/// Returns `Ok(false)` if stopped for an interactive rebase conflict.
+fn restack_branches_from(stack: &Stack, start: usize, no_interactive: bool) -> Result<bool> {
+    if start == 0 || stack.branches.len() <= start {
+        return Ok(true);
+    }
+    for i in start..stack.branches.len() {
+        let base = stack.branches[i - 1].name.clone();
+        let branch = stack.branches[i].name.clone();
+
+        gitcmd::git_mutate(
+            &["checkout", &branch],
+            &format!("Switch to branch '{}' to restack after fold", branch),
+        )
+        .with_context(|| format!("Failed to checkout '{}'", branch))?;
+
+        let result = gitcmd::git_mutate(
+            &["rebase", &base],
+            &format!(
+                "Rebase '{}' onto '{}' so upstack branches follow the folded spine",
+                branch, base
+            ),
+        );
+
+        match result {
+            Ok(_) => {
+                if !gitcmd::is_dry_run() {
+                    ui::print_success(&format!(
+                        "{} rebased onto {}",
+                        branch.green().bold(),
+                        base.cyan()
+                    ));
+                }
+            }
+            Err(e) => {
+                if no_interactive {
+                    let _ = gitcmd::git_output(&["rebase", "--abort"]);
+                    bail!(
+                        "Conflict rebasing '{}' onto '{}': {}\nRun without --no-interactive to resolve manually.",
+                        branch, base, e
+                    );
+                } else {
+                    ui::print_warning(&format!(
+                        "Conflict in {}: resolve manually, then run `g stack sync` again",
+                        branch.yellow()
+                    ));
+                    println!();
+                    println!("  {} After resolving conflicts:", "→".cyan());
+                    println!("    {} git add <files>", "1.".bright_black());
+                    println!("    {} git rebase --continue", "2.".bright_black());
+                    println!(
+                        "    {} g stack sync  (to straighten any remaining branches)",
+                        "3.".bright_black()
+                    );
+                    println!();
+                    return Ok(false);
+                }
+            }
+        }
+    }
+    Ok(true)
+}
+
+pub fn fold(keep: bool, no_interactive: bool) -> Result<()> {
+    let mut store = load_store()?;
+    let repo = repo_id()?;
+    let current = gitcmd::current_branch()?;
+
+    let (stack_name, stack_snapshot, pos, parent, child) = {
+        let stacks = repo_stacks(&store, &repo)
+            .with_context(|| "No stacks in this repository.".to_string())?;
+        let stack = find_stack_for_branch(stacks, &current)
+            .with_context(|| format!("Branch '{}' is not part of any stack.", current))?;
+        let pos = stack
+            .branches
+            .iter()
+            .position(|b| b.name == current)
+            .unwrap();
+        if pos == 0 {
+            bail!(
+                "Cannot fold: '{}' is the bottom branch of the stack (no parent below it).",
+                current
+            );
+        }
+        let parent = stack.branches[pos - 1].name.clone();
+        let child = stack.branches[pos].name.clone();
+        (stack.name.clone(), stack.clone(), pos, parent, child)
+    };
+
+    if !gitcmd::working_tree_clean()? {
+        bail!("Working tree is not clean. Commit or stash changes before folding.");
+    }
+
+    let (result_branch, restack_start, new_branches, new_root) = if !keep {
+        let mut nb = stack_snapshot.branches.clone();
+        nb.remove(pos);
+        (
+            parent.clone(),
+            pos,
+            nb,
+            stack_snapshot.root.clone(),
+        )
+    } else {
+        let mut nb = stack_snapshot.branches.clone();
+        nb.remove(pos - 1);
+        let nr = if stack_snapshot.root == parent {
+            child.clone()
+        } else {
+            stack_snapshot.root.clone()
+        };
+        (child.clone(), pos, nb, nr)
+    };
+
+    let restack_stack = Stack {
+        name: stack_snapshot.name.clone(),
+        root: new_root.clone(),
+        branches: new_branches.clone(),
+        created_at: stack_snapshot.created_at,
+        updated_at: stack_snapshot.updated_at,
+    };
+
+    let saved_branch = current.clone();
+
+    println!();
+    println!(
+        "  {} {} {} {}",
+        "Folding:".bold().white(),
+        child.green().bold(),
+        "→".bright_black(),
+        parent.cyan().bold()
+    );
+    if keep {
+        println!(
+            "  {} {}",
+            "Keep:".bright_black(),
+            "combined branch will keep the current branch name (--keep)".cyan()
+        );
+    }
+    println!();
+
+    if !keep {
+        gitcmd::git_mutate(
+            &["checkout", &parent],
+            &format!("Switch to parent branch '{}' to merge in '{}'", parent, child),
+        )
+        .with_context(|| format!("Failed to checkout '{}'", parent))?;
+
+        let merge_result = gitcmd::git_mutate(
+            &["merge", &child],
+            &format!(
+                "Merge '{}' into '{}' (fast-forward when possible; preserves full history)",
+                child, parent
+            ),
+        );
+        if let Err(e) = merge_result {
+            if !gitcmd::is_dry_run() {
+                let _ = gitcmd::git_output(&["merge", "--abort"]);
+                let _ = gitcmd::git_output(&["checkout", &saved_branch]);
+            }
+            bail!("Merge failed: {}", e);
+        }
+
+        gitcmd::git_mutate(
+            &["branch", "-d", &child],
+            &format!(
+                "Delete branch '{}' after it is merged into '{}'",
+                child, parent
+            ),
+        )?;
+    } else {
+        gitcmd::git_mutate(
+            &["checkout", &child],
+            &format!(
+                "Switch to '{}' to merge parent '{}' and keep this branch name",
+                child, parent
+            ),
+        )
+        .with_context(|| format!("Failed to checkout '{}'", child))?;
+
+        let merge_result = gitcmd::git_mutate(
+            &["merge", &parent],
+            &format!(
+                "Merge '{}' into '{}' so both histories are preserved on the kept branch",
+                parent, child
+            ),
+        );
+        if let Err(e) = merge_result {
+            if !gitcmd::is_dry_run() {
+                let _ = gitcmd::git_output(&["merge", "--abort"]);
+                let _ = gitcmd::git_output(&["checkout", &saved_branch]);
+            }
+            bail!("Merge failed: {}", e);
+        }
+
+        gitcmd::git_mutate(
+            &["branch", "-d", &parent],
+            &format!(
+                "Delete parent branch '{}' after it is merged into '{}'",
+                parent, child
+            ),
+        )?;
+    }
+
+    if !gitcmd::is_dry_run() {
+        let stacks = repo_stacks_mut(&mut store, &repo);
+        let st = stacks.iter_mut().find(|s| s.name == stack_name).unwrap();
+        st.branches = new_branches.clone();
+        st.root = new_root.clone();
+        st.updated_at = Utc::now();
+        save_store(&store)?;
+    } else {
+        gitcmd::dry_run_action(
+            "Update stack metadata",
+            &format!(
+                "Rewrite stack '{}' branch list and root after fold",
+                stack_name
+            ),
+        );
+    }
+
+    let restack_done = restack_branches_from(&restack_stack, restack_start, no_interactive)?;
+
+    if !restack_done && !gitcmd::is_dry_run() {
+        println!();
+        ui::print_warning(
+            "Fold merge finished; resolve the rebase conflict, then `g stack sync` if needed.",
+        );
+        println!();
+        return Ok(());
+    }
+
+    gitcmd::git_mutate(
+        &["checkout", &result_branch],
+        &format!("Check out combined branch '{}'", result_branch),
+    )?;
+
+    if !gitcmd::is_dry_run() {
+        println!();
+        ui::print_success(&format!(
+            "Folded {} into {}",
+            child.green().bold(),
+            result_branch.cyan().bold()
+        ));
+        println!();
+    }
+
+    Ok(())
+}
+
+pub fn squash(message: Option<&str>, no_interactive: bool) -> Result<()> {
+    let store = load_store()?;
+    let cfg = config::load().unwrap_or_default();
+    let repo = repo_id()?;
+    let branch = gitcmd::current_branch()?;
+
+    let (stack, pos) = {
+        let stacks = repo_stacks(&store, &repo)
+            .with_context(|| "No stacks in this repository.".to_string())?;
+        let stack = find_stack_for_branch(stacks, &branch)
+            .with_context(|| format!("Branch '{}' is not part of any stack.", branch))?;
+        let pos = stack
+            .branches
+            .iter()
+            .position(|b| b.name == branch)
+            .unwrap();
+        (stack.clone(), pos)
+    };
+
+    let base_ref = if pos > 0 {
+        stack.branches[pos - 1].name.clone()
+    } else {
+        cfg.general.default_branch.clone()
+    };
+
+    if !gitcmd::working_tree_clean()? {
+        bail!("Working tree is not clean. Commit or stash changes before squashing.");
+    }
+
+    gitcmd::git_output(&["rev-parse", "--verify", &base_ref]).with_context(|| {
+        format!(
+            "Base branch '{}' does not exist locally. For the bottom stack branch, set [general].default_branch in config or create the branch.",
+            base_ref
+        )
+    })?;
+
+    if !gitcmd::is_ancestor(&base_ref, &branch)? {
+        bail!(
+            "'{}' is not an ancestor of '{}'. Run `g stack sync` first, then try again.",
+            base_ref,
+            branch
+        );
+    }
+
+    let range = format!("{}..{}", base_ref, branch);
+    let count_str = gitcmd::git_output(&["rev-list", "--count", &range])?;
+    let count: u32 = count_str.parse().unwrap_or(0);
+    if count == 0 {
+        bail!(
+            "There are no commits to squash on '{}' relative to '{}'.",
+            branch,
+            base_ref
+        );
+    }
+
+    let commit_msg = if let Some(m) = message {
+        m.to_string()
+    } else {
+        let oldest = gitcmd::git_output(&[
+            "log",
+            &range,
+            "--reverse",
+            "--format=%s",
+            "-1",
+        ])?;
+        if oldest.is_empty() {
+            format!("Squash branch `{}`", branch)
+        } else {
+            oldest
+        }
+    };
+
+    println!();
+    println!(
+        "  {} {} → {}",
+        "Squashing branch:".bold().white(),
+        branch.green().bold(),
+        "one commit".cyan()
+    );
+    println!(
+        "  {} {}",
+        "Base:".bright_black(),
+        base_ref.cyan()
+    );
+    println!();
+
+    let saved_branch = branch.clone();
+
+    gitcmd::git_mutate(
+        &["checkout", &branch],
+        &format!("Switch to branch '{}' to squash commits", branch),
+    )
+    .with_context(|| format!("Failed to checkout '{}'", branch))?;
+
+    gitcmd::git_mutate(
+        &["reset", "--soft", &base_ref],
+        &format!(
+            "Soft-reset '{}' to '{}' (keep changes staged as one squashed commit)",
+            branch, base_ref
+        ),
+    )
+    .with_context(|| format!("Failed to reset '{}' to '{}'", branch, base_ref))?;
+
+    gitcmd::git_mutate(
+        &["commit", "-m", &commit_msg],
+        "Create a single commit with the squashed changes",
+    )
+    .with_context(|| "Failed to commit squashed changes".to_string())?;
+
+    for j in (pos + 1)..stack.branches.len() {
+        let base = stack.branches[j - 1].name.clone();
+        let upper = stack.branches[j].name.clone();
+
+        gitcmd::git_mutate(
+            &["checkout", &upper],
+            &format!("Switch to branch '{}' to restack after squash", upper),
+        )
+        .with_context(|| format!("Failed to checkout '{}'", upper))?;
+
+        let result = gitcmd::git_mutate(
+            &["rebase", &base],
+            &format!(
+                "Rebase '{}' onto '{}' after squash below",
+                upper, base
+            ),
+        );
+
+        match result {
+            Ok(_) => {
+                if !gitcmd::is_dry_run() {
+                    ui::print_success(&format!(
+                        "{} rebased onto {}",
+                        upper.green().bold(),
+                        base.cyan()
+                    ));
+                }
+            }
+            Err(e) => {
+                if no_interactive {
+                    let _ = gitcmd::git_output(&["rebase", "--abort"]);
+                    bail!(
+                        "Conflict rebasing '{}' onto '{}': {}\nRun without --no-interactive to resolve manually.",
+                        upper, base, e
+                    );
+                } else {
+                    ui::print_warning(&format!(
+                        "Conflict in {}: resolve manually, then run `g stack sync` again",
+                        upper.yellow()
+                    ));
+                    println!();
+                    println!("  {} After resolving conflicts:", "→".cyan());
+                    println!("    {} git add <files>", "1.".bright_black());
+                    println!("    {} git rebase --continue", "2.".bright_black());
+                    println!(
+                        "    {} g stack sync  (to straighten any remaining branches)",
+                        "3.".bright_black()
+                    );
+                    println!();
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    gitcmd::git_mutate(
+        &["checkout", &saved_branch],
+        &format!("Return to original branch '{}'", saved_branch),
+    )?;
+
+    if !gitcmd::is_dry_run() {
+        println!();
+        ui::print_success(&format!(
+            "Squashed {} onto {}",
+            branch.green().bold(),
+            base_ref.cyan()
+        ));
+        if pos + 1 < stack.branches.len() {
+            ui::print_success("Restacked branches above.");
+        }
+        println!();
     }
     Ok(())
 }

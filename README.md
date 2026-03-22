@@ -98,6 +98,8 @@ Rich branch table with hash, last commit subject, author, date, and upstream tra
 g branch               # list all branches
 g branch -b new-feat   # create (passes through to git)
 g branch -d old-feat   # delete (passes through)
+g branch squash        # one commit from merge-base with upstream / origin/<default> / <default>
+g branch squash -m "…" # same with explicit message; use -b / --base to pick the comparison ref
 ```
 
 ### `g show`
@@ -187,7 +189,8 @@ Stacked PRs let you break large changes into a series of small, reviewable PRs t
 5. **Commit more changes**: `g commit`
 6. **View the stack**: `g stack view` or `g stack details`
 7. **Sync changes**: If you update a middle branch, run `g stack sync` to propagate changes upwards.
-8. **Push and PR**: `g stack push` then `g stack pr --open`.
+8. **Squash (optional)**: To keep each branch as a single commit, run `g stack squash` on that branch (see Stack Commands).
+9. **Push and PR**: `g stack push` then `g stack pr --open`.
 
 ### Stack Commands
 
@@ -199,7 +202,11 @@ g stack view              # tree view of current stack
 g stack details           # detailed view with commits and PR status
 g stack switch <name>     # switch to the top branch of a stack
 g stack sync              # rebase each branch onto the one below
-g stack absorb            # merge current branch into the one below and delete it
+g stack squash            # collapse current branch to one commit; restack branches above
+g stack squash -m "msg"   # same, with an explicit commit message
+g stack fold              # merge current branch into parent; delete folded ref; restack above
+g stack fold --keep       # same, but keep current branch name (drop parent ref from stack)
+g stack absorb            # merge current branch into the one below (--no-ff); no upstack restack
 g stack push              # push all branches in the stack
 g stack push --force      # force-push with lease
 g stack pr                # create/update GitHub PRs (chaining them)

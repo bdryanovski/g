@@ -51,6 +51,7 @@ Configuration lives in `~/.config/g/config.toml`. Workspace metadata and stack d
 g -C /path/to/repo status     # run as if started in that directory
 g -c ui.log_limit=50 log      # one-off config override
 g --dry-run stack sync        # print planned steps without executing
+g --dry-run stack squash      # same for squash + restack
 ```
 
 ## Design philosophy

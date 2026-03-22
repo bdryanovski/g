@@ -108,6 +108,7 @@ g --dry-run stack sync
 |------|-----------|----------|
 | Second checkout | `git worktree add ../path branch` | `g workspace create …` |
 | Stacked branches | You remember order; manual `git rebase` | `g stack sync` |
+| One commit per branch | `git reset --soft` + `commit` + manual rebases above | `g stack squash` |
 | PR base branch | Set in GitHub UI / API | `g stack pr` |
 
 ## See also

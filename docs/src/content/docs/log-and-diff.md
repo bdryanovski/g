@@ -107,7 +107,11 @@ Table of branches with last commit, author, date, upstream.
 ```bash
 g branch
 g branch -vv
+g branch squash              # compact all commits on the branch (merge-base vs upstream / mainline)
+g branch squash -m "feat: …" --base origin/main
 ```
+
+`g branch squash` is for a **single** branch and does not restack a registered stack; for that, use `g stack squash` on the [Stacks](./stacks/) page.
 
 ### `g compare`
 
