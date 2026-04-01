@@ -952,27 +952,71 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
     let repo_root = gitcmd::repo_root()?;
     let src_root = PathBuf::from(&repo_root);
 
-    for idx in selected {
-        let rel = &candidates[idx];
+    // Count total files across all selected items so the progress bar has an
+    // accurate total before any copying starts.
+    let total_files: u64 = selected
+        .iter()
+        .map(|&idx| count_files(&src_root.join(&candidates[idx])))
+        .sum();
+
+    let pb = ui::progress_bar(
+        total_files.max(1),
+        &format!(
+            "Copying {} item{}…",
+            selected.len(),
+            if selected.len() == 1 { "" } else { "s" }
+        ),
+    );
+
+    for idx in &selected {
+        let rel = &candidates[*idx];
         let src = src_root.join(rel);
         let dst = dest.join(rel);
-        copy_path(&src, &dst).with_context(|| {
+        copy_path(&src, &dst, &pb).with_context(|| {
             format!("Failed to copy '{}' to '{}'", src.display(), dst.display())
         })?;
     }
 
+    pb.finish_and_clear();
+    ui::print_success(&format!(
+        "Copied {} item{}",
+        selected.len(),
+        if selected.len() == 1 { "" } else { "s" },
+    ));
+
     Ok(())
 }
 
-/// Copy `src` to `dst`, handling both files and directories.
+/// Recursively count the number of regular files under `path`.
 ///
-/// For a regular file, this is a plain `fs::copy`.  For a directory, the
-/// entire tree is copied recursively, preserving relative structure.
+/// Returns `1` for a regular file, `0` for anything that cannot be read, and
+/// the recursive sum for a directory.
+fn count_files(path: &Path) -> u64 {
+    if path.is_file() {
+        return 1;
+    }
+    if path.is_dir() {
+        return fs::read_dir(path)
+            .map(|entries| {
+                entries
+                    .filter_map(|e| e.ok())
+                    .map(|e| count_files(&e.path()))
+                    .sum()
+            })
+            .unwrap_or(0);
+    }
+    0
+}
+
+/// Copy `src` to `dst`, handling both regular files and directories.
+///
+/// Increments `pb` by one for each regular file copied and updates the
+/// progress message with the file's name.
 ///
 /// # Errors
 ///
-/// Returns an error if any read, create, or write operation fails.
-fn copy_path(src: &Path, dst: &Path) -> Result<()> {
+/// Returns an error if any filesystem operation fails.
+fn copy_path(src: &Path, dst: &Path, pb: &indicatif::ProgressBar) -> Result<()> {
     if src.is_dir() {
         fs::create_dir_all(dst)
             .with_context(|| format!("Failed to create directory '{}'", dst.display()))?;
@@ -981,15 +1025,21 @@ fn copy_path(src: &Path, dst: &Path) -> Result<()> {
         {
             let entry =
                 entry.with_context(|| format!("Failed to read entry in '{}'", src.display()))?;
-            let file_name = entry.file_name();
-            copy_path(&entry.path(), &dst.join(&file_name))?;
+            copy_path(&entry.path(), &dst.join(entry.file_name()), pb)?;
         }
     } else {
         if let Some(parent) = dst.parent() {
             fs::create_dir_all(parent)
                 .with_context(|| format!("Failed to create directory '{}'", parent.display()))?;
         }
+        // Show the file name (not the full path) to keep the bar readable.
+        let label = src
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        pb.set_message(label);
         fs::copy(src, dst).with_context(|| format!("Failed to copy file '{}'", src.display()))?;
+        pb.inc(1);
     }
     Ok(())
 }
