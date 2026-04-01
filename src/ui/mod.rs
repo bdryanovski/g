@@ -1,52 +1,105 @@
-//! Terminal UI helpers (colors, tables, formatting).
+//! Terminal UI helpers — colors, tables, spinners, and git-specific formatting.
 //!
-//! Tutorial overview:
-//! - This module centralizes all presentation logic, ensuring a consistent
-//!   look and feel across all commands.
-//! - It provides high-level "widgets" like a flexible Table renderer,
-//!   spinners for long-running operations, and specialized color formatters
-//!   for git-specific data (hashes, branches, conventional commit subjects).
-//! - It abstracts away the complexity of ANSI color codes and Unicode icons,
-//!   providing a clean API for the rest of the application.
+//! ## Tutorial overview
 //!
-//! Rust concepts used here:
-//! - Traits like `std::fmt::Write` for efficient string building.
-//! - `match` expressions for mapping status codes and commit types to icons/colors.
-//! - `indicatif` crate for progress bars and spinners.
-//! - `console` crate for measuring visible text width (ignoring ANSI codes).
-//! - `struct` with `impl` blocks for stateful UI components like `Table`.
+//! This module centralises all presentation logic so every command has a
+//! consistent look and feel.  It provides:
+//!
+//! - High-level "message" helpers (`print_info`, `print_success`, …).
+//! - A flexible [`Table`] renderer that accounts for ANSI color codes when
+//!   calculating column widths.
+//! - A [`CommitEntry`] value type for rendering individual git log entries.
+//! - Spinners and progress bars via the `indicatif` crate.
+//! - Colour helpers for git-specific data: hashes, branch names, commit
+//!   subjects following the Conventional Commits convention, etc.
+//!
+//! ## Rust concepts used here
+//!
+//! - Traits like `std::fmt::Write` for efficient string building without heap
+//!   allocation on every `format!`.
+//! - `match` expressions for mapping status codes and commit types to icons.
+//! - `indicatif` for progress bars and spinners.
+//! - `console` for measuring *visible* text width (ignoring ANSI escape codes).
+//! - `struct` with `impl` blocks for stateful UI components like [`Table`].
 
 use colored::Colorize;
 use std::fmt::Write as FmtWrite;
 
-// ─── Theme Colors ─────────────────────────────────────────────────────────────
+// ─── Status-message helpers ──────────────────────────────────────────────────
 
-/// Print an info message with a cyan bullet
-/// Print an info message with a cyan bullet.
+/// Print an info message with a cyan bullet to stdout.
 pub fn print_info(msg: &str) {
     println!("  {} {}", "ℹ".cyan(), msg);
 }
 
-/// Print a success message with a green checkmark
-/// Print a success message with a green checkmark.
+/// Print a success message with a bold green checkmark to stdout.
 pub fn print_success(msg: &str) {
     println!("  {} {}", "✓".green().bold(), msg);
 }
 
-/// Print a warning message with a yellow warning sign
-/// Print a warning message with a yellow warning sign.
+/// Print a warning message with a bold yellow warning sign to stderr.
 pub fn print_warning(msg: &str) {
     eprintln!("  {} {}", "⚠".yellow().bold(), msg);
 }
 
-/// Print an error message with a red X
-/// Print an error message with a red X.
+/// Print an error message with a bold red × to stderr.
 pub fn print_error(msg: &str) {
     eprintln!("  {} {}", "✗".red().bold(), msg);
 }
 
-/// Print a section header in a box
-/// Print a section header in a box.
+/// Print a dim `tip:` hint line to stdout.
+///
+/// This is a companion to [`print_info`] for short, actionable hints shown
+/// after a command completes.  Centralising it here ensures the `"tip:"`
+/// prefix is always styled the same way across all commands.
+///
+/// # Example
+///
+/// ```text
+/// print_tip("g commit  — commit staged changes");
+/// // →   tip:  g commit  — commit staged changes
+/// ```
+pub fn print_tip(msg: &str) {
+    println!("  {}  {}", "tip:".bright_black(), msg.bright_black());
+}
+
+/// Return the Unicode marker (`◉` / `◯`) for a branch row, coloured by state.
+///
+/// `◉` (filled) in bold green marks the currently checked-out branch;
+/// `◯` (empty) in dim grey marks any other branch.
+///
+/// Keeping this in one place means every tree view (stack list, workspace list,
+/// branch list) uses the same symbols consistently.
+pub fn branch_marker(is_current: bool) -> String {
+    if is_current {
+        "◉".green().bold().to_string()
+    } else {
+        "◯".bright_black().to_string()
+    }
+}
+
+/// Return `name` coloured for its role in a branch-tree row.
+///
+/// The current branch is bold green; all others are plain white.
+pub fn branch_name_colored(name: &str, is_current: bool) -> String {
+    if is_current {
+        name.green().bold().to_string()
+    } else {
+        name.white().to_string()
+    }
+}
+
+/// Print the standard "verb stack: <name>" banner used by `push`, `sync`, and `pr`.
+///
+/// All three stack operations printed the same three-line block inline.  This
+/// helper gives it a single source of truth.
+pub fn print_stack_banner(verb: &str, stack_name: &str) {
+    println!();
+    println!("  {} {}", verb.bold().white(), stack_name.cyan().bold());
+    println!();
+}
+
+/// Print a section header inside a Unicode box to stdout.
 #[allow(dead_code)]
 pub fn print_header(title: &str) {
     let width = title.len() + 4;
@@ -61,8 +114,14 @@ pub fn print_header(title: &str) {
     println!("{}", format!("╰{}╯", line).bright_black());
 }
 
-/// Print a section title (lighter than header)
-/// Print a section title (lighter than header).
+/// Print a section title with an optional item count in parentheses.
+///
+/// # Examples
+///
+/// ```text
+/// print_section("Staged Changes", Some(3));
+/// // →   Staged Changes (3)
+/// ```
 pub fn print_section(title: &str, count: Option<usize>) {
     if let Some(n) = count {
         println!(
@@ -75,21 +134,24 @@ pub fn print_section(title: &str, count: Option<usize>) {
     }
 }
 
-/// Divider line
-/// Divider line.
+/// Print a horizontal divider line (60 em-dashes) in dim colour.
 #[allow(dead_code)]
 pub fn print_divider() {
     println!("  {}", "─".repeat(60).bright_black());
 }
 
-// ─── Git Color Helpers ────────────────────────────────────────────────────────
+// ─── Git colour helpers ───────────────────────────────────────────────────────
 
-/// Color a git hash.
+/// Colour a git commit hash (short or long) with yellow+dimmed styling.
 pub fn color_hash(hash: &str) -> String {
     hash.yellow().dimmed().to_string()
 }
 
-/// Color a branch name based on its type (local/remote/HEAD).
+/// Colour a branch name based on its type.
+///
+/// - Remote branches (`origin/…`, `upstream/…`) → bold red.
+/// - `HEAD` → bold cyan.
+/// - Local branches → bold green.
 pub fn color_branch(name: &str) -> String {
     if name.starts_with("origin/") || name.starts_with("upstream/") {
         name.red().bold().to_string()
@@ -100,7 +162,7 @@ pub fn color_branch(name: &str) -> String {
     }
 }
 
-/// Color a ref decoration (tags, remotes, HEAD, etc.).
+/// Colour a ref decoration string (tags, remotes, HEAD pointers, etc.).
 pub fn color_ref(r: &str) -> String {
     if r.contains("HEAD") {
         r.cyan().bold().to_string()
@@ -113,17 +175,32 @@ pub fn color_ref(r: &str) -> String {
     }
 }
 
-/// Color an author name.
+/// Colour an author name in cyan.
 pub fn color_author(name: &str) -> String {
     name.cyan().to_string()
 }
 
-/// Color a date string.
+/// Colour a date string in dim grey.
 pub fn color_date(date: &str) -> String {
     date.bright_black().to_string()
 }
 
-/// Color a commit subject, highlighting Conventional Commit prefixes.
+/// Colour a commit subject, highlighting Conventional Commit prefixes.
+///
+/// If the subject contains a `:`, the part before the colon is treated as the
+/// commit type and coloured according to the table below:
+///
+/// | Type prefix | Colour |
+/// |-------------|--------|
+/// | `feat`      | bold green |
+/// | `fix`       | bold red |
+/// | `docs`      | bold blue |
+/// | `refactor`  | bold magenta |
+/// | `perf`      | bold yellow |
+/// | `test`      | bold cyan |
+/// | `chore` / `build` / `ci` | dim grey |
+/// | `revert`    | dim red |
+/// | *other*     | bold white |
 pub fn color_subject(subject: &str) -> String {
     if let Some(idx) = subject.find(':') {
         let prefix = &subject[..idx];
@@ -156,19 +233,22 @@ pub fn color_subject(subject: &str) -> String {
     }
 }
 
-/// Render a green "+N" added count.
+/// Render a green `+N` added-lines count.
 pub fn color_added(n: i64) -> String {
     format!("+{}", n).green().to_string()
 }
 
-/// Render a red "-N" deleted count.
+/// Render a red `-N` deleted-lines count.
 pub fn color_deleted(n: i64) -> String {
     format!("-{}", n).red().to_string()
 }
 
-// ─── Status Icons ─────────────────────────────────────────────────────────────
+// ─── Status icons ─────────────────────────────────────────────────────────────
 
-/// Convert porcelain status code to an icon + colored code.
+/// Convert a git porcelain status code into an `(icon, coloured_code)` pair.
+///
+/// The icon is a static `&str` (single Unicode character); the coloured code
+/// is an owned `String` already formatted with ANSI codes.
 pub fn status_icon(code: &str) -> (&'static str, String) {
     match code {
         "A" | "AA" => ("✚", "A".green().bold().to_string()),
@@ -183,14 +263,19 @@ pub fn status_icon(code: &str) -> (&'static str, String) {
     }
 }
 
-// ─── Progress / Spinner ───────────────────────────────────────────────────────
+// ─── Progress / spinner ───────────────────────────────────────────────────────
 
-/// Create a spinner progress bar with a custom message.
+/// Create and start a braille-spinner progress bar with `msg` as its label.
+///
+/// The spinner ticks automatically every 80 ms.  Call `.finish_and_clear()` on
+/// the returned [`indicatif::ProgressBar`] when the operation completes.
 pub fn spinner(msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new_spinner();
+    // `.expect` is appropriate here because the template string is a compile-time
+    // constant; a panic would only occur if we introduced a typo in the template.
     pb.set_style(
         indicatif::ProgressStyle::with_template("  {spinner:.cyan} {msg}")
-            .unwrap()
+            .expect("spinner template is valid")
             .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
     );
     pb.set_message(msg.to_string());
@@ -198,7 +283,7 @@ pub fn spinner(msg: &str) -> indicatif::ProgressBar {
     pb
 }
 
-/// Create a progress bar with a fixed length and message.
+/// Create a fixed-length progress bar with `len` steps and `msg` as its label.
 #[allow(dead_code)]
 pub fn progress_bar(len: u64, msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new(len);
@@ -206,26 +291,25 @@ pub fn progress_bar(len: u64, msg: &str) -> indicatif::ProgressBar {
         indicatif::ProgressStyle::with_template(
             "  {spinner:.cyan} [{bar:40.cyan/blue}] {pos}/{len} {msg}",
         )
-        .unwrap()
+        .expect("progress bar template is valid")
         .progress_chars("█▉▊▋▌▍▎▏  "),
     );
     pb.set_message(msg.to_string());
     pb
 }
 
-// ─── Diff Stat Bar ────────────────────────────────────────────────────────────
+// ─── Diff stat bar ────────────────────────────────────────────────────────────
 
-/// Render a fixed-width bar showing added vs deleted proportions.
+/// Render a fixed-`width` colour bar showing added-vs-deleted proportions.
+///
+/// Green blocks represent additions; red blocks represent deletions.
+/// Returns an empty string when both counts are zero.
 pub fn render_stat_bar(added: usize, deleted: usize, width: usize) -> String {
     let total = added + deleted;
     if total == 0 {
         return String::new();
     }
-    let add_blocks = if total > 0 {
-        (added * width / total).max(if added > 0 { 1 } else { 0 })
-    } else {
-        0
-    };
+    let add_blocks = (added * width / total).max(if added > 0 { 1 } else { 0 });
     let del_blocks = (width - add_blocks).min(deleted.min(width));
 
     format!(
@@ -235,9 +319,11 @@ pub fn render_stat_bar(added: usize, deleted: usize, width: usize) -> String {
     )
 }
 
-// ─── Ref Decoration Formatter ─────────────────────────────────────────────────
+// ─── Ref decoration formatter ─────────────────────────────────────────────────
 
-/// Format git ref decorations (HEAD -> main, origin/main) into colored badges.
+/// Format git ref decorations (`HEAD -> main, origin/main`) into coloured badges.
+///
+/// Returns an empty string when `refs_str` is blank.
 pub fn format_refs(refs_str: &str) -> String {
     if refs_str.trim().is_empty() {
         return String::new();
@@ -272,9 +358,18 @@ pub fn format_refs(refs_str: &str) -> String {
     }
 }
 
-// ─── Table Formatter ─────────────────────────────────────────────────────────
+// ─── Table formatter ──────────────────────────────────────────────────────────
 
-/// Simple table renderer that accounts for ANSI color codes.
+/// A simple columnar table renderer that accounts for ANSI escape codes when
+/// measuring cell widths.
+///
+/// ## Example
+///
+/// ```text
+/// let mut t = Table::new(vec!["Name", "Branch"]);
+/// t.add_row(vec!["feature-x".to_string(), "green-branch".to_string()]);
+/// t.print();
+/// ```
 pub struct Table {
     headers: Vec<String>,
     rows: Vec<Vec<String>>,
@@ -283,6 +378,8 @@ pub struct Table {
 
 impl Table {
     /// Create a new table with the provided header labels.
+    ///
+    /// Column widths are initialised to the visible width of each header.
     pub fn new(headers: Vec<&str>) -> Self {
         let col_widths = headers
             .iter()
@@ -295,7 +392,7 @@ impl Table {
         }
     }
 
-    /// Add a row to the table (updates column widths).
+    /// Append a row, automatically expanding column widths as needed.
     pub fn add_row(&mut self, row: Vec<String>) {
         for (i, cell) in row.iter().enumerate() {
             let visible_width = console::measure_text_width(cell);
@@ -306,8 +403,9 @@ impl Table {
         self.rows.push(row);
     }
 
-    /// Print the table to stdout.
+    /// Print the table — headers, a divider, then each row — to stdout.
     pub fn print(&self) {
+        // Pad a cell to the target column width, accounting for invisible ANSI codes.
         let pad_cell = |cell: &str, col: usize| -> String {
             let visible_width = console::measure_text_width(cell);
             let target = self.col_widths.get(col).copied().unwrap_or(0);
@@ -315,7 +413,7 @@ impl Table {
             format!("{}{}", cell, " ".repeat(padding))
         };
 
-        // Header
+        // Header row.
         let header_cells: Vec<String> = self
             .headers
             .iter()
@@ -324,7 +422,7 @@ impl Table {
             .collect();
         println!("  {}", header_cells.join("  "));
 
-        // Divider
+        // Divider.
         let divider: Vec<String> = self
             .col_widths
             .iter()
@@ -332,7 +430,7 @@ impl Table {
             .collect();
         println!("  {}", divider.join("  "));
 
-        // Rows
+        // Data rows.
         for row in &self.rows {
             let cells: Vec<String> = row
                 .iter()
@@ -344,9 +442,16 @@ impl Table {
     }
 }
 
-// ─── Branch Ahead/Behind ─────────────────────────────────────────────────────
+// ─── Branch ahead/behind ─────────────────────────────────────────────────────
 
-/// Format ahead/behind counts into a compact, colored string.
+/// Format ahead/behind commit counts into a compact, coloured string.
+///
+/// | State          | Output example          |
+/// |----------------|-------------------------|
+/// | Both zero      | `up to date` (dim)      |
+/// | Ahead only     | `↑ 3 ahead` (green)     |
+/// | Behind only    | `↓ 2 behind` (red)      |
+/// | Both non-zero  | `↑ 3 ahead  ↓ 2 behind` |
 pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
     match (ahead, behind) {
         (0, 0) => "up to date".bright_black().to_string(),
@@ -362,12 +467,13 @@ pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
     }
 }
 
-// ─── Stack Tree ───────────────────────────────────────────────────────────────
+// ─── Stack tree ───────────────────────────────────────────────────────────────
 
-/// Print a stack tree (older helper, kept for potential reuse).
+/// Print a stack tree to stdout.
+///
+/// `branches` is a slice of `(name, is_current, pr_url)` tuples.
 #[allow(dead_code)]
 pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<String>)]) {
-    // branches: (name, is_current, pr_url)
     println!(
         "\n  {} {}",
         "Stack:".bold().bright_white(),
@@ -407,40 +513,52 @@ pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<Stri
     println!();
 }
 
-// ─── Commit Entry ─────────────────────────────────────────────────────────────
+// ─── Commit entry ─────────────────────────────────────────────────────────────
 
-/// Renderable commit entry used by log and compare output.
+/// A single git log entry ready to be rendered to a terminal line.
+///
+/// Construct this struct from the fields parsed out of `git log --format=…`,
+/// then call [`CommitEntry::render`] to obtain the final coloured string.
 pub struct CommitEntry {
+    /// Short (7-char) commit hash.
     pub hash: String,
+    /// Commit subject (first line of the commit message).
     pub subject: String,
+    /// Author name.
     pub author: String,
+    /// Relative date string (e.g. "3 days ago").
     pub date: String,
+    /// Raw ref decorations string from `%D` (e.g. `HEAD -> main, origin/main`).
     pub refs: String,
+    /// ASCII graph prefix from `git log --graph` (may be empty).
     pub graph_prefix: String,
 }
 
 impl CommitEntry {
-    /// Render a single commit entry with padding and colored fields.
+    /// Render a single log line with padding and coloured fields.
+    ///
+    /// `max_subject` is the maximum *visible* character width reserved for the
+    /// subject column; shorter subjects are padded with spaces so columns align.
     pub fn render(&self, max_subject: usize) -> String {
         let mut out = String::new();
 
-        // Graph prefix (git's graph art, colorized)
+        // Graph prefix (git's graph art, colorised).
         if !self.graph_prefix.is_empty() {
             let colored_graph = colorize_graph(&self.graph_prefix);
             write!(out, "{}", colored_graph).ok();
         }
 
-        // Hash
+        // Hash.
         write!(out, " {} ", color_hash(&self.hash)).ok();
 
-        // Subject (truncated + padded to fixed display width)
+        // Subject — truncated and padded to a fixed display width.
         let subject = truncate(&self.subject, max_subject);
         let colored_subject = color_subject(&subject);
         let subject_width = console::measure_text_width(&colored_subject);
         let subject_pad = max_subject.saturating_sub(subject_width);
         write!(out, "{}{}", colored_subject, " ".repeat(subject_pad)).ok();
 
-        // Author (truncated + padded to fixed display width)
+        // Author — truncated and padded to a fixed display width.
         let author_max = 20;
         let author = truncate(&self.author, author_max);
         let colored_author = color_author(&author);
@@ -448,10 +566,10 @@ impl CommitEntry {
         let author_pad = author_max.saturating_sub(author_width);
         write!(out, "  {}{}", colored_author, " ".repeat(author_pad)).ok();
 
-        // Date
+        // Date.
         write!(out, "  {}", color_date(&self.date)).ok();
 
-        // Refs
+        // Ref decorations.
         if !self.refs.trim().is_empty() {
             write!(out, " {}", format_refs(&self.refs)).ok();
         }
@@ -460,7 +578,7 @@ impl CommitEntry {
     }
 }
 
-/// Truncate a string to a maximum display width, adding an ellipsis if needed.
+/// Truncate a string to a maximum *visible* display width, appending `…` if needed.
 fn truncate(s: &str, max: usize) -> String {
     if console::measure_text_width(s) > max {
         let truncated = console::truncate_str(s, max.saturating_sub(1), "");
@@ -470,9 +588,14 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
-/// Colorize ASCII graph output from `git log --graph`.
+/// Colorise the ASCII graph output produced by `git log --graph`.
+///
+/// Each graph character (`*`, `|`, `/`, `\`, `-`) is wrapped in an ANSI colour
+/// escape sequence, cycling through a small palette to distinguish parallel
+/// branch lines.
 pub fn colorize_graph(graph: &str) -> String {
-    // Colorize git graph lines: * | \ / are the main chars
+    // A small palette of ANSI colour codes.  We cycle through them based on the
+    // column position so that adjacent parallel lines get different colours.
     let colors = [
         "\x1b[33m", // yellow
         "\x1b[32m", // green
@@ -485,8 +608,7 @@ pub fn colorize_graph(graph: &str) -> String {
     for (i, ch) in graph.chars().enumerate() {
         match ch {
             '*' => {
-                let color = colors[0];
-                result.push_str(&format!("{}{}{}", color, ch, reset));
+                result.push_str(&format!("{}{}{}", colors[0], ch, reset));
             }
             '|' => {
                 let col_idx = (i / 2) % colors.len();
@@ -502,6 +624,3 @@ pub fn colorize_graph(graph: &str) -> String {
     }
     result
 }
-
-// TODO(ui): Centralize icon characters and allow toggling ASCII-only mode.
-// TODO(ui): Add width-aware truncation for multi-byte Unicode characters.

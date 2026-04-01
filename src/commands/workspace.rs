@@ -1,17 +1,22 @@
 //! Workspace (git worktree) management.
 //!
-//! Tutorial overview:
-//! - A "workspace" here is just a git worktree plus metadata stored in a TOML file.
-//! - We keep the source of truth for branches/worktrees in git itself, and only
-//!   store optional UI metadata (name/description/created_at) in `workspaces.toml`.
-//! - The functions in this module are called from `main.rs` when a user runs
-//!   `g workspace <command>`.
+//! ## Tutorial overview
 //!
-//! Rust concepts used here:
-//! - `serde` derives (`Serialize`, `Deserialize`) to read/write TOML.
-//! - `Option<T>` for optional fields like description or branch.
-//! - `Path` vs `PathBuf` for filesystem paths (borrowed vs owned).
-//! - Iterators and pattern matching when parsing git output.
+//! A "workspace" here is a git worktree plus a small metadata record stored in
+//! `~/.config/g/workspaces.toml`.  Git itself is the source of truth for
+//! which worktrees exist on disk; this module only adds extra UI metadata
+//! (human-friendly name, description, creation timestamp).
+//!
+//! The public functions in this module are called from `main.rs` when the user
+//! runs `g workspace <subcommand>`.
+//!
+//! ## Rust concepts used here
+//!
+//! - `serde` derives (`Serialize`, `Deserialize`) to read/write TOML metadata.
+//! - `Option<T>` for optional fields like `description`.
+//! - `Path` (borrowed) vs `PathBuf` (owned) for filesystem paths.
+//! - Iterators and pattern matching to parse git porcelain output line-by-line.
+//! - `chrono::DateTime<Utc>` for time-zone-aware creation timestamps.
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
@@ -25,69 +30,89 @@ use crate::commands::git as gitcmd;
 use crate::config;
 use crate::ui;
 
-// ─── Data Structures ─────────────────────────────────────────────────────────
+// ─── Data structures ──────────────────────────────────────────────────────────
 
 /// User-visible workspace metadata stored in `workspaces.toml`.
+///
+/// Git worktrees are identified by their filesystem path.  The fields here are
+/// purely for display purposes; they do not affect git's own worktree tracking.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Workspace {
-    /// Human-friendly workspace name.
+    /// Human-friendly workspace name used in `g workspace switch <name>`.
     pub name: String,
-    /// Optional description shown in list view.
-    /// `Option<String>` means "may be absent" without using null or empty strings.
+    /// Optional one-line description shown in `g workspace list`.
+    ///
+    /// `Option<String>` means "may be absent" — Rust has no `null`.
     pub description: Option<String>,
     /// Absolute filesystem path to the worktree directory.
     pub path: String,
-    /// Branch associated with the worktree.
+    /// Branch associated with the worktree at creation time.
     pub branch: String,
-    /// Timestamp used for relative "created X days ago" UI.
-    /// `chrono::DateTime<Utc>` gives time-zone-aware timestamps.
+    /// UTC timestamp used to display "created X days ago" in list view.
     pub created_at: DateTime<Utc>,
 }
 
-/// Persistent store of workspaces plus their metadata.
+/// Persistent store: the top-level TOML table in `workspaces.toml`.
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct WorkspaceStore {
-    /// We store all workspaces in a flat vector for easy TOML serialization.
+    /// All known workspace metadata entries in insertion order.
     pub workspaces: Vec<Workspace>,
 }
 
-/// Live worktree info parsed from `git worktree list --porcelain`
+/// Live worktree info parsed from `git worktree list --porcelain`.
+///
+/// This struct is crate-internal; callers work with the higher-level
+/// [`Workspace`] type from the store.
 struct WorktreeInfo {
-    /// Worktree filesystem path.
+    /// Absolute filesystem path to the worktree directory.
     path: PathBuf,
+    /// Full object name of the HEAD commit in this worktree.
     #[allow(dead_code)]
     head: String,
-    /// Branch name (if not detached).
+    /// Branch name (short ref name), or `None` in detached-HEAD state.
     branch: Option<String>,
-    /// Whether this entry represents a bare repository.
+    /// `true` when this entry represents a bare repository.
     bare: bool,
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
-/// Read the workspace store from disk (or return default if missing).
+/// Read the workspace store from `workspaces.toml`, or return an empty default.
+///
+/// # Errors
+///
+/// Returns an error if the file exists but cannot be read or parsed.
 fn load_store() -> Result<WorkspaceStore> {
     let path = config::workspaces_path()?;
     if !path.exists() {
-        // If the file doesn't exist yet, return an empty store instead of erroring.
         return Ok(WorkspaceStore::default());
     }
     let raw = fs::read_to_string(&path).context("Failed to read workspaces file")?;
-    // Deserialize the TOML into our struct. `toml::from_str` returns a Result.
     toml::from_str(&raw).context("Failed to parse workspaces file")
 }
 
-/// Persist the workspace store to disk.
+/// Serialise `store` and write it to `workspaces.toml`.
+///
+/// # Errors
+///
+/// Returns an error if serialisation or the file write fails.
 fn save_store(store: &WorkspaceStore) -> Result<()> {
     let path = config::workspaces_path()?;
-    // Serialize our structs into human-readable TOML.
     let raw = toml::to_string_pretty(store).context("Failed to serialize workspaces")?;
     fs::write(&path, raw).context("Failed to save workspaces file")
 }
 
-// ─── Git Worktree Helpers ────────────────────────────────────────────────────
+// ─── Git worktree helpers ─────────────────────────────────────────────────────
 
-/// Query git for worktree entries and parse the porcelain format.
+/// Query git for all worktree entries and parse the `--porcelain` format.
+///
+/// The porcelain format emits blocks of key-value pairs, each block starting
+/// with `worktree <path>`.  We parse these line-by-line, accumulating state
+/// for the current block.
+///
+/// # Errors
+///
+/// Returns an error if `git worktree list` fails (e.g. not in a git repo).
 fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
     let raw = gitcmd::git_output(&["worktree", "list", "--porcelain"])
         .context("Failed to list git worktrees. Are you inside a git repository?")?;
@@ -98,9 +123,9 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
     let mut current_branch: Option<String> = None;
     let mut is_bare = false;
 
-    // The porcelain format is a sequence of blocks starting with "worktree <path>".
     for line in raw.lines() {
         if let Some(p) = line.strip_prefix("worktree ") {
+            // Flush the previous block before starting a new one.
             if let Some(path) = current_path.take() {
                 worktrees.push(WorktreeInfo {
                     path,
@@ -116,12 +141,14 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
         } else if let Some(h) = line.strip_prefix("HEAD ") {
             current_head = h.to_string();
         } else if let Some(b) = line.strip_prefix("branch ") {
+            // Strip "refs/heads/" so we store just the short name.
             current_branch = Some(b.strip_prefix("refs/heads/").unwrap_or(b).to_string());
         } else if line == "bare" {
             is_bare = true;
         }
     }
 
+    // Flush the last block.
     if let Some(path) = current_path.take() {
         worktrees.push(WorktreeInfo {
             path,
@@ -134,7 +161,14 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
     Ok(worktrees)
 }
 
-/// Compute the default sibling-directory path for a new worktree.
+/// Compute the default sibling-directory path for a new worktree named `name`.
+///
+/// For example, with a repo at `/home/user/myapp` and separator `"--"`, a
+/// workspace named `feature-x` would be placed at `/home/user/myapp--feature-x`.
+///
+/// # Errors
+///
+/// Returns an error if the repo root or config cannot be determined.
 fn worktree_path_for(name: &str) -> Result<PathBuf> {
     let cfg = config::load()?;
     let repo_root = gitcmd::repo_root()?;
@@ -148,7 +182,7 @@ fn worktree_path_for(name: &str) -> Result<PathBuf> {
     Ok(parent.join(dir_name))
 }
 
-/// Render a "time ago" string for display (e.g., "3 days ago").
+/// Render a human-readable "time ago" string for `dt` (e.g. `"3 days ago"`).
 fn format_relative_time(dt: DateTime<Utc>) -> String {
     let now = Utc::now();
     let diff = now.signed_duration_since(dt);
@@ -169,13 +203,19 @@ fn format_relative_time(dt: DateTime<Utc>) -> String {
 
 // ─── Commands ─────────────────────────────────────────────────────────────────
 
-/// List all git worktrees with optional g metadata.
+/// List all git worktrees with their optional `g` metadata.
+///
+/// Combines live worktree data from git with display metadata from the store.
+/// The current working directory is highlighted with a `◉` marker.
+///
+/// # Errors
+///
+/// Returns an error if the store or git worktree listing cannot be read.
 pub fn list() -> Result<()> {
     let store = load_store()?;
     let worktrees = list_worktrees()?;
     let cwd = std::env::current_dir()?;
 
-    // Early return pattern: if no worktrees, exit gracefully.
     if worktrees.is_empty() {
         println!();
         println!("  {}", "No worktrees found.".bright_black());
@@ -194,7 +234,7 @@ pub fn list() -> Result<()> {
         let branch_display = wt.branch.as_deref().unwrap_or("(detached)");
         let is_current = cwd.starts_with(&wt.path);
 
-        // Try to find g metadata for this worktree
+        // Look up optional g metadata for this worktree by path.
         let meta = store
             .workspaces
             .iter()
@@ -217,7 +257,7 @@ pub fn list() -> Result<()> {
             };
             (label, format_relative_time(ws.created_at))
         } else {
-            // Main worktree or untracked worktree
+            // Main worktree or untracked worktree.
             let name = if is_current {
                 "(main)".green().bold().to_string()
             } else {
@@ -250,7 +290,11 @@ pub fn list() -> Result<()> {
         println!(
             "  {} {}",
             "tip:".bright_black(),
-            "g workspace create <name>  to create a worktree workspace".bright_black()
+            format!(
+                "{} workspace create <name>  to create a worktree workspace",
+                crate::bin_name()
+            )
+            .bright_black()
         );
         println!();
     }
@@ -258,7 +302,18 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 
-/// Create a new worktree and persist its metadata.
+/// Create a new worktree for `branch` (or a new branch named after the workspace)
+/// and save its metadata to the store.
+///
+/// The worktree is placed in a sibling directory computed by [`worktree_path_for`].
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - A workspace with the same name already exists.
+/// - The computed directory already exists on disk.
+/// - `git worktree add` fails.
+/// - The store cannot be saved.
 pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Result<()> {
     let mut store = load_store()?;
 
@@ -277,7 +332,7 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
     let branch_name = branch.unwrap_or(name);
     let wt_path_str = wt_path.to_string_lossy().to_string();
 
-    // Check if the branch already exists.
+    // Choose between checking out an existing branch or creating a new one.
     let branch_exists = gitcmd::git_output(&["rev-parse", "--verify", branch_name]).is_ok();
 
     let result = if branch_exists {
@@ -307,13 +362,12 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
     })?;
 
     if !gitcmd::is_dry_run() {
-        let now = Utc::now();
         store.workspaces.push(Workspace {
             name: name.to_string(),
             description: description.map(str::to_string),
             path: wt_path_str.clone(),
             branch: branch_name.to_string(),
-            created_at: now,
+            created_at: Utc::now(),
         });
         save_store(&store)?;
 
@@ -332,7 +386,12 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
         println!(
             "  {} {}",
             "tip:".bright_black(),
-            format!("g workspace switch {}  to open a shell there", name).bright_black()
+            format!(
+                "{} workspace switch {}  to open a shell there",
+                crate::bin_name(),
+                name
+            )
+            .bright_black()
         );
         println!();
     } else {
@@ -348,7 +407,17 @@ pub fn create(name: &str, branch: Option<&str>, description: Option<&str>) -> Re
     Ok(())
 }
 
-/// Open a subshell in the given workspace directory.
+/// Open an interactive subshell inside the workspace directory.
+///
+/// Spawns `$SHELL` (or `/bin/sh` as a fallback) with its working directory
+/// set to the workspace path.  The user exits the shell to return.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The workspace is not found in the store.
+/// - The workspace directory no longer exists on disk.
+/// - The shell process cannot be spawned.
 pub fn switch(name: &str) -> Result<()> {
     let store = load_store()?;
 
@@ -358,18 +427,20 @@ pub fn switch(name: &str) -> Result<()> {
         .find(|w| w.name == name || w.name.contains(name))
         .with_context(|| {
             format!(
-                "Workspace '{}' not found. Run `g workspace list` to see all workspaces.",
-                name
+                "Workspace '{}' not found. Run `{} workspace list` to see all workspaces.",
+                name,
+                crate::bin_name()
             )
         })?;
 
-    // Guard: ensure the directory still exists (it might have been removed manually).
     let wt_path = Path::new(&workspace.path);
     if !wt_path.exists() {
         bail!(
-            "Workspace directory '{}' no longer exists. It may have been removed outside g.\n\
-             Run `g workspace delete {}` to clean up.",
+            "Workspace directory '{}' no longer exists. It may have been removed outside {}.\n\
+             Run `{} workspace delete {}` to clean up.",
             wt_path.display(),
+            crate::bin_name(),
+            crate::bin_name(),
             workspace.name
         );
     }
@@ -396,7 +467,6 @@ pub fn switch(name: &str) -> Result<()> {
 
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
 
-    // Spawn the shell with stdio inherited so the user gets an interactive session.
     let status = Command::new(&shell)
         .current_dir(wt_path)
         .stdin(Stdio::inherit())
@@ -421,7 +491,17 @@ pub fn switch(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Remove a workspace and its worktree (optionally forcing).
+/// Remove a workspace and its git worktree, optionally forcing removal of dirty trees.
+///
+/// If the worktree directory was already removed manually, `git worktree prune`
+/// is run to clean up git's internal tracking before removing the metadata entry.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The workspace is not found in the store.
+/// - `git worktree remove` fails and the directory was not already missing.
+/// - The store cannot be saved.
 pub fn delete(name: &str, force: bool) -> Result<()> {
     let mut store = load_store()?;
 
@@ -432,21 +512,18 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
         .with_context(|| format!("Workspace '{}' not found.", name))?;
 
     let workspace = &store.workspaces[idx];
-    let wt_path = &workspace.path;
+    let wt_path = workspace.path.clone();
 
     let mut args = vec!["worktree", "remove"];
     if force {
         args.push("--force");
     }
-    args.push(wt_path);
+    args.push(&wt_path);
 
     let force_note = if force { " (forced)" } else { "" };
     let result = gitcmd::git_mutate(
         &args,
-        &format!(
-            "Remove worktree directory at {}{}",
-            wt_path, force_note
-        ),
+        &format!("Remove worktree directory at {}{}", wt_path, force_note),
     );
 
     match result {
@@ -458,11 +535,12 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
             let msg = format!("{}", e);
             if msg.contains("dirty") || msg.contains("untracked") {
                 bail!(
-                    "Worktree has uncommitted changes. Use `g workspace delete {} --force` to remove anyway.",
+                    "Worktree has uncommitted changes. Use `{} workspace delete {} --force` to remove anyway.",
+                    crate::bin_name(),
                     name
                 );
             }
-            if !Path::new(wt_path).exists() {
+            if !Path::new(&wt_path).exists() {
                 ui::print_warning("Worktree directory already removed; cleaning up metadata.");
                 gitcmd::git_output(&["worktree", "prune"]).ok();
             } else {
@@ -487,13 +565,20 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
     Ok(())
 }
 
-/// Print status of the current worktree (if any).
+/// Print status information about the current worktree.
+///
+/// Shows the workspace name, description, branch, creation time, and a summary
+/// of staged/unstaged/untracked changes.  If the cwd is not inside any known
+/// worktree, a brief message is shown instead.
+///
+/// # Errors
+///
+/// Returns an error if the store or git worktree listing cannot be read.
 pub fn status() -> Result<()> {
     let store = load_store()?;
     let cwd = std::env::current_dir()?;
     let worktrees = list_worktrees()?;
 
-    // Find which worktree we are currently in by prefix matching on cwd.
     let current_wt = worktrees.iter().find(|wt| cwd.starts_with(&wt.path));
 
     println!();
@@ -535,7 +620,6 @@ pub fn status() -> Result<()> {
 
         println!("  {} {}", "Branch:".bright_black(), branch.cyan().bold());
 
-        // Porcelain output is machine-readable; we count staged/unstaged/untracked items.
         let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
         let changes: Vec<&str> = porcelain.lines().collect();
         if changes.is_empty() {
@@ -579,7 +663,20 @@ pub fn status() -> Result<()> {
     Ok(())
 }
 
-/// Rename a workspace by moving its directory and repairing git worktree metadata.
+/// Rename a workspace by moving its directory and repairing git worktree tracking.
+///
+/// After the directory move, `git worktree repair` updates git's internal
+/// `.git/worktrees/<name>/gitdir` symlink to the new path.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The workspace is not found in the store.
+/// - The new directory name already exists on disk.
+/// - The old directory no longer exists.
+/// - The directory cannot be moved (`fs::rename`).
+/// - `git worktree repair` fails.
+/// - The store cannot be saved.
 pub fn rename(old: &str, new: &str) -> Result<()> {
     let mut store = load_store()?;
 
@@ -601,8 +698,9 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
 
     if !old_path.exists() {
         bail!(
-            "Workspace directory '{}' no longer exists. Clean up with `g workspace delete {}`.",
+            "Workspace directory '{}' no longer exists. Clean up with `{} workspace delete {}`.",
             old_path.display(),
+            crate::bin_name(),
             old
         );
     }
@@ -637,11 +735,7 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
         println!();
     } else {
         gitcmd::dry_run_action(
-            &format!(
-                "mv {} {}",
-                old_path.display(),
-                new_path.display()
-            ),
+            &format!("mv {} {}", old_path.display(), new_path.display()),
             &format!(
                 "Move worktree directory from '{}' to '{}'",
                 old_path.display(),
@@ -654,16 +748,9 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
         )?;
         gitcmd::dry_run_action(
             "Update workspace metadata",
-            &format!(
-                "Rename workspace '{}' → '{}' in workspaces.toml",
-                old, new
-            ),
+            &format!("Rename workspace '{}' → '{}' in workspaces.toml", old, new),
         );
     }
 
     Ok(())
 }
-
-// TODO(workspace): Detect and handle name collisions via fuzzy matches more explicitly.
-// TODO(workspace): Store and display last-accessed time for smarter sorting.
-// TODO(workspace): Add `workspace doctor` to repair metadata vs on-disk worktrees.
