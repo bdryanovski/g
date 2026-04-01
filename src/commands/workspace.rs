@@ -1,28 +1,24 @@
 //! Workspace (git worktree) management.
 //!
-//! ## Tutorial overview
+//! ## Overview
 //!
-//! A "workspace" here is a git worktree plus a small metadata record stored in
-//! `~/.config/g/workspaces.toml`.  Git itself is the source of truth for
-//! which worktrees exist on disk; this module only adds extra UI metadata
-//! (human-friendly name, description, creation timestamp).
+//! A "workspace" is a git worktree plus a small metadata record stored in
+//! `~/.config/g/workspaces.toml`.  Git is the source of truth for which
+//! worktrees exist on disk; this module adds UI metadata (friendly name,
+//! description, creation timestamp).
 //!
-//! The public functions in this module are called from `main.rs` when the user
-//! runs `g workspace <subcommand>`.
-//!
-//! ## Rust concepts used here
-//!
-//! - `serde` derives (`Serialize`, `Deserialize`) to read/write TOML metadata.
-//! - `Option<T>` for optional fields like `description`.
-//! - `Path` (borrowed) vs `PathBuf` (owned) for filesystem paths.
-//! - Iterators and pattern matching to parse git porcelain output line-by-line.
-//! - `chrono::DateTime<Utc>` for time-zone-aware creation timestamps.
+//! The store is keyed by repository root path so metadata from multiple
+//! repositories coexists in the same file without colliding.  For repos using
+//! the container layout (set by `init` or `clone --workspace`), the key is the
+//! container directory — which equals the original repo root before `init` —
+//! so it remains stable after the directory reorganisation.
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect, MultiSelect};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -34,58 +30,76 @@ use crate::ui;
 // ─── Data structures ──────────────────────────────────────────────────────────
 
 /// User-visible workspace metadata stored in `workspaces.toml`.
-///
-/// Git worktrees are identified by their filesystem path.  The fields here are
-/// purely for display purposes; they do not affect git's own worktree tracking.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Workspace {
-    /// Human-friendly workspace name used in `g workspace switch <name>`.
+    /// Human-friendly name used in `g workspace switch <name>`.
     pub name: String,
     /// Optional one-line description shown in `g workspace list`.
-    ///
-    /// `Option<String>` means "may be absent" — Rust has no `null`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Absolute filesystem path to the worktree directory.
     pub path: String,
     /// Branch associated with the worktree at creation time.
     pub branch: String,
-    /// UTC timestamp used to display "created X days ago" in list view.
+    /// UTC timestamp used to display "created X days ago".
     pub created_at: DateTime<Utc>,
 }
 
-/// Persistent store: the top-level TOML table in `workspaces.toml`.
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct WorkspaceStore {
+/// Per-repository metadata stored under a single key in [`WorkspaceStore`].
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct RepoStore {
     /// All known workspace metadata entries in insertion order.
+    #[serde(default)]
     pub workspaces: Vec<Workspace>,
     /// Set by `init` or `clone --workspace`.
     ///
     /// When present, new worktrees are placed as direct children of this
-    /// directory (e.g. `<container_root>/feature-x`) instead of as sibling
-    /// directories with the separator convention
-    /// (`<parent>/<repo_name>--feature-x`).
+    /// directory (`<container_root>/<name>`) instead of as siblings with
+    /// the separator convention (`<parent>/<repo_name>--<name>`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub container_root: Option<String>,
 }
 
-/// Live worktree info parsed from `git worktree list --porcelain`.
+/// Top-level TOML file: all repo stores keyed by their root path.
 ///
-/// This struct is crate-internal; callers work with the higher-level
-/// [`Workspace`] type from the store.
+/// Example on disk:
+///
+/// ```toml
+/// [repos."/home/user/myapp"]
+/// container_root = "/home/user/myapp"
+///
+/// [[repos."/home/user/myapp".workspaces]]
+/// name = "feature-auth"
+/// branch = "feat/auth"
+/// path = "/home/user/myapp/feature-auth"
+/// created_at = "2026-01-01T00:00:00Z"
+///
+/// [repos."/home/user/other-project"]
+///
+/// [[repos."/home/user/other-project".workspaces]]
+/// name = "hotfix"
+/// branch = "fix/crash"
+/// path = "/home/user/other-project--hotfix"
+/// created_at = "2026-01-02T00:00:00Z"
+/// ```
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct WorkspaceStore {
+    /// Per-repo metadata, keyed by repository root path.
+    #[serde(default)]
+    pub repos: HashMap<String, RepoStore>,
+}
+
+/// Live worktree info parsed from `git worktree list --porcelain`.
 struct WorktreeInfo {
-    /// Absolute filesystem path to the worktree directory.
     path: PathBuf,
-    /// Full object name of the HEAD commit in this worktree.
     head: String,
-    /// Branch name (short ref name), or `None` in detached-HEAD state.
     branch: Option<String>,
-    /// `true` when this entry represents a bare repository.
     bare: bool,
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
-/// Read the workspace store from `workspaces.toml`, or return an empty default.
+/// Read the full workspace store from disk, or return an empty default.
 ///
 /// # Errors
 ///
@@ -99,24 +113,80 @@ fn load_store() -> Result<WorkspaceStore> {
     toml::from_str(&raw).context("Failed to parse workspaces file")
 }
 
-/// Serialise `store` and write it to `workspaces.toml`.
+/// Serialise and write the full store to disk.
 ///
 /// # Errors
 ///
 /// Returns an error if serialisation or the file write fails.
 fn save_store(store: &WorkspaceStore) -> Result<()> {
     let path = config::workspaces_path()?;
+    // Ensure the config directory exists before writing.
+    if let Some(dir) = path.parent() {
+        fs::create_dir_all(dir).context("Failed to create config directory")?;
+    }
     let raw = toml::to_string_pretty(store).context("Failed to serialize workspaces")?;
     fs::write(&path, raw).context("Failed to save workspaces file")
+}
+
+/// Determine the store key for the current repository.
+///
+/// The key is stable across the container-layout reorganisation performed by
+/// `init`: the container root equals the original repo root, so data written
+/// before and after `init` lives under the same key.
+///
+/// Algorithm:
+/// 1. Get the current repo root via `git rev-parse --show-toplevel`.
+/// 2. Scan existing store entries: if any `container_root` is a prefix of the
+///    current repo root (i.e. we are inside a known container), return that
+///    entry's key.
+/// 3. Otherwise return the repo root itself.
+///
+/// # Errors
+///
+/// Returns an error if `git rev-parse` fails (not inside a git repo).
+fn current_repo_key(store: &WorkspaceStore) -> Result<String> {
+    let repo_root = gitcmd::repo_root()?;
+
+    for (key, repo) in &store.repos {
+        if let Some(ref croot) = repo.container_root {
+            if repo_root.starts_with(croot.as_str()) {
+                return Ok(key.clone());
+            }
+        }
+    }
+
+    Ok(repo_root)
+}
+
+/// Load the full store, resolve the current repo key, and return the repo's
+/// [`RepoStore`] alongside the data needed to save it back.
+///
+/// Returns `(full_store, key, repo_store)`.
+///
+/// # Errors
+///
+/// Propagates errors from [`load_store`] or [`current_repo_key`].
+fn load_repo_store() -> Result<(WorkspaceStore, String, RepoStore)> {
+    let store = load_store()?;
+    let key = current_repo_key(&store)?;
+    let repo = store.repos.get(&key).cloned().unwrap_or_default();
+    Ok((store, key, repo))
+}
+
+/// Insert the updated [`RepoStore`] back into the full store under `key` and
+/// write it to disk.
+///
+/// # Errors
+///
+/// Propagates errors from [`save_store`].
+fn save_repo_store(mut store: WorkspaceStore, key: &str, repo: RepoStore) -> Result<()> {
+    store.repos.insert(key.to_string(), repo);
+    save_store(&store)
 }
 
 // ─── Git worktree helpers ─────────────────────────────────────────────────────
 
 /// Query git for all worktree entries and parse the `--porcelain` format.
-///
-/// The porcelain format emits blocks of key-value pairs, each block starting
-/// with `worktree <path>`.  We parse these line-by-line, accumulating state
-/// for the current block.
 ///
 /// # Errors
 ///
@@ -133,7 +203,6 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
 
     for line in raw.lines() {
         if let Some(p) = line.strip_prefix("worktree ") {
-            // Flush the previous block before starting a new one.
             if let Some(path) = current_path.take() {
                 worktrees.push(WorktreeInfo {
                     path,
@@ -149,14 +218,12 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
         } else if let Some(h) = line.strip_prefix("HEAD ") {
             current_head = h.to_string();
         } else if let Some(b) = line.strip_prefix("branch ") {
-            // Strip "refs/heads/" so we store just the short name.
             current_branch = Some(b.strip_prefix("refs/heads/").unwrap_or(b).to_string());
         } else if line == "bare" {
             is_bare = true;
         }
     }
 
-    // Flush the last block.
     if let Some(path) = current_path.take() {
         worktrees.push(WorktreeInfo {
             path,
@@ -171,23 +238,16 @@ fn list_worktrees() -> Result<Vec<WorktreeInfo>> {
 
 /// Compute the filesystem path for a new worktree named `name`.
 ///
-/// Two conventions are supported:
-///
-/// 1. **Container layout** (set by `init` / `clone --workspace`): when
-///    `store.container_root` is set, the new worktree is placed directly
-///    inside that directory — e.g. `<container_root>/feature-x`.
-///
-/// 2. **Sibling layout** (default): the new worktree is placed next to the
-///    repo root, separated by the configured separator — e.g.
-///    `/home/user/myapp--feature-x`.
+/// Uses the container layout when `container_root` is set for the current
+/// repo; otherwise falls back to the sibling layout.
 ///
 /// # Errors
 ///
 /// Returns an error if the repo root or config cannot be determined.
 fn worktree_path_for(name: &str) -> Result<PathBuf> {
-    let store = load_store()?;
+    let (_, _, repo) = load_repo_store()?;
 
-    if let Some(container) = &store.container_root {
+    if let Some(container) = &repo.container_root {
         return Ok(PathBuf::from(container).join(name));
     }
 
@@ -203,7 +263,7 @@ fn worktree_path_for(name: &str) -> Result<PathBuf> {
     Ok(parent.join(dir_name))
 }
 
-/// Render a human-readable "time ago" string for `dt` (e.g. `"3 days ago"`).
+/// Render a human-readable "time ago" string for `dt`.
 fn format_relative_time(dt: DateTime<Utc>) -> String {
     let now = Utc::now();
     let diff = now.signed_duration_since(dt);
@@ -229,22 +289,19 @@ fn format_relative_time(dt: DateTime<Utc>) -> String {
 /// Given a repo at `/path/to/repo` on branch `main`, the operation is:
 ///
 /// ```text
-/// mv  /path/to/repo         /path/to/repo--ws-tmp
-/// mkdir                     /path/to/repo           (container)
-/// mv  /path/to/repo--ws-tmp /path/to/repo/main
+/// mv  /path/to/repo          /path/to/repo--ws-tmp  (temp rename)
+/// mkdir                      /path/to/repo           (container)
+/// mv  /path/to/repo--ws-tmp  /path/to/repo/main      (inner worktree)
 /// ```
 ///
-/// After this, `g workspace create` will place new worktrees as siblings of
-/// `main` inside the container directory.
-///
-/// The command asks for confirmation before making any changes and rolls back
-/// on failure.
+/// The store is saved before `git worktree repair` runs so that a repair
+/// failure does not leave the filesystem and store out of sync.
 ///
 /// # Errors
 ///
 /// Returns an error if:
 /// - The current directory is not inside a git repository.
-/// - The repo is already in the container layout (double-init guard).
+/// - The repo is already in container layout for this repository.
 /// - The user cancels the confirmation prompt.
 /// - Any filesystem or git operation fails.
 pub fn init() -> Result<()> {
@@ -252,18 +309,6 @@ pub fn init() -> Result<()> {
         gitcmd::repo_root().context("Not inside a git repository. Run `git init` first.")?;
     let repo_root = PathBuf::from(&repo_root_str);
 
-    // Guard: already init'd if the store has a container_root set.
-    let mut store = load_store()?;
-    if store.container_root.is_some() {
-        bail!(
-            "This repository is already using the container workspace layout.\n\
-             Run `{} workspace list` to see your workspaces.",
-            crate::bin_name()
-        );
-    }
-
-    // Guard: if the repo root's parent contains a directory with the same
-    // name we'd create, something unexpected is already there.
     let parent = repo_root
         .parent()
         .context("Repository is at the filesystem root — cannot create container.")?;
@@ -282,10 +327,20 @@ pub fn init() -> Result<()> {
                 .unwrap_or_else(|_| "main".to_string())
         });
 
-    let container_dir = repo_root.clone(); // will be recreated as the container
-    let inner_dir = container_dir.join(&branch_name);
+    // Guard: if the current repo is already inside a known container, block.
+    // Using load_repo_store() resolves the key correctly even when running
+    // from inside a container child (e.g. vcli/main after a previous init).
+    let (store, key, repo) = load_repo_store()?;
+    if repo.container_root.is_some() {
+        bail!(
+            "This repository is already using the container workspace layout.\n\
+             Run `{} workspace list` to see your workspaces.",
+            crate::bin_name()
+        );
+    }
 
-    // A unique temp name in the parent, not inside the repo (we're about to move it).
+    let container_dir = repo_root.clone();
+    let inner_dir = container_dir.join(&branch_name);
     let temp_name = format!("{}--ws-tmp", repo_name);
     let temp_path = parent.join(&temp_name);
 
@@ -296,7 +351,7 @@ pub fn init() -> Result<()> {
         );
     }
 
-    // Show the plan and ask for confirmation.
+    // Show the plan.
     println!();
     println!("  {} workspace init", "g".green().bold());
     println!();
@@ -343,8 +398,8 @@ pub fn init() -> Result<()> {
             "Move repo into container as the main workspace",
         );
         gitcmd::dry_run_action(
-            "git worktree repair",
-            "Repair git worktree tracking after directory move",
+            "git -C <inner> worktree repair && git -C <inner> worktree prune",
+            "Repair and prune git worktree tracking after directory move",
         );
         return Ok(());
     }
@@ -362,7 +417,7 @@ pub fn init() -> Result<()> {
         return Ok(());
     }
 
-    // Step out of the repo directory before we move it.
+    // Step out of the repo before we move it.
     std::env::set_current_dir(parent)
         .context("Failed to change directory to parent before moving repo")?;
 
@@ -375,8 +430,8 @@ pub fn init() -> Result<()> {
         )
     })?;
 
-    // Step 2 + 3: create container, move temp → inner.
-    let result = (|| -> Result<()> {
+    // Steps 2 + 3: create container, move temp → inner.
+    let move_result = (|| -> Result<()> {
         fs::create_dir_all(&container_dir).with_context(|| {
             format!(
                 "Failed to create container directory '{}'",
@@ -393,35 +448,45 @@ pub fn init() -> Result<()> {
         Ok(())
     })();
 
-    if let Err(e) = result {
-        // Attempt rollback: move temp back to the original repo path.
+    if let Err(e) = move_result {
+        // Attempt rollback.
         if temp_path.exists() && !repo_root.exists() {
             let _ = fs::rename(&temp_path, &repo_root);
         }
         return Err(e).context("Init failed — attempted to roll back to original state");
     }
 
-    // Step 4: repair git worktree tracking after the directory move.
-    gitcmd::git_output(&[
-        "--git-dir",
-        &format!("{}/.git", inner_dir.display()),
-        "worktree",
-        "repair",
-    ])
-    .context("Failed to repair git worktree tracking after move")?;
-
-    // Persist the container root and register the main workspace.
     let container_root_str = container_dir.to_string_lossy().to_string();
     let inner_dir_str = inner_dir.to_string_lossy().to_string();
-    store.container_root = Some(container_root_str);
-    store.workspaces.push(Workspace {
-        name: branch_name.clone(),
-        description: None,
-        path: inner_dir_str.clone(),
-        branch: branch_name.clone(),
-        created_at: Utc::now(),
-    });
-    save_store(&store)?;
+
+    // Save the store BEFORE the repair step so that a repair failure does not
+    // leave the filesystem and store out of sync.
+    let mut updated_repo = repo;
+    updated_repo.container_root = Some(container_root_str.clone());
+    // Register the main workspace if it isn't already there.
+    if !updated_repo
+        .workspaces
+        .iter()
+        .any(|w| w.path == inner_dir_str)
+    {
+        updated_repo.workspaces.push(Workspace {
+            name: branch_name.clone(),
+            description: None,
+            path: inner_dir_str.clone(),
+            branch: branch_name.clone(),
+            created_at: Utc::now(),
+        });
+    }
+    save_repo_store(store, &key, updated_repo)?;
+
+    // Step 4: repair git worktree tracking after the directory move.
+    // Use `git -C <inner_dir>` so git finds both the .git dir and the work
+    // tree.  `--git-dir` alone (without `--work-tree`) fails when the process
+    // cwd was changed to the parent above.
+    gitcmd::git_output(&["-C", &inner_dir_str, "worktree", "repair"])
+        .context("Failed to repair git worktree tracking after move")?;
+    // Prune is best-effort — stale entries are harmless, just untidy.
+    let _ = gitcmd::git_output(&["-C", &inner_dir_str, "worktree", "prune"]);
 
     println!();
     ui::print_success(&format!(
@@ -446,15 +511,11 @@ pub fn init() -> Result<()> {
 
 /// Clone a remote repository and set it up in the container/worktree layout.
 ///
-/// Equivalent to running `g clone <url> [dest] --workspace`:
-///
-/// 1. Queries the remote for its default branch via `git ls-remote`.
+/// 1. Queries the remote for its default branch via `git ls-remote --symref`.
 /// 2. Creates a container directory named after the repo.
-/// 3. Clones into `<container>/<default_branch>` so the primary worktree is
-///    immediately ready for `g workspace create`.
+/// 3. Clones into `<container>/<default_branch>`.
 ///
-/// Any extra flags in `args` (e.g. `--depth 1`, `-q`) are forwarded to
-/// `git clone` verbatim.
+/// Extra flags in `args` (`--depth`, `-q`, etc.) are forwarded to `git clone`.
 ///
 /// # Errors
 ///
@@ -464,14 +525,11 @@ pub fn init() -> Result<()> {
 /// - `git ls-remote` or `git clone` fails.
 /// - The store cannot be saved.
 pub fn clone_with_workspace(args: &[String]) -> Result<()> {
-    // Find the URL — the first arg that isn't a flag.
     let url = args
         .iter()
         .find(|a| !a.starts_with('-'))
         .with_context(|| "No URL found. Usage: g clone <url> [dest] --workspace")?;
 
-    // Derive the container directory name from the URL: strip trailing `/`,
-    // take the last path segment, and remove a `.git` suffix.
     let repo_name = url
         .trim_end_matches('/')
         .split('/')
@@ -480,8 +538,6 @@ pub fn clone_with_workspace(args: &[String]) -> Result<()> {
         .trim_end_matches(".git")
         .to_string();
 
-    // Allow the user to supply an explicit destination as the second non-flag
-    // positional arg (mirrors `git clone <url> <dest>`).
     let non_flag_args: Vec<&str> = args
         .iter()
         .filter(|a| !a.starts_with('-'))
@@ -499,7 +555,6 @@ pub fn clone_with_workspace(args: &[String]) -> Result<()> {
         );
     }
 
-    // Determine the remote's default branch before cloning.
     let default_branch = detect_remote_default_branch(url).unwrap_or_else(|_| "main".to_string());
 
     let inner_dir = container_dir.join(&default_branch);
@@ -512,9 +567,7 @@ pub fn clone_with_workspace(args: &[String]) -> Result<()> {
         )
     })?;
 
-    // Build git clone args: forward all original flags, replace dest with inner_dir.
     let mut clone_args: Vec<&str> = vec!["clone"];
-    // Forward flags only (not positional args — we replace those).
     for a in args {
         if a.starts_with('-') {
             clone_args.push(a.as_str());
@@ -529,24 +582,29 @@ pub fn clone_with_workspace(args: &[String]) -> Result<()> {
     );
 
     if let Err(e) = result {
-        // Clean up the container dir on failure.
         let _ = fs::remove_dir_all(&container_dir);
         return Err(e).context("Clone failed");
     }
 
     if !gitcmd::is_dry_run() {
-        // Load (or create) the store and set the container root.
-        let mut store = load_store()?;
         let container_root_str = container_dir.to_string_lossy().to_string();
-        store.container_root = Some(container_root_str.clone());
-        store.workspaces.push(Workspace {
-            name: default_branch.clone(),
-            description: None,
-            path: inner_dir_str.clone(),
-            branch: default_branch.clone(),
-            created_at: Utc::now(),
-        });
-        save_store(&store)?;
+        // The key for a freshly cloned repo is the container dir itself.
+        let mut full_store = load_store()?;
+        let repo = full_store
+            .repos
+            .entry(container_root_str.clone())
+            .or_default();
+        repo.container_root = Some(container_root_str.clone());
+        if !repo.workspaces.iter().any(|w| w.path == inner_dir_str) {
+            repo.workspaces.push(Workspace {
+                name: default_branch.clone(),
+                description: None,
+                path: inner_dir_str.clone(),
+                branch: default_branch.clone(),
+                created_at: Utc::now(),
+            });
+        }
+        save_store(&full_store)?;
 
         println!();
         ui::print_success(&format!(
@@ -571,11 +629,7 @@ pub fn clone_with_workspace(args: &[String]) -> Result<()> {
     Ok(())
 }
 
-/// Query the remote for its default branch using `git ls-remote --symref`.
-///
-/// Parses a line of the form `ref: refs/heads/<branch>\tHEAD` to extract
-/// the branch name.  Falls back to `Err` when the remote does not advertise
-/// a HEAD symref (e.g. some GitHub mirrors).
+/// Query the remote for its default branch via `git ls-remote --symref`.
 ///
 /// # Errors
 ///
@@ -585,7 +639,6 @@ fn detect_remote_default_branch(url: &str) -> Result<String> {
         .context("Failed to query remote default branch")?;
 
     for line in output.lines() {
-        // Expected format: `ref: refs/heads/main\tHEAD`
         if let Some(rest) = line.strip_prefix("ref: refs/heads/") {
             let branch = rest.split('\t').next().unwrap_or("").trim();
             if !branch.is_empty() {
@@ -599,14 +652,14 @@ fn detect_remote_default_branch(url: &str) -> Result<String> {
 
 /// List all git worktrees with their optional `g` metadata.
 ///
-/// Combines live worktree data from git with display metadata from the store.
-/// The current working directory is highlighted with a `◉` marker.
+/// Combines live worktree data from git with metadata from the current repo's
+/// store.  The current working directory is highlighted with a `◉` marker.
 ///
 /// # Errors
 ///
 /// Returns an error if the store or git worktree listing cannot be read.
 pub fn list() -> Result<()> {
-    let store = load_store()?;
+    let (_, _, repo) = load_repo_store()?;
     let worktrees = list_worktrees()?;
     let cwd = std::env::current_dir()?;
 
@@ -628,15 +681,13 @@ pub fn list() -> Result<()> {
         let branch_display = wt.branch.as_deref().unwrap_or("(detached)");
         let is_current = cwd.starts_with(&wt.path);
 
-        // Truncate the full SHA to a 7-char short hash for display.
         let head_display = if wt.head.len() >= 7 {
             wt.head[..7].bright_black().to_string()
         } else {
             wt.head.bright_black().to_string()
         };
 
-        // Look up optional g metadata for this worktree by path.
-        let meta = store
+        let meta = repo
             .workspaces
             .iter()
             .find(|ws| Path::new(&ws.path) == wt.path);
@@ -647,18 +698,14 @@ pub fn list() -> Result<()> {
             } else {
                 ws.name.white().to_string()
             };
-            let label = if let Some(desc) = &ws.description {
-                if !desc.is_empty() {
+            let label = match &ws.description {
+                Some(desc) if !desc.is_empty() => {
                     format!("{}  {}", name, desc.bright_black())
-                } else {
-                    name
                 }
-            } else {
-                name
+                _ => name,
             };
             (label, format_relative_time(ws.created_at))
         } else {
-            // Main worktree or untracked worktree.
             let name = if is_current {
                 "(main)".green().bold().to_string()
             } else {
@@ -673,13 +720,11 @@ pub fn list() -> Result<()> {
             "◯".bright_black().to_string()
         };
 
-        let path_display = wt.path.display().to_string().bright_black().to_string();
-
         table.add_row(vec![
             marker,
             name_display,
             ui::color_branch(branch_display),
-            path_display,
+            wt.path.display().to_string().bright_black().to_string(),
             head_display,
             created_display,
         ]);
@@ -688,7 +733,7 @@ pub fn list() -> Result<()> {
     table.print();
     println!();
 
-    if store.workspaces.is_empty() {
+    if repo.workspaces.is_empty() {
         println!(
             "  {} {}",
             "tip:".bright_black(),
@@ -704,21 +749,20 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 
-/// Create a new worktree for `branch` (or a new branch named after the workspace)
-/// and save its metadata to the store.
+/// Create a new worktree and save its metadata to the current repo's store.
 ///
-/// The worktree is placed in a directory computed by [`worktree_path_for`]:
-/// inside `container_root` when the repo was set up with `init`/`clone
-/// --workspace`, or as a sibling directory otherwise.
+/// Branch resolution order:
+/// 1. Branch exists locally → check out directly.
+/// 2. Branch exists on `origin` → create a local tracking branch.
+/// 3. Neither → create a new branch (optionally from `start_point`).
 ///
-/// When `copy` is `true`, an interactive [`MultiSelect`] checklist of
-/// untracked and gitignored files is shown; the user picks which ones to copy
-/// into the new worktree.
+/// When `copy` is `true`, an interactive [`MultiSelect`] lets the user pick
+/// untracked and gitignored files to copy into the new worktree.
 ///
 /// # Errors
 ///
 /// Returns an error if:
-/// - A workspace with the same name already exists.
+/// - A workspace with the same name already exists in the current repo.
 /// - The computed directory already exists on disk.
 /// - `git worktree add` fails.
 /// - The file-copy step fails (when `copy` is `true`).
@@ -730,9 +774,9 @@ pub fn create(
     description: Option<&str>,
     copy: bool,
 ) -> Result<()> {
-    let mut store = load_store()?;
+    let (store, key, mut repo) = load_repo_store()?;
 
-    if store.workspaces.iter().any(|w| w.name == name) {
+    if repo.workspaces.iter().any(|w| w.name == name) {
         bail!("Workspace '{}' already exists. Use a different name.", name);
     }
 
@@ -747,10 +791,6 @@ pub fn create(
     let branch_name = branch.unwrap_or(name);
     let wt_path_str = wt_path.to_string_lossy().to_string();
 
-    // Three-stage branch resolution:
-    //  1. Branch exists locally              → checkout directly
-    //  2. Branch exists on origin (remote)   → create local tracking branch
-    //  3. Neither                            → create a fresh branch (optional start_point)
     let local_exists = gitcmd::git_output(&["rev-parse", "--verify", branch_name]).is_ok();
     let remote_ref = format!("origin/{}", branch_name);
     let remote_exists =
@@ -781,7 +821,6 @@ pub fn create(
             ),
         )
     } else {
-        // Build args for a new branch, optionally from a start point.
         let mut args = vec!["worktree", "add", "-b", branch_name, &wt_path_str];
         if let Some(sp) = start_point {
             args.push(sp);
@@ -803,20 +842,19 @@ pub fn create(
         )
     })?;
 
-    // Copy untracked / gitignored files from the current worktree into the new one.
     if copy && !gitcmd::is_dry_run() {
         copy_untracked_files(&wt_path)?;
     }
 
     if !gitcmd::is_dry_run() {
-        store.workspaces.push(Workspace {
+        repo.workspaces.push(Workspace {
             name: name.to_string(),
             description: description.map(str::to_string),
             path: wt_path_str.clone(),
             branch: branch_name.to_string(),
             created_at: Utc::now(),
         });
-        save_store(&store)?;
+        save_repo_store(store, &key, repo)?;
 
         println!();
         ui::print_success(&format!(
@@ -860,20 +898,15 @@ pub fn create(
     Ok(())
 }
 
-/// Present an interactive checklist of untracked and gitignored files from the
-/// current working tree and copy the user's selection into `dest`.
-///
-/// Silently returns `Ok(())` when there are no files to copy or the user
-/// selects nothing.
+/// Present an interactive checklist of untracked and gitignored files and copy
+/// the user's selection into `dest`.
 ///
 /// # Errors
 ///
 /// Returns an error if the interactive prompt fails or a file copy fails.
 fn copy_untracked_files(dest: &Path) -> Result<()> {
-    // Collect untracked (not ignored) files.
     let untracked_out =
         gitcmd::git_output(&["ls-files", "--others", "--exclude-standard"]).unwrap_or_default();
-    // Collect gitignored files (e.g. .env, node_modules).
     let ignored_out = gitcmd::git_output(&[
         "ls-files",
         "--others",
@@ -889,8 +922,6 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
         .filter(|l| !l.is_empty())
         .map(str::to_string)
         .collect();
-
-    // Deduplicate while preserving order.
     candidates.dedup();
 
     if candidates.is_empty() {
@@ -919,12 +950,10 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
         let rel = &candidates[idx];
         let src = src_root.join(rel);
         let dst = dest.join(rel);
-
-        if let Some(parent) = dst.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create directory '{}'", parent.display()))?;
+        if let Some(p) = dst.parent() {
+            fs::create_dir_all(p)
+                .with_context(|| format!("Failed to create directory '{}'", p.display()))?;
         }
-
         fs::copy(&src, &dst).with_context(|| {
             format!("Failed to copy '{}' to '{}'", src.display(), dst.display())
         })?;
@@ -935,12 +964,9 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
 
 /// Open an interactive subshell inside the workspace directory.
 ///
-/// When `name` is `Some`, the workspace is fuzzy-matched by name from the
-/// store and the shell is opened immediately.  When `name` is `None`, a
-/// `FuzzySelect` picker is shown so the user can search and choose.
-///
-/// Spawns `$SHELL` (or `/bin/sh` as a fallback) with its working directory
-/// set to the workspace path.  The user exits the shell to return.
+/// When `name` is `None`, a [`FuzzySelect`] picker is shown so the user can
+/// search and choose.  When `name` is `Some`, the workspace is fuzzy-matched
+/// from the current repo's store.
 ///
 /// # Errors
 ///
@@ -949,15 +975,12 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
 /// - The workspace directory no longer exists on disk.
 /// - The shell process cannot be spawned.
 pub fn switch(name: Option<&str>) -> Result<()> {
-    let store = load_store()?;
+    let (_, _, repo) = load_repo_store()?;
     let worktrees = list_worktrees()?;
     let cwd = std::env::current_dir()?;
 
-    // Resolve which workspace to open — either by the supplied name or via an
-    // interactive fuzzy picker when no name was given.
     let workspace: &Workspace = match name {
-        // ── Named switch ──────────────────────────────────────────────────────
-        Some(n) => store
+        Some(n) => repo
             .workspaces
             .iter()
             .find(|w| w.name == n || w.name.contains(n))
@@ -969,16 +992,12 @@ pub fn switch(name: Option<&str>) -> Result<()> {
                 )
             })?,
 
-        // ── Interactive picker ────────────────────────────────────────────────
         None => {
-            // Build the candidate list from live worktrees joined with store
-            // metadata.  Bare worktrees are excluded.
             let candidates: Vec<&Workspace> = worktrees
                 .iter()
                 .filter(|wt| !wt.bare)
                 .filter_map(|wt| {
-                    store
-                        .workspaces
+                    repo.workspaces
                         .iter()
                         .find(|ws| Path::new(&ws.path) == wt.path)
                 })
@@ -995,8 +1014,6 @@ pub fn switch(name: Option<&str>) -> Result<()> {
                 return Ok(());
             }
 
-            // Build display strings with consistent column widths so the fuzzy
-            // matcher has clean, readable lines to search against.
             let name_width = candidates.iter().map(|ws| ws.name.len()).max().unwrap_or(0);
             let branch_width = candidates
                 .iter()
@@ -1024,7 +1041,6 @@ pub fn switch(name: Option<&str>) -> Result<()> {
                 })
                 .collect();
 
-            // Pre-select the current workspace if we're inside one.
             let default_idx = candidates
                 .iter()
                 .position(|ws| cwd.starts_with(Path::new(&ws.path)))
@@ -1107,28 +1123,27 @@ pub fn switch(name: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// Remove a workspace and its git worktree, optionally forcing removal of dirty trees.
+/// Remove a workspace and its git worktree.
 ///
-/// If the worktree directory was already removed manually, `git worktree prune`
-/// is run to clean up git's internal tracking before removing the metadata entry.
+/// If the directory was already removed manually, `git worktree prune` cleans
+/// up git's internal tracking before removing the metadata entry.
 ///
 /// # Errors
 ///
 /// Returns an error if:
-/// - The workspace is not found in the store.
+/// - The workspace is not found in the current repo's store.
 /// - `git worktree remove` fails and the directory was not already missing.
 /// - The store cannot be saved.
 pub fn delete(name: &str, force: bool) -> Result<()> {
-    let mut store = load_store()?;
+    let (store, key, mut repo) = load_repo_store()?;
 
-    let idx = store
+    let idx = repo
         .workspaces
         .iter()
         .position(|w| w.name == name)
         .with_context(|| format!("Workspace '{}' not found.", name))?;
 
-    let workspace = &store.workspaces[idx];
-    let wt_path = workspace.path.clone();
+    let wt_path = repo.workspaces[idx].path.clone();
 
     let mut args = vec!["worktree", "remove"];
     if force {
@@ -1166,9 +1181,8 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
     }
 
     if !gitcmd::is_dry_run() {
-        store.workspaces.remove(idx);
-        save_store(&store)?;
-
+        repo.workspaces.remove(idx);
+        save_repo_store(store, &key, repo)?;
         println!();
         ui::print_success(&format!("Deleted workspace '{}'", name.red()));
         println!();
@@ -1178,20 +1192,17 @@ pub fn delete(name: &str, force: bool) -> Result<()> {
             &format!("Delete workspace '{}' entry from workspaces.toml", name),
         );
     }
+
     Ok(())
 }
 
 /// Print status information about the current worktree.
 ///
-/// Shows the workspace name, description, branch, creation time, and a summary
-/// of staged/unstaged/untracked changes.  If the cwd is not inside any known
-/// worktree, a brief message is shown instead.
-///
 /// # Errors
 ///
 /// Returns an error if the store or git worktree listing cannot be read.
 pub fn status() -> Result<()> {
-    let store = load_store()?;
+    let (_, _, repo) = load_repo_store()?;
     let cwd = std::env::current_dir()?;
     let worktrees = list_worktrees()?;
 
@@ -1201,7 +1212,7 @@ pub fn status() -> Result<()> {
 
     if let Some(wt) = current_wt {
         let branch = wt.branch.as_deref().unwrap_or("(detached)");
-        let meta = store
+        let meta = repo
             .workspaces
             .iter()
             .find(|ws| Path::new(&ws.path) == wt.path);
@@ -1281,22 +1292,18 @@ pub fn status() -> Result<()> {
 
 /// Rename a workspace by moving its directory and repairing git worktree tracking.
 ///
-/// After the directory move, `git worktree repair` updates git's internal
-/// `.git/worktrees/<name>/gitdir` symlink to the new path.
-///
 /// # Errors
 ///
 /// Returns an error if:
-/// - The workspace is not found in the store.
-/// - The new directory name already exists on disk.
+/// - The workspace is not found in the current repo's store.
+/// - The new directory already exists on disk.
 /// - The old directory no longer exists.
-/// - The directory cannot be moved (`fs::rename`).
-/// - `git worktree repair` fails.
+/// - The directory move or `git worktree repair` fails.
 /// - The store cannot be saved.
 pub fn rename(old: &str, new: &str) -> Result<()> {
-    let mut store = load_store()?;
+    let (store, key, mut repo) = load_repo_store()?;
 
-    let ws = store
+    let ws = repo
         .workspaces
         .iter_mut()
         .find(|w| w.name == old)
@@ -1339,7 +1346,7 @@ pub fn rename(old: &str, new: &str) -> Result<()> {
 
         ws.name = new.to_string();
         ws.path = new_path.to_string_lossy().to_string();
-        save_store(&store)?;
+        save_repo_store(store, &key, repo)?;
 
         println!();
         ui::print_success(&format!("Renamed workspace '{}' → '{}'", old, new.green()));
