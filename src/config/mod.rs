@@ -1,20 +1,22 @@
-//! Configuration types and config file I/O.
+//! Configuration types and config-file I/O.
 //!
-//! Tutorial overview:
-//! - This module defines the persistent configuration for the CLI, stored
-//!   in `~/.config/g/config.toml`.
-//! - It uses `serde` and `toml` to map Rust structs directly to a human-readable
-//!   file format.
-//! - It handles everything from UI preferences (colors, icons) to git-specific
-//!   settings (default branch, custom diff tools) and user-defined aliases.
+//! ## Tutorial overview
 //!
-//! Rust concepts used here:
-//! - `#[derive(Serialize, Deserialize)]` to automatically generate conversion
-//!   code for TOML.
-//! - `HashMap<String, String>` for dynamic key-value storage (used for aliases).
-//! - `Default` trait implementation for providing sensible "out-of-the-box" settings.
-//! - `fs::create_dir_all` and `fs::write` for managing local filesystem state.
-//! - `anyhow::Context` to provide more helpful error messages during file I/O.
+//! This module defines the persistent configuration for the CLI, stored at
+//! `~/.config/g/config.toml`.  It uses `serde` and `toml` to map Rust structs
+//! directly to a human-readable file format, and provides helper functions for
+//! locating, loading, saving, and bootstrapping the config.
+//!
+//! ## Rust concepts used here
+//!
+//! - `#[derive(Serialize, Deserialize)]` automatically generates TOML
+//!   conversion code at compile time — no manual parsing needed.
+//! - `HashMap<String, String>` for dynamic key-value storage (git aliases).
+//! - The [`Default`] trait gives every config section a sensible baseline so
+//!   users only need to override what they care about.
+//! - `fs::create_dir_all` and `fs::write` for managing the local filesystem.
+//! - `anyhow::Context` attaches a human-readable message to any `Result` error,
+//!   making it much easier to diagnose file I/O failures.
 
 use anyhow::{Context, Result};
 use dirs::home_dir;
@@ -23,41 +25,57 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-// ─── Config Structure ────────────────────────────────────────────────────────
+// ─── Config structure ─────────────────────────────────────────────────────────
 
-/// Root configuration struct (matches the TOML schema).
+/// Root configuration struct — mirrors the top-level TOML table.
+///
+/// Every field is tagged with `#[serde(default)]` so that a minimal (or even
+/// empty) config file is accepted; missing keys fall back to [`Default`].
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
+    /// General git settings.
     #[serde(default)]
     pub general: GeneralConfig,
+    /// User-interface preferences.
     #[serde(default)]
     pub ui: UiConfig,
+    /// Conventional Commit flow settings.
     #[serde(default)]
     pub commit: CommitConfig,
+    /// Diff-tool selection and options.
     #[serde(default)]
     pub diff: DiffConfig,
+    /// GitHub API integration.
     #[serde(default)]
     pub github: GithubConfig,
+    /// Workspace (git worktree) settings.
     #[serde(default)]
     pub workspace: WorkspaceConfig,
+    /// Log-output formatting settings.
     #[serde(default)]
     pub log: LogConfig,
+    /// User-defined command aliases (`co = "checkout"`, etc.).
     #[serde(default)]
     pub aliases: HashMap<String, String>,
+    /// Plugin discovery configuration.
     #[serde(default)]
     pub plugins: PluginsConfig,
 }
 
-/// General settings (git path, default branch, etc.).
+/// General settings: git executable path, default branch, auto-fetch, pager.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GeneralConfig {
-    /// Default branch name (main, master, trunk, etc.)
+    /// Default branch name used as a base for comparisons and new stacks
+    /// (e.g. `"main"`, `"master"`, `"trunk"`).
     pub default_branch: String,
-    /// Automatically fetch before comparing
+    /// When `true`, `g compare` runs `git fetch --all` before computing
+    /// ahead/behind counts so the numbers reflect the remote state.
     pub auto_fetch: bool,
-    /// Pager program to use
+    /// Optional pager program (`"delta"`, `"less"`, `"bat"`, or `""` to
+    /// disable).  When `None`, the system default is used.
     pub pager: Option<String>,
-    /// Path to git executable (defaults to searching PATH)
+    /// Override the path to the `git` executable.  Useful when multiple git
+    /// versions are installed.  When `None`, `git` is resolved from `$PATH`.
     pub git_path: Option<String>,
 }
 
@@ -72,18 +90,20 @@ impl Default for GeneralConfig {
     }
 }
 
-/// UI-related settings.
+/// User-interface preferences: colours, icons, date format, log limits.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UiConfig {
-    /// Enable colored output
+    /// Enable ANSI-coloured output.
     pub colors: bool,
-    /// Use Unicode icons and box-drawing characters
+    /// Use Unicode icons and box-drawing characters.  Set to `false` for
+    /// environments that only support ASCII.
     pub icons: bool,
-    /// Date format: "relative" | "short" | "iso" | "rfc"
+    /// Date display format: `"relative"` (3 days ago), `"short"` (2024-01-15),
+    /// `"iso"`, or `"rfc"`.
     pub date_format: String,
-    /// How many commits to show in log by default
+    /// Maximum number of commits shown by `g log` when `-n` is not given.
     pub log_limit: usize,
-    /// Show commit graph in log
+    /// Show the ASCII branch graph in `g log` output.
     pub show_graph: bool,
 }
 
@@ -99,22 +119,22 @@ impl Default for UiConfig {
     }
 }
 
-/// Commit-flow settings.
+/// Settings for the interactive `g commit` flow.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CommitConfig {
-    /// Conventional commit types
+    /// Conventional Commit types shown in the interactive type picker.
     pub types: Vec<String>,
-    /// Whether scope is required
+    /// When `true`, the scope prompt is mandatory.
     pub require_scope: bool,
-    /// Whether body is required
+    /// When `true`, the body prompt is mandatory.
     pub require_body: bool,
-    /// Custom template for commit messages
+    /// Optional custom commit-message template.
     pub template: Option<String>,
-    /// Max subject line length
+    /// Maximum subject-line length before a warning is shown (default: 72).
     pub max_subject_length: usize,
-    /// Sign commits with GPG
+    /// Sign commits with GPG (`-S` flag to `git commit`).
     pub gpg_sign: bool,
-    /// Whether to use emojis in commit messages (e.g., "feat" -> "✨")
+    /// Show emoji next to commit type names in the interactive picker.
     pub emoji: bool,
 }
 
@@ -144,14 +164,15 @@ impl Default for CommitConfig {
     }
 }
 
-/// Diff-tool settings.
+/// Diff-tool selection and context configuration.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiffConfig {
-    /// Diff tool: "builtin" | "delta" | "diff-so-fancy" | custom path
+    /// Diff tool to use: `"auto"` (detect `delta`/`diff-so-fancy` in `$PATH`),
+    /// `"builtin"`, `"delta"`, `"diff-so-fancy"`, or a custom executable path.
     pub tool: String,
-    /// Extra args to pass to the diff tool
+    /// Extra arguments forwarded to the diff tool.
     pub tool_args: Vec<String>,
-    /// Context lines to show
+    /// Number of context lines shown around each change hunk.
     pub context_lines: usize,
 }
 
@@ -165,16 +186,18 @@ impl Default for DiffConfig {
     }
 }
 
-/// GitHub integration settings.
+/// GitHub API integration settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GithubConfig {
-    /// GitHub personal access token (prefer GITHUB_TOKEN env var)
+    /// GitHub personal access token.  Prefer the `GITHUB_TOKEN` environment
+    /// variable over storing a token in the config file.
     pub token: Option<String>,
-    /// Default PR reviewers
+    /// Default PR reviewers added to every newly created PR.
     pub default_reviewers: Vec<String>,
-    /// Default PR labels
+    /// Default labels applied to every newly created PR.
     pub default_labels: Vec<String>,
-    /// GitHub API base URL (for GitHub Enterprise)
+    /// GitHub API base URL.  Override for GitHub Enterprise instances
+    /// (e.g. `"https://github.corp.example.com/api/v3"`).
     pub api_base: String,
 }
 
@@ -189,10 +212,14 @@ impl Default for GithubConfig {
     }
 }
 
-/// Workspace management settings.
+/// Workspace (git worktree) directory naming settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WorkspaceConfig {
-    /// Separator between repo name and workspace name in sibling directories
+    /// String placed between the repo name and the workspace name when
+    /// constructing sibling worktree directories.
+    ///
+    /// For example, with `separator = "--"` and repo `myapp`, a workspace
+    /// named `feature-x` is placed at `../myapp--feature-x`.
     pub separator: String,
 }
 
@@ -204,60 +231,88 @@ impl Default for WorkspaceConfig {
     }
 }
 
-/// Log-formatting settings.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Log-formatting preferences.
+///
+/// All fields default to `None` / `false`, so this can use `#[derive(Default)]`
+/// instead of a manual `impl` — less boilerplate and equivalent behaviour.
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct LogConfig {
-    /// Format string for log output (git format)
+    /// Custom `git log --format` string.  When `None`, the built-in pretty
+    /// formatter is used.
     pub format: Option<String>,
-    /// Show commit signature status
+    /// Show commit GPG signature status in log output.
     pub show_signature: bool,
-    /// Show diff stat in log
+    /// Show a diff-stat summary beneath each commit in log output.
     pub show_stat: bool,
 }
 
-impl Default for LogConfig {
-    fn default() -> Self {
-        Self {
-            format: None,
-            show_signature: false,
-            show_stat: false,
-        }
-    }
-}
-
-/// Plugin discovery settings.
+/// Plugin discovery configuration.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct PluginsConfig {
-    /// Paths to plugin scripts/binaries
+    /// Additional directories to scan for plugin executables.
     pub paths: Vec<String>,
-    /// Whether to load plugins from $PATH with prefix "g"
+    /// When `true`, executables named `g-<name>` anywhere in `$PATH` are
+    /// treated as `g` subcommands.
     pub discover: bool,
 }
 
 // ─── Config I/O ──────────────────────────────────────────────────────────────
 
-/// Return the `~/.config/g` directory.
+/// Return the `~/.config/g` configuration directory path.
+///
+/// # Errors
+///
+/// Returns an error if the user's home directory cannot be determined.
+#[must_use = "use the returned path or it is wasted"]
 pub fn config_dir() -> Result<PathBuf> {
     let home = home_dir().context("Could not find home directory")?;
-    Ok(home.join(".config").join("g"))
+    // We use APP_ID ("g") rather than the runtime binary name here
+    // deliberately: the config directory must stay stable even if the binary
+    // is renamed or symlinked.  Only changing APP_ID in main.rs should move
+    // the config location.
+    Ok(home.join(".config").join(crate::APP_ID))
 }
 
-/// Return the full path to `config.toml`.
+/// Return the full path to the main `config.toml` file.
+///
+/// # Errors
+///
+/// Propagates any error from [`config_dir`].
+#[must_use = "use the returned path or it is wasted"]
 pub fn config_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("config.toml"))
 }
 
-/// Return the full path to `workspaces.toml`.
+/// Return the full path to the `workspaces.toml` metadata file.
+///
+/// # Errors
+///
+/// Propagates any error from [`config_dir`].
+#[must_use = "use the returned path or it is wasted"]
 pub fn workspaces_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("workspaces.toml"))
 }
 
-/// Return the full path to `stacks.toml`.
+/// Return the full path to the `stacks.toml` metadata file.
+///
+/// # Errors
+///
+/// Propagates any error from [`config_dir`].
+#[must_use = "use the returned path or it is wasted"]
 pub fn stacks_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("stacks.toml"))
 }
 
-/// Ensure the config directory and default config file exist.
+/// Ensure the config directory and a default `config.toml` exist on disk.
+///
+/// This is called once at startup.  If the directory or file are missing they
+/// are created with sensible defaults and a message is printed to the user.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The config directory cannot be created.
+/// - The default config file cannot be written.
 pub fn ensure_config() -> Result<()> {
     let dir = config_dir()?;
     if !dir.exists() {
@@ -276,7 +331,17 @@ pub fn ensure_config() -> Result<()> {
     Ok(())
 }
 
-/// Load config from disk, merging with defaults.
+/// Load and parse the config file from disk, merging with struct defaults.
+///
+/// If the config file does not exist yet, a [`Config::default()`] value is
+/// returned so the caller never has to special-case a missing file.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The config path cannot be determined.
+/// - The file exists but cannot be read (e.g. permission denied).
+/// - The file content is not valid TOML or does not match the [`Config`] schema.
 pub fn load() -> Result<Config> {
     let path = config_path()?;
     if !path.exists() {
@@ -289,7 +354,14 @@ pub fn load() -> Result<Config> {
     Ok(config)
 }
 
-/// Save config to disk.
+/// Serialise `config` and write it to the config file on disk.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The config path cannot be determined.
+/// - The struct cannot be serialised to TOML.
+/// - The file cannot be written (e.g. permission denied, disk full).
 #[allow(dead_code)]
 pub fn save(config: &Config) -> Result<()> {
     let path = config_path()?;
@@ -298,9 +370,12 @@ pub fn save(config: &Config) -> Result<()> {
     Ok(())
 }
 
-// ─── Default Config Template ─────────────────────────────────────────────────
+// ─── Default config template ─────────────────────────────────────────────────
 
-/// Default config template written when no config exists.
+/// Returns the default `config.toml` content written on first run.
+///
+/// Using a raw string literal (`r#"…"#`) lets us embed a multi-line TOML
+/// document without any escaping.
 fn default_config_toml() -> &'static str {
     r#"# g configuration
 # Documentation: https://github.com/your-org/g/
@@ -399,6 +474,10 @@ paths = []
 
 impl Default for Config {
     fn default() -> Self {
+        // Try to parse the built-in default template first so users get the
+        // same values whether or not they have a config file.  Fall back to
+        // constructing the struct manually if parsing somehow fails (e.g. the
+        // template has a syntax error introduced during development).
         toml::from_str(default_config_toml()).unwrap_or_else(|_| Self {
             general: GeneralConfig::default(),
             ui: UiConfig::default(),
@@ -412,6 +491,3 @@ impl Default for Config {
         })
     }
 }
-
-// TODO(config): Support layered config (system + user + repo-local overrides).
-// TODO(config): Validate config values and surface friendly errors (e.g., bad date_format).

@@ -13,12 +13,17 @@
 
 use clap::{Args, Parser, Subcommand};
 
-/// g — A beautiful Git CLI with stacked PRs, workspace management, and enhanced UX.
+/// A beautiful Git CLI with stacked PRs, workspace management, and enhanced UX.
 /// All standard git commands are passed through transparently.
+///
+/// The `name` attribute is intentionally absent so that clap reads the binary
+/// name from the first element of `try_parse_from` at runtime (set in
+/// `main::run`).  This means `--help` and error messages always show the
+/// actual name of the executable — rename the binary and everything updates
+/// automatically.
 #[derive(Parser)]
 #[command(
-    name = "g",
-    about = "Version CLI — enhanced Git with stacked PRs, workspaces, and beautiful output",
+    about = "Enhanced Git with stacked PRs, workspaces, and beautiful output",
     long_about = None,
     version,
     propagate_version = true,

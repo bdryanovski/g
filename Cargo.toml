@@ -44,6 +44,26 @@ ureq = { version = "2", features = ["json"] }
 
 [profile.release]
 opt-level = 3
-lto = true
+# "fat" LTO merges all crate codegen units into a single module so the
+# compiler can inline and eliminate dead code across crate boundaries.
+lto = "fat"
 codegen-units = 1
+# Abort on panic removes the unwinding machinery from the binary, shrinking
+# it and making panics immediately terminate (no stack-unwinding overhead).
+panic = "abort"
 strip = true
+
+[profile.bench]
+inherits = "release"
+# Keep debug symbols in benchmark builds so profilers can show function names.
+debug = true
+strip = false
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+# Compile dependencies at opt-level 3 even in dev builds so the terminal UI
+# (indicatif, crossterm, colored) renders at full speed during development.
+[profile.dev.package."*"]
+opt-level = 3

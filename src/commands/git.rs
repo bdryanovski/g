@@ -1,21 +1,26 @@
 //! Git command helpers and enhanced output modes.
 //!
-//! Tutorial overview:
-//! - This module is the "engine room" of the CLI. It handles all interaction
-//!   with the underlying `git` binary.
-//! - It provides high-level wrappers for common git tasks (getting the current
-//!   branch, finding the repo root) and complex "enhanced" versions of standard
-//!   commands like `log`, `status`, and `branch`, plus `branch squash` for
-//!   single-commit feature branches.
-//! - It also implements a "dry-run" system using atomic flags to preview
-//!   destructive actions without executing them.
+//! ## Tutorial overview
 //!
-//! Rust concepts used here:
+//! This module is the "engine room" of the CLI.  It handles all interaction
+//! with the underlying `git` binary.  It provides:
+//!
+//! - **Low-level wrappers** (`git_output`, `git_output_lossy`, `passthrough`)
+//!   for capturing or streaming git output.
+//! - **Repo helpers** (`current_branch`, `repo_root`, `default_branch`) used
+//!   throughout the codebase.
+//! - **Enhanced commands**: colourised, opinionated replacements for `log`,
+//!   `status`, `diff`, `branch`, and `show`.
+//! - **Dry-run mode**: an atomic flag that, when set, prints the git commands
+//!   that *would* run instead of executing them.
+//!
+//! ## Rust concepts used here
+//!
 //! - `std::process::Command` for spawning and interacting with external processes.
-//! - `AtomicBool` and `AtomicUsize` for thread-safe global state (dry-run mode).
-//! - `String::from_utf8_lossy` for handling potentially non-UTF8 output from git.
-//! - `match` and `if let` for robust error handling and optional value extraction.
-//! - `static` variables for program-wide configuration flags.
+//! - `AtomicBool` and `AtomicUsize` for thread-safe, lock-free global state.
+//! - `String::from_utf8_lossy` to safely decode potentially non-UTF-8 output.
+//! - `match` and `if let` for robust error handling and optional-value extraction.
+//! - `static` variables for program-wide flags that need to persist across calls.
 
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
@@ -25,30 +30,53 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use crate::config;
 use crate::ui;
 
-// ─── Dry Run ──────────────────────────────────────────────────────────────────
+// ─── Dry-run state ────────────────────────────────────────────────────────────
 
+// `static` variables live for the entire lifetime of the program.
+// `AtomicBool` / `AtomicUsize` are safe to access from multiple threads without
+// a `Mutex` because they use hardware-level atomic operations.
 static DRY_RUN: AtomicBool = AtomicBool::new(false);
 static DRY_RUN_STEP: AtomicUsize = AtomicUsize::new(0);
 
+/// Enable or disable dry-run mode and reset the step counter.
+///
+/// When dry-run is enabled, [`git_mutate`] prints the planned command instead
+/// of executing it.
 pub fn set_dry_run(enabled: bool) {
     DRY_RUN.store(enabled, Ordering::SeqCst);
     DRY_RUN_STEP.store(0, Ordering::SeqCst);
 }
 
+/// Returns `true` when dry-run mode is active.
+///
+/// Use this to skip side-effects (e.g. writing files) that should not happen
+/// during a preview run.
 pub fn is_dry_run() -> bool {
     DRY_RUN.load(Ordering::SeqCst)
 }
 
-fn next_step() -> usize {
-    DRY_RUN_STEP.fetch_add(1, Ordering::SeqCst) + 1
-}
-
+/// Returns the number of mutating steps logged so far in dry-run mode.
 pub fn step_count() -> usize {
     DRY_RUN_STEP.load(Ordering::SeqCst)
 }
 
-/// Execute a mutating git command. In dry-run mode, prints the planned step
-/// and returns `Ok("")` without executing anything.
+/// Increments the step counter and returns the new value.
+fn next_step() -> usize {
+    DRY_RUN_STEP.fetch_add(1, Ordering::SeqCst) + 1
+}
+
+/// Execute a mutating git command, or print the planned command in dry-run mode.
+///
+/// Use this for any `git` invocation that writes to the repository (checkout,
+/// commit, rebase, …).  Read-only calls (log, rev-parse, …) should use
+/// [`git_output`] directly.
+///
+/// In dry-run mode this function prints a numbered step and returns `Ok("")`
+/// without touching the repository.
+///
+/// # Errors
+///
+/// Propagates any error from [`git_output`] when not in dry-run mode.
 pub fn git_mutate(args: &[&str], explanation: &str) -> Result<String> {
     if is_dry_run() {
         print_dry_run_git(args, explanation);
@@ -57,8 +85,9 @@ pub fn git_mutate(args: &[&str], explanation: &str) -> Result<String> {
     git_output(args)
 }
 
-/// Log a non-git side effect (file write, API call, etc.) during dry-run.
-/// In normal mode this is a no-op.
+/// Log a non-git side effect (file write, API call, …) in dry-run mode.
+///
+/// In normal (non-dry-run) mode this is a no-op.
 pub fn dry_run_action(action: &str, explanation: &str) {
     if is_dry_run() {
         let step = next_step();
@@ -78,24 +107,16 @@ pub fn dry_run_action(action: &str, explanation: &str) {
     }
 }
 
+/// Print a dry-run step for a git command.
+///
+/// Delegates to [`dry_run_action`] after formatting the command as
+/// `"git <args>"`.  This removes the ~12 lines of duplicated output logic
+/// that previously existed between the two functions.
 fn print_dry_run_git(args: &[&str], explanation: &str) {
-    let step = next_step();
-    let label = format!("Step {}", step);
-    let cmd = format!("git {}", args.join(" "));
-    println!();
-    println!(
-        "  {} {} {}",
-        label.cyan().bold(),
-        "▸".bright_black(),
-        cmd.yellow()
-    );
-    println!(
-        "  {}  {}",
-        " ".repeat(label.len()),
-        explanation.bright_black()
-    );
+    dry_run_action(&format!("git {}", args.join(" ")), explanation);
 }
 
+/// Print the dry-run banner shown at the start of a `--dry-run` invocation.
 pub fn dry_run_banner() {
     println!();
     println!(
@@ -107,18 +128,19 @@ pub fn dry_run_banner() {
     );
     println!(
         "  {}",
-        "───────────────────────────────────────────────────────────────"
-            .bright_black()
+        "───────────────────────────────────────────────────────────────".bright_black()
     );
 }
 
+/// Print the dry-run footer shown at the end of a `--dry-run` invocation.
+///
+/// Summarises the number of operations that would be performed.
 pub fn dry_run_footer() {
     let steps = step_count();
     println!();
     println!(
         "  {}",
-        "───────────────────────────────────────────────────────────────"
-            .bright_black()
+        "───────────────────────────────────────────────────────────────".bright_black()
     );
     if steps > 0 {
         println!(
@@ -136,22 +158,34 @@ pub fn dry_run_footer() {
         println!(
             "  {} {}",
             "ℹ".cyan(),
-            "This command has no mutating operations to preview."
-                .bright_black()
+            "This command has no mutating operations to preview.".bright_black()
         );
     }
     println!();
 }
 
-// ─── Git Executable ───────────────────────────────────────────────────────────
+// ─── Git executable ───────────────────────────────────────────────────────────
 
-/// Resolve the git executable path (from config or default to "git").
+/// Resolve the git executable path from config, falling back to `"git"`.
+///
+/// Reads `[general].git_path` from the user config.  If the config cannot be
+/// loaded or the key is absent, `"git"` is returned so the OS resolves it via
+/// `$PATH`.
 pub fn git_exe() -> String {
     let cfg = config::load().unwrap_or_default();
     cfg.general.git_path.unwrap_or_else(|| "git".to_string())
 }
 
-/// Run git and return stdout as a String (error on non-zero exit).
+/// Run `git` with `args` and return stdout as a trimmed `String`.
+///
+/// Stderr from git is captured and returned as the error message on non-zero
+/// exit so callers get the same diagnostic git would normally print.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The git process cannot be spawned (e.g. `git` not found in `$PATH`).
+/// - git exits with a non-zero status; the error contains the captured stderr.
 pub fn git_output(args: &[&str]) -> Result<String> {
     let out = Command::new(git_exe())
         .args(args)
@@ -165,7 +199,14 @@ pub fn git_output(args: &[&str]) -> Result<String> {
     }
 }
 
-/// True when `ancestor` is an ancestor of `descendant` (reachable from `descendant`).
+/// Returns `true` if `ancestor` is reachable from `descendant`'s history.
+///
+/// Internally runs `git merge-base --is-ancestor <ancestor> <descendant>`.
+///
+/// # Errors
+///
+/// Returns an error if the git process cannot be spawned or exits with a code
+/// other than `0` (ancestor) or `1` (not an ancestor).
 pub fn is_ancestor(ancestor: &str, descendant: &str) -> Result<bool> {
     let status = Command::new(git_exe())
         .args(["merge-base", "--is-ancestor", ancestor, descendant])
@@ -185,13 +226,44 @@ pub fn is_ancestor(ancestor: &str, descendant: &str) -> Result<bool> {
     }
 }
 
-/// Whether `git status --porcelain` is empty (no staged or unstaged changes).
+/// Returns `true` when `git status --porcelain` produces no output (clean tree).
+///
+/// # Errors
+///
+/// Returns an error if the git process cannot be spawned or exits non-zero.
 pub fn working_tree_clean() -> Result<bool> {
     let s = git_output(&["status", "--porcelain"])?;
     Ok(s.is_empty())
 }
 
-/// Run git and return stdout even on non-zero exit.
+/// Bail with a standardised message if the working tree has uncommitted changes.
+///
+/// Three commands (`branch squash`, `stack squash`, `stack fold`) all need
+/// to check the working tree before doing history-rewriting operations.
+/// This helper gives them one consistent message and removes the repeated
+/// `if !working_tree_clean()? { bail!(…) }` block.
+///
+/// `operation` is the verb used in the message, e.g. `"squashing"` or `"folding"`.
+///
+/// # Errors
+///
+/// Returns an error immediately when the tree is dirty.  When the tree is
+/// clean the function returns `Ok(())` and the caller continues normally.
+pub fn require_clean_tree(operation: &str) -> Result<()> {
+    if !working_tree_clean()? {
+        bail!(
+            "Working tree is not clean. Commit or stash changes before {}.",
+            operation
+        );
+    }
+    Ok(())
+}
+
+/// Run `git` with `args` and return stdout as a `String`, ignoring a non-zero exit.
+///
+/// Non-UTF-8 bytes in the output are replaced with the Unicode replacement
+/// character (`U+FFFD`).  Use this for display-only calls where a git error
+/// (e.g. "no commits yet") should silently produce an empty string.
 pub fn git_output_lossy(args: &[&str]) -> String {
     Command::new(git_exe())
         .args(args)
@@ -200,11 +272,22 @@ pub fn git_output_lossy(args: &[&str]) -> String {
         .unwrap_or_default()
 }
 
-/// Run git, streaming stdout/stderr directly to the terminal (for passthrough).
+/// Stream a git invocation directly to the terminal (stdin/stdout/stderr inherited).
+///
+/// Used for "passthrough" commands where we want git's own interactive output,
+/// pager, colour handling, etc.  If git exits non-zero, this function calls
+/// [`std::process::exit`] with that code so the shell receives the correct
+/// exit status.
+///
+/// In dry-run mode the command is printed but not executed.
+///
+/// # Errors
+///
+/// Returns an error if the git process cannot be spawned.
 pub fn passthrough(args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
 
-    // Check aliases first.
+    // Check aliases first so `g co` works even as a passthrough.
     if let Some(first) = args.first() {
         if let Some(alias_target) = cfg.aliases.get(first) {
             let mut new_args: Vec<String> =
@@ -226,7 +309,7 @@ pub fn passthrough(args: &[String]) -> Result<()> {
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .status()
-        .with_context(|| "Failed to execute git")?;
+        .context("Failed to execute git")?;
 
     if !status.success() {
         std::process::exit(status.code().unwrap_or(1));
@@ -234,32 +317,49 @@ pub fn passthrough(args: &[String]) -> Result<()> {
     Ok(())
 }
 
-// ─── Current Branch / Repo Helpers ───────────────────────────────────────────
+// ─── Repo helpers ─────────────────────────────────────────────────────────────
 
-/// Return the current branch name (or "HEAD" in detached state).
+/// Return the name of the currently checked-out branch.
+///
+/// Returns `"HEAD"` when in detached-HEAD state.
+///
+/// # Errors
+///
+/// Returns an error if `git rev-parse --abbrev-ref HEAD` fails (e.g. no
+/// commits in the repo yet).
 pub fn current_branch() -> Result<String> {
     git_output(&["rev-parse", "--abbrev-ref", "HEAD"])
 }
 
-/// Return the repository root directory.
+/// Return the absolute path of the repository root directory.
+///
+/// # Errors
+///
+/// Returns an error if the command is run outside a git repository.
 pub fn repo_root() -> Result<String> {
     git_output(&["rev-parse", "--show-toplevel"])
 }
 
-/// Determine the default branch using origin/HEAD or config fallback.
+/// Determine the default branch name using `origin/HEAD`, falling back to config.
+///
+/// First tries `git symbolic-ref refs/remotes/origin/HEAD` to detect what the
+/// remote considers its default.  Falls back to `config.general.default_branch`
+/// (typically `"main"`) when no remote HEAD is set.
 pub fn default_branch() -> String {
     let cfg = config::load().unwrap_or_default();
-    // Try to detect from remote HEAD
     let detected = git_output_lossy(&["symbolic-ref", "refs/remotes/origin/HEAD"]);
     if !detected.is_empty() {
-        if let Some(branch) = detected.split('/').last() {
+        if let Some(branch) = detected.split('/').next_back() {
             return branch.to_string();
         }
     }
     cfg.general.default_branch
 }
 
-/// Quick boolean check for "am I in a git repo?"
+/// Returns `true` if the current directory is inside a git repository.
+///
+/// Both stdout and stderr are suppressed so nothing is printed regardless of
+/// the result.
 pub fn is_inside_git_repo() -> bool {
     Command::new(git_exe())
         .args(["rev-parse", "--git-dir"])
@@ -270,28 +370,33 @@ pub fn is_inside_git_repo() -> bool {
         .unwrap_or(false)
 }
 
-// ─── Enhanced Log ─────────────────────────────────────────────────────────────
+// ─── Enhanced log ─────────────────────────────────────────────────────────────
 
-/// Parse and pretty-print git log with beautiful colors.
+/// Parse and pretty-print `git log` with colours, graph art, and aligned columns.
 ///
-/// This works by:
-/// 1. Building a custom `git log` format string using special control characters
-///    (\x01 as field separator, \x02 as record separator).
-/// 2. Appending `--graph` and other user arguments.
-/// 3. Running git and capturing the output.
-/// 4. Parsing the output line-by-line:
-///    - If a line contains a record (\x02), we split it into fields (hash, subject, etc.)
-///      and render them using our custom `ui::CommitEntry` formatter.
-///    - Any leading characters before the record are treated as the ASCII graph art.
+/// The implementation works in three phases:
+///
+/// 1. Build a custom `--pretty=format:` string using ASCII control characters
+///    (`\x01` as field separator, `\x02` as record separator) to reliably
+///    distinguish fields even when subjects contain special characters.
+/// 2. Append `--graph` and any user-supplied extra args, then run git.
+/// 3. Parse each output line: lines containing a `\x02`-delimited record are
+///    split into fields and rendered via [`ui::CommitEntry`]; lines containing
+///    only graph art are colourised with [`ui::colorize_graph`].
+///
+/// # Errors
+///
+/// Returns an error if the config cannot be loaded.
 pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
 
-    // Special ASCII control characters to avoid collisions with commit message content.
-    const SEP: &str = "\x01"; // Start of Heading (used as field separator)
-    const REC: &str = "\x02"; // Start of Text (used as record separator)
+    // Special ASCII control characters chosen to be collision-free with typical
+    // commit message content.
+    const SEP: &str = "\x01"; // Start of Heading — field separator
+    const REC: &str = "\x02"; // Start of Text — record separator
 
-    // Build format string: record_sep + full_hash + sep + short_hash + sep + subject + sep
-    // + author_name + sep + rel_date + sep + ref_names + record_sep
+    // Format: REC + full_hash + SEP + short_hash + SEP + subject + SEP +
+    //         author_name + SEP + rel_date + SEP + ref_names + REC
     let fmt = format!(
         "{}%H{}%h{}%s{}%an{}%ar{}%D{}",
         REC, SEP, SEP, SEP, SEP, SEP, REC
@@ -299,7 +404,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
 
     let mut args = vec!["log".to_string(), format!("--pretty=format:{}", fmt)];
 
-    // Automatically add --graph if enabled in config and not overridden by user.
+    // Add --graph unless the user explicitly requested --no-graph.
     let has_graph = cfg.ui.show_graph && !extra_args.contains(&"--no-graph".to_string());
     if has_graph
         && !extra_args
@@ -309,7 +414,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
         args.push("--graph".to_string());
     }
 
-    // Default limit unless user passed -n or --max-count.
+    // Apply a default commit limit unless the user passed -n/--max-count/--all.
     let has_limit = extra_args
         .iter()
         .any(|a| a.starts_with("-n") || a.starts_with("--max-count") || a.starts_with("--all"));
@@ -329,7 +434,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     println!(); // top padding
 
     for line in output.lines() {
-        // Check if this line contains a commit record
+        // Lines that contain a commit record are bounded by two \x02 bytes.
         if let (Some(start), Some(end)) = (line.find('\x02'), line.rfind('\x02')) {
             if start != end {
                 let record = &line[start + 1..end];
@@ -337,7 +442,6 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
                 let fields: Vec<&str> = record.splitn(7, '\x01').collect();
 
                 if fields.len() >= 6 {
-                    let _hash = fields[0];
                     let short_hash = fields[1];
                     let subject = fields[2];
                     let author = fields[3];
@@ -359,7 +463,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
             }
         }
 
-        // Graph-only lines (no commit data).
+        // Graph-only lines (no commit data) — colourised and printed as-is.
         if !line.trim().is_empty() {
             println!("{}", ui::colorize_graph(line));
         }
@@ -369,13 +473,20 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     Ok(())
 }
 
-// ─── Enhanced Status ─────────────────────────────────────────────────────────
+// ─── Enhanced status ─────────────────────────────────────────────────────────
 
-/// Pretty status output using porcelain v2 data.
+/// Pretty-print git status using `--porcelain=v2` machine-readable output.
+///
+/// Shows staged, unstaged, untracked, and conflicted files in separate sections
+/// with colour-coded status codes and Unicode icons, along with ahead/behind
+/// counts for the current tracking branch.
+///
+/// # Errors
+///
+/// Returns an error if the config cannot be loaded.
 pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     let branch = current_branch().unwrap_or_else(|_| "unknown".into());
 
-    // Get porcelain v2 output
     let raw = git_output_lossy(&["status", "--porcelain=v2", "--branch", "--ahead-behind"]);
 
     let mut ahead: usize = 0;
@@ -389,28 +500,27 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     for line in raw.lines() {
         if line.starts_with("# branch.head ") {
-            // skip, we already have it
-        } else if line.starts_with("# branch.upstream ") {
-            upstream = Some(line["# branch.upstream ".len()..].to_string());
-        } else if line.starts_with("# branch.ab ") {
-            let ab = &line["# branch.ab ".len()..];
+            // Already captured in `current_branch()` above.
+        } else if let Some(up) = line.strip_prefix("# branch.upstream ") {
+            upstream = Some(up.to_string());
+        } else if let Some(ab) = line.strip_prefix("# branch.ab ") {
+            // "# branch.ab +3 -1" — ahead/behind counts.
             let parts: Vec<&str> = ab.split_whitespace().collect();
             if parts.len() >= 2 {
                 ahead = parts[0].trim_start_matches('+').parse().unwrap_or(0);
                 behind = parts[1].trim_start_matches('-').parse().unwrap_or(0);
             }
         } else if let Some(rest) = line.strip_prefix("1 ") {
-            // Ordinary changed entry: "1 XY sub mH mI mW hH hI path"
+            // Ordinary changed file: "1 XY sub mH mI mW hH hI path"
             let xy = &rest[..2];
-            let _path_start = rest.find('\t').map(|i| i + 1).unwrap_or(10);
             let fields: Vec<&str> = rest.splitn(9, ' ').collect();
             let path = if fields.len() >= 9 {
                 fields[8]
             } else {
                 rest.splitn(9, ' ').last().unwrap_or("")
             };
-            let x = &xy[0..1]; // staged
-            let y = &xy[1..2]; // unstaged
+            let x = &xy[0..1]; // staged status
+            let y = &xy[1..2]; // unstaged status
             if x != "." {
                 staged.push((x.to_string(), path.to_string()));
             }
@@ -418,13 +528,13 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
                 unstaged.push((y.to_string(), path.to_string()));
             }
         } else if let Some(rest) = line.strip_prefix("2 ") {
-            // Renamed/copied
+            // Renamed or copied file.
             let xy = &rest[..2];
             let fields: Vec<&str> = rest.splitn(10, ' ').collect();
             let paths = if fields.len() >= 10 {
                 let p = fields[9];
                 if p.contains('\t') {
-                    p.splitn(2, '\t').next().unwrap_or(p).to_string()
+                    p.split('\t').next().unwrap_or(p).to_string()
                 } else {
                     p.to_string()
                 }
@@ -440,17 +550,18 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
                 unstaged.push((y.to_string(), paths));
             }
         } else if let Some(rest) = line.strip_prefix("u ") {
+            // Unmerged (conflict) entry.
             let fields: Vec<&str> = rest.splitn(12, ' ').collect();
             let path = fields.last().copied().unwrap_or("").to_string();
             unmerged.push((rest[..2].to_string(), path));
         } else if let Some(rest) = line.strip_prefix("? ") {
+            // Untracked file.
             untracked.push(rest.to_string());
         }
     }
 
-    // ─── Print ────────────────────────────────────────────────────────────────
+    // ─── Print output ─────────────────────────────────────────────────────────
 
-    // Branch header.
     println!();
     print!("  {} {}", "On branch".bright_black(), branch.green().bold());
     if let Some(up) = &upstream {
@@ -458,12 +569,10 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     }
     println!();
 
-    // Ahead/behind.
     if ahead > 0 || behind > 0 {
         println!("  {}", ui::format_ahead_behind(ahead, behind));
     }
 
-    // Nothing to show.
     if staged.is_empty() && unstaged.is_empty() && untracked.is_empty() && unmerged.is_empty() {
         println!();
         println!(
@@ -475,7 +584,6 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    // Unmerged.
     if !unmerged.is_empty() {
         ui::print_section("Conflicts", Some(unmerged.len()));
         for (code, path) in &unmerged {
@@ -484,7 +592,6 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Staged.
     if !staged.is_empty() {
         ui::print_section("Staged Changes", Some(staged.len()));
         let last = staged.len() - 1;
@@ -495,7 +602,6 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Unstaged.
     if !unstaged.is_empty() {
         ui::print_section("Unstaged Changes", Some(unstaged.len()));
         let last = unstaged.len() - 1;
@@ -512,7 +618,6 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Untracked.
     if !untracked.is_empty() {
         ui::print_section("Untracked Files", Some(untracked.len()));
         let last = untracked.len() - 1;
@@ -529,12 +634,11 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     println!();
 
-    // Hints.
     if !staged.is_empty() {
         println!(
             "  {}  {}",
             "tip:".bright_black(),
-            "g commit  — commit staged changes".bright_black()
+            format!("{} commit  — commit staged changes", crate::bin_name()).bright_black()
         );
     } else if !unstaged.is_empty() || !untracked.is_empty() {
         println!(
@@ -548,9 +652,19 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     Ok(())
 }
 
-// ─── Enhanced Diff ────────────────────────────────────────────────────────────
+// ─── Enhanced diff ────────────────────────────────────────────────────────────
 
-/// Run diff using a configured external tool if available.
+/// Run diff using a configured external tool if available, otherwise passthrough.
+///
+/// The tool is selected from `config.diff.tool`:
+/// - `"auto"` → detect `delta` or `diff-so-fancy` in `$PATH`.
+/// - `"delta"` / `"diff-so-fancy"` → pipe git diff output through the tool.
+/// - Anything else → forward directly to `git diff`.
+///
+/// # Errors
+///
+/// Returns an error if the git diff process cannot be spawned, or if the config
+/// cannot be loaded.
 pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
     let cfg = config::load().unwrap_or_default();
     let tool = resolve_diff_tool(&cfg.diff.tool);
@@ -566,10 +680,7 @@ pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
                     .stdout
                     .context("no stdout")?;
 
-                let status = Command::new("delta").stdin(output).status()?;
-                if !status.success() {
-                    // fall through to builtin
-                }
+                Command::new("delta").stdin(output).status()?;
                 return Ok(());
             }
             passthrough_with_subcommand("diff", extra_args)
@@ -593,7 +704,7 @@ pub fn enhanced_diff(extra_args: &[String]) -> Result<()> {
     }
 }
 
-/// Determine which diff tool to run based on config and availability.
+/// Determine which diff tool to use based on the config value and `$PATH`.
 fn resolve_diff_tool(tool: &str) -> String {
     match tool {
         "auto" => {
@@ -609,16 +720,16 @@ fn resolve_diff_tool(tool: &str) -> String {
     }
 }
 
-/// Helper to run git with a specific subcommand + extra args.
+/// Prepend a subcommand name to `extra` and delegate to [`passthrough`].
 fn passthrough_with_subcommand(sub: &str, extra: &[String]) -> Result<()> {
     let mut args = vec![sub.to_string()];
     args.extend_from_slice(extra);
     passthrough(&args)
 }
 
-// ─── Enhanced Branch ─────────────────────────────────────────────────────────
+// ─── Enhanced branch ─────────────────────────────────────────────────────────
 
-/// True if `refspec` resolves to an object (`git rev-parse -q --verify`).
+/// Returns `true` if `refspec` resolves to an existing object in the repo.
 fn git_ref_exists(refspec: &str) -> bool {
     Command::new(git_exe())
         .args(["rev-parse", "-q", "--verify", refspec])
@@ -629,6 +740,17 @@ fn git_ref_exists(refspec: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Resolve the "mainline" ref used as the squash base when no `--base` is given.
+///
+/// Resolution order:
+/// 1. The explicit `--base` value from the user.
+/// 2. `@{upstream}` — the configured tracking branch.
+/// 3. `origin/<default_branch>` — the remote default branch.
+/// 4. `<default_branch>` — the local default branch.
+///
+/// # Errors
+///
+/// Returns an error if none of the candidates exist in the repository.
 fn resolve_branch_squash_mainline(user_base: Option<&str>) -> Result<String> {
     if let Some(b) = user_base {
         git_output(&["rev-parse", "--verify", b])
@@ -654,11 +776,49 @@ fn resolve_branch_squash_mainline(user_base: Option<&str>) -> Result<String> {
     );
 }
 
-/// Collapse all commits on the current branch into one commit (parent = merge-base with base).
-pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
-    if !working_tree_clean()? {
-        bail!("Working tree is not clean. Commit or stash changes before squashing.");
+/// Resolve the commit message for a squash operation.
+///
+/// Priority:
+/// - If `message` is `Some`, use it directly.
+/// - Otherwise use the subject of the *oldest* commit in `range`.
+/// - If that is empty (e.g. the range is empty), fall back to
+///   `"Squash branch \`<branch>\`"`.
+///
+/// This logic was copy-pasted verbatim in both `branch_squash` (this file) and
+/// `squash` in `stack.rs`.  Extracting it here gives both a single source of truth.
+///
+/// # Errors
+///
+/// Returns an error if the `git log` invocation fails.
+pub fn resolve_squash_message(message: Option<&str>, range: &str, branch: &str) -> Result<String> {
+    if let Some(m) = message {
+        return Ok(m.to_string());
     }
+    let oldest = git_output(&["log", range, "--reverse", "--format=%s", "-1"])?;
+    if oldest.is_empty() {
+        Ok(format!("Squash branch `{}`", branch))
+    } else {
+        Ok(oldest)
+    }
+}
+
+/// Collapse all commits on the current branch into a single commit on top of
+/// its merge-base with `base`.
+///
+/// Steps:
+/// 1. Compute `git merge-base HEAD <base>`.
+/// 2. `git reset --soft <merge-base>` to stage all branch changes at once.
+/// 3. `git commit -m <message>` to create the single squashed commit.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The working tree is dirty.
+/// - The current state is detached HEAD.
+/// - The base ref does not exist.
+/// - Any git operation fails.
+pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
+    require_clean_tree("squashing")?;
     let branch = current_branch()?;
     if branch == "HEAD" {
         bail!("Detached HEAD; checkout a branch first.");
@@ -682,16 +842,7 @@ pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
         );
     }
 
-    let commit_msg = if let Some(m) = message {
-        m.to_string()
-    } else {
-        let oldest = git_output(&["log", &range, "--reverse", "--format=%s", "-1"])?;
-        if oldest.is_empty() {
-            format!("Squash branch `{}`", branch)
-        } else {
-            oldest
-        }
-    };
+    let commit_msg = resolve_squash_message(message, &range, &branch)?;
 
     let fork_short = git_output(&["rev-parse", "--short", &fork]).unwrap_or(fork.clone());
 
@@ -734,9 +885,19 @@ pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// Branch listing with metadata and color, or passthrough for mutations.
+/// List branches with metadata and colour, or pass through for mutation flags.
+///
+/// When `extra_args` contains flags that create, delete, or move branches
+/// (`-d`, `-D`, `-m`, `--move`, `--copy`, `-b`, `--create`), the call is
+/// forwarded to `git branch` unchanged.
+///
+/// Otherwise a formatted table is printed showing branch name, hash, last
+/// commit subject, author, date, and upstream tracking branch.
+///
+/// # Errors
+///
+/// Returns an error if the git command cannot be spawned.
 pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
-    // If extra args look like modifications (create/delete), just pass through
     let mutating = extra_args.iter().any(|a| {
         a == "-d"
             || a == "-D"
@@ -749,14 +910,12 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             || a == "--create"
     });
 
-    if mutating || !extra_args.is_empty() && !extra_args[0].starts_with('-') {
-        // Creating a new branch or mutating: pass through
+    if mutating || (!extra_args.is_empty() && !extra_args[0].starts_with('-')) {
         let mut args = vec!["branch".to_string()];
         args.extend_from_slice(extra_args);
         return passthrough(&args);
     }
 
-    // List branches with metadata
     let raw = git_output_lossy(&[
         "branch",
         "--format=%(refname:short)\t%(objectname:short)\t%(subject)\t%(authorname)\t%(committerdate:relative)\t%(upstream:short)\t%(HEAD)",
@@ -783,7 +942,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
         );
 
-        // Skip remote tracking branches in the list (they're shown as "remote/branch")
+        // Remote branches are prefixed with "remotes/" in the ref format.
         let is_remote = name.starts_with("remotes/");
         let display_name = if is_remote {
             name.trim_start_matches("remotes/").to_string()
@@ -814,6 +973,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             display_name.white().to_string()
         };
 
+        // Truncate long subject lines to keep the table readable.
         let subj = if subject.len() > 40 {
             format!("{}…", &subject[..39])
         } else {
@@ -844,11 +1004,18 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     Ok(())
 }
 
-// ─── Enhanced Show ────────────────────────────────────────────────────────────
+// ─── Enhanced show ────────────────────────────────────────────────────────────
 
-/// Show commit metadata with nice formatting, then the diff.
+/// Show a commit's metadata with rich formatting, followed by its diff.
+///
+/// Displays the full hash, author, date (absolute + relative), subject, and
+/// optional body in a readable layout, then delegates to [`enhanced_diff`] for
+/// the patch view.
+///
+/// # Errors
+///
+/// Returns an error if any git operation fails or the config cannot be loaded.
 pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
-    // Show commit metadata beautifully, then the diff
     let rev = extra_args.first().map(|s| s.as_str()).unwrap_or("HEAD");
 
     let meta_fmt = "%H\x01%h\x01%s\x01%b\x01%an\x01%ae\x01%ai\x01%ar\x01%D\x01%P";
@@ -884,8 +1051,8 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
             println!("      {}", ui::color_subject(subject).bold());
             if !body.trim().is_empty() {
                 println!();
-                for line in body.lines() {
-                    println!("      {}", line.white());
+                for body_line in body.lines() {
+                    println!("      {}", body_line.white());
                 }
             }
             println!();
@@ -893,16 +1060,11 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
         }
     }
 
-    // Now show the diff.
+    // Show the diff for this single commit.
     let diff_args: Vec<String> = {
         let mut a = vec!["-1".to_string(), rev.to_string()];
-        // Remove the rev from extra_args if present
         a.extend(extra_args.iter().filter(|&s| s != rev).cloned());
         a
     };
     enhanced_diff(&diff_args)
 }
-
-// TODO(git): Support pager configuration for enhanced outputs (respect config.general.pager).
-// TODO(git): Improve parsing of porcelain v2 renames with both old/new paths.
-// TODO(git): Add unit tests for log/status parsing with fixed sample outputs.
