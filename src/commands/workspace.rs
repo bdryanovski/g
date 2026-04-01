@@ -905,8 +905,12 @@ pub fn create(
 ///
 /// Returns an error if the interactive prompt fails or a file copy fails.
 fn copy_untracked_files(dest: &Path) -> Result<()> {
+    // Untracked files (not gitignored) — individual file paths.
     let untracked_out =
         gitcmd::git_output(&["ls-files", "--others", "--exclude-standard"]).unwrap_or_default();
+
+    // Gitignored entries — use --directory so large trees like node_modules
+    // appear as a single selectable item rather than thousands of files.
     let ignored_out = gitcmd::git_output(&[
         "ls-files",
         "--others",
@@ -916,11 +920,13 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
     ])
     .unwrap_or_default();
 
+    // Merge both lists.  Strip trailing slashes so paths are uniform and
+    // can be used directly with Path::new().
     let mut candidates: Vec<String> = untracked_out
         .lines()
         .chain(ignored_out.lines())
         .filter(|l| !l.is_empty())
-        .map(str::to_string)
+        .map(|l| l.trim_end_matches('/').to_string())
         .collect();
     candidates.dedup();
 
@@ -950,15 +956,41 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
         let rel = &candidates[idx];
         let src = src_root.join(rel);
         let dst = dest.join(rel);
-        if let Some(p) = dst.parent() {
-            fs::create_dir_all(p)
-                .with_context(|| format!("Failed to create directory '{}'", p.display()))?;
-        }
-        fs::copy(&src, &dst).with_context(|| {
+        copy_path(&src, &dst).with_context(|| {
             format!("Failed to copy '{}' to '{}'", src.display(), dst.display())
         })?;
     }
 
+    Ok(())
+}
+
+/// Copy `src` to `dst`, handling both files and directories.
+///
+/// For a regular file, this is a plain `fs::copy`.  For a directory, the
+/// entire tree is copied recursively, preserving relative structure.
+///
+/// # Errors
+///
+/// Returns an error if any read, create, or write operation fails.
+fn copy_path(src: &Path, dst: &Path) -> Result<()> {
+    if src.is_dir() {
+        fs::create_dir_all(dst)
+            .with_context(|| format!("Failed to create directory '{}'", dst.display()))?;
+        for entry in fs::read_dir(src)
+            .with_context(|| format!("Failed to read directory '{}'", src.display()))?
+        {
+            let entry =
+                entry.with_context(|| format!("Failed to read entry in '{}'", src.display()))?;
+            let file_name = entry.file_name();
+            copy_path(&entry.path(), &dst.join(&file_name))?;
+        }
+    } else {
+        if let Some(parent) = dst.parent() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("Failed to create directory '{}'", parent.display()))?;
+        }
+        fs::copy(src, dst).with_context(|| format!("Failed to copy file '{}'", src.display()))?;
+    }
     Ok(())
 }
 
