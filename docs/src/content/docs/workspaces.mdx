@@ -1,102 +1,461 @@
 ---
 title: Workspaces
-description: Git worktrees with friendly names, sibling directories, and metadata.
+description: Git worktrees with friendly names, interactive switching, container layouts, and file-copy support.
 order: 4
 ---
 
 import { DocFlowWorktree } from "../../components/react/InlineFlowDiagrams";
 
-Workspaces wrap **`git worktree`**: each workspace is a **separate directory** with its own checkout. You keep multiple branches checked out at once without stashing or constantly switching branches.
-
-## Why worktrees
-
-| Without worktrees | With `g workspace` |
-|-------------------|---------------------|
-| `git stash`, `git switch`, context lost | Stay on your branch; open another path |
-| Clone the repo twice | One object database, multiple working trees |
-| Forget where the second clone lived | `g workspace list` shows paths + branches |
+Workspaces wrap **`git worktree`**: each workspace is a **separate directory** on disk with its own checkout, but they all share a single Git object database. You keep multiple branches alive at once — no stashing, no second clone, no lost context.
 
 <DocFlowWorktree
   client:visible
-  caption="Animated: the main repo folder stays on `main`; `g workspace create` adds sibling directories that share the same Git object database but check out other branches."
+  caption="The main repo folder stays on `main`; `g workspace create` adds sibling (or container-child) directories that share the same Git object database but check out independent branches."
 />
 
-## Create
+---
 
-**New branch** named after the workspace (default):
+## When to use workspaces
 
-```bash
-g workspace create feature-auth --description "OIDC + sessions"
-```
+| Situation | Without workspaces | With `g workspace` |
+|---|---|---|
+| Urgent hotfix arrives while you're mid-feature | `git stash`, switch, fix, pop stash, pray | Open a second directory on `main`, fix there, come back |
+| Two long-running tracks at once | Clone the repo a second time | One object store, two named directories |
+| Review a teammate's branch locally | Abandon your current state | Create a workspace for their branch, switch in seconds |
+| Work on a feature that needs `.env` tweaks | Manually copy files each time | `--copy` brings your untracked files along |
+| Onboarding a fresh repo | `git clone`, settle for flat layout | `g clone --workspace`, container layout from day one |
 
-**Existing branch**:
+---
 
-```bash
-g workspace create hotfix -b fix/login-bug
-```
+## Two directory layouts
 
-**With explicit path** (if your CLI version supports flags—otherwise rely on default sibling naming):
+### Sibling layout (default)
 
-The default sibling layout uses the repo folder name + configured separator:
+Each workspace lives next to the repo root, joined by a configurable separator:
 
 ```text
-~/projects/myapp           ← main repo
-~/projects/myapp--feature-auth
+~/projects/myapp                    ← main repo      (main branch)
+~/projects/myapp--feature-auth      ← workspace      (feat/auth branch)
+~/projects/myapp--hotfix            ← workspace      (fix/oauth branch)
 ```
 
-## List & inspect
+### Container layout
+
+Enabled by `g workspace init` or `g clone --workspace`. The original repo path becomes a **container** directory; each workspace is a child:
+
+```text
+~/projects/myapp/                   ← container
+~/projects/myapp/main/              ← primary workspace   (main branch)
+~/projects/myapp/feature-auth/      ← workspace           (feat/auth branch)
+~/projects/myapp/hotfix/            ← workspace           (fix/oauth branch)
+```
+
+Once in container layout, every future `g workspace create` places new worktrees inside the container automatically — no configuration needed.
+
+---
+
+## Use cases
+
+### Fix a production bug without touching your feature branch
+
+**Who:** You are halfway through `feat/notifications`. A login bug just hit production. It needs a patch on `main` now.
+
+**Goal:** Produce a fix commit and PR without abandoning or stashing your current work.
+
+**What to do**
+
+1. From anywhere in your repo, create a hotfix workspace branching off `main`:
+
+   ```bash
+   g workspace create hotfix -b fix/oauth-token
+   ```
+
+   > `g` creates `myapp--hotfix` (sibling) or `myapp/hotfix` (container) and checks out a new `fix/oauth-token` branch there. Your current directory is untouched.
+
+2. Switch into it:
+
+   ```bash
+   g workspace switch hotfix
+   # A subshell opens inside myapp--hotfix
+   ```
+
+3. Fix, test, commit, push, open PR — exactly as normal:
+
+   ```bash
+   # ... edit files ...
+   g commit -m "fix(auth): refresh token expiry window"
+   g push origin fix/oauth-token
+   ```
+
+4. Exit the shell when you are done. Your feature branch is right where you left it:
+
+   ```bash
+   exit
+   # back in myapp on feat/notifications
+   ```
+
+5. Once the hotfix is merged, clean up:
+
+   ```bash
+   g workspace delete hotfix
+   ```
+
+---
+
+### Run two long-lived features in parallel
+
+**Who:** You own both the search redesign and the billing refactor. Each takes weeks. Switching between them with `git switch` means rebuilding caches, restarting dev servers, and losing IDE state every time.
+
+**Goal:** Keep both tracks alive on disk at the same time.
+
+**What to do**
+
+1. Set up both workspaces once:
+
+   ```bash
+   g workspace create search-v2 --description "Elasticsearch rollout"
+   g workspace create billing-ui -b feat/billing-shell --description "Stripe v3 migration"
+   ```
+
+2. See what is running:
+
+   ```bash
+   g workspace list
+   ```
+
+   ```text
+     ◉ main        main          ~/projects/myapp/main          abc1234  —
+     ◯ search-v2   feat/search   ~/projects/myapp/search-v2     def5678  3 hours ago
+     ◯ billing-ui  feat/billing  ~/projects/myapp/billing-ui    9ab0123  1 day ago
+   ```
+
+3. Jump between them as needed:
+
+   ```bash
+   g workspace switch        # interactive fuzzy picker — type to filter
+   g workspace switch search-v2   # or directly by name
+   ```
+
+4. Each workspace gets its own `node_modules`, build cache, and editor window. Switching is opening a shell tab — not a `git switch`.
+
+---
+
+### Pick up a teammate's branch for local testing
+
+**Who:** You are reviewing a PR for `feat/new-dashboard`. You want to run it locally without leaving your current branch.
+
+**Goal:** Check out their branch in a separate directory while staying on your own work.
+
+**What to do**
+
+1. Their branch exists on `origin` but not locally. `g` tracks it automatically:
+
+   ```bash
+   g workspace create dashboard-review -b feat/new-dashboard
+   # → finds origin/feat/new-dashboard, creates a local tracking branch
+   ```
+
+2. Switch in, run their dev server on a different port, test:
+
+   ```bash
+   g workspace switch dashboard-review
+   npm run dev -- --port 3001
+   ```
+
+3. Leave feedback, exit, delete:
+
+   ```bash
+   exit
+   g workspace delete dashboard-review
+   ```
+
+---
+
+### Start a new project with workspace layout from day one
+
+**Who:** You are cloning a repo for a new engagement. You know you will work on multiple branches over time and want the container layout from the start.
+
+**Goal:** Clone and be workspace-ready before writing a single line of code.
+
+**What to do**
+
+```bash
+g clone https://github.com/org/api-service.git --workspace
+cd api-service/main
+```
+
+What happened:
+
+```text
+~/projects/api-service/         ← container created
+~/projects/api-service/main/    ← repo cloned here (or /master, detected automatically)
+```
+
+Any extra `git clone` flags work as normal:
+
+```bash
+g clone https://github.com/org/api-service.git --workspace --depth 1 -q
+```
+
+From now on, `g workspace create feature-x` places the worktree at `api-service/feature-x/`.
+
+---
+
+### Convert an existing repo to container layout
+
+**Who:** You cloned the repo months ago the normal way. You have started hitting the "too many stashes" problem and want to switch to worktrees properly.
+
+**Goal:** Reorganise the existing clone in place without losing any work.
+
+**What to do**
+
+1. Make sure your working tree is clean (commit or stash anything in progress):
+
+   ```bash
+   g status
+   ```
+
+2. Run `init` from inside the repo:
+
+   ```bash
+   cd ~/projects/myapp
+   g workspace init
+   ```
+
+   `init` prints its plan — exactly which directories will move — and asks for confirmation before touching anything:
+
+   ```text
+     move  ~/projects/myapp  →  ~/projects/myapp--ws-tmp
+     mkdir ~/projects/myapp
+     move  ~/projects/myapp--ws-tmp  →  ~/projects/myapp/main
+
+   Proceed? [y/N]
+   ```
+
+3. Confirm, then navigate to the new inner location:
+
+   ```bash
+   cd ~/projects/myapp/main
+   ```
+
+4. Create your first extra workspace:
+
+   ```bash
+   g workspace create feature-x
+   # → placed at ~/projects/myapp/feature-x/
+   ```
+
+---
+
+### Bring your local config files along
+
+**Who:** Your project needs `.env`, `config/local.yml`, and a self-signed cert that are gitignored and live only in your checkout. You branch off to work on a new feature but those files are missing from the fresh worktree.
+
+**Goal:** Copy just the files you need into the new workspace without manual `cp` commands.
+
+**What to do**
+
+```bash
+g workspace create feature-payments --copy
+```
+
+An interactive checklist appears listing every untracked and gitignored file in your current workspace:
+
+```text
+Select files to copy into the new workspace (space to toggle, enter to confirm)
+> [x] .env
+  [ ] .env.test
+  [x] config/local.yml
+  [ ] certs/localhost.pem
+```
+
+Toggle with Space, confirm with Enter. Only the selected files are copied — directory structure is preserved.
+
+---
+
+### Jump to any workspace from anywhere
+
+**Who:** You have four workspaces open and lost track of which terminal is which.
+
+**Goal:** Get into the right workspace without remembering the exact name.
+
+**What to do**
+
+Run `switch` with no argument:
+
+```bash
+g workspace switch
+```
+
+A fuzzy-searchable list opens:
+
+```text
+Switch to workspace
+> ◉ main         main          ~/projects/myapp/main
+  ◯ feature-auth feat/auth     ~/projects/myapp/feature-auth
+  ◯ hotfix        fix/oauth     ~/projects/myapp/hotfix
+  ◯ billing-ui    feat/billing  ~/projects/myapp/billing-ui
+```
+
+Type any part of the name, branch, or path to filter. The workspace you are currently inside is pre-selected. Press Enter to open a shell there, Escape to cancel.
+
+---
+
+## Command reference
+
+### `g workspace init`
+
+Reorganise an existing repo into container layout. Shows a plan and asks for confirmation. On failure, rolls back to the original state.
+
+```bash
+g workspace init
+```
+
+### `g workspace list`
+
+Show all worktrees with metadata. The `◉` marker indicates the workspace your shell is currently inside.
 
 ```bash
 g workspace list
+```
+
+```text
+     Name         Branch        Path                              HEAD     Created
+─ ──────────── ─────────────  ──────────────────────────────────  ───────  ───────
+◉ main         main          ~/projects/myapp/main               abc1234  —
+◯ feature-auth feat/auth     ~/projects/myapp/feature-auth       def5678  2 days ago
+◯ hotfix       fix/oauth     ~/projects/myapp/hotfix             9ab0123  4 hours ago
+```
+
+### `g workspace create`
+
+```bash
+# New branch named after the workspace
+g workspace create feature-auth
+
+# New branch with a custom name
+g workspace create hotfix -b fix/oauth-token
+
+# New branch from a specific commit
+g workspace create hotfix -b fix/oauth-token abc1234
+
+# Existing local or remote branch (remote auto-tracked if not local)
+g workspace create auth-review -b feat/auth
+
+# With a description shown in list view
+g workspace create search-v2 --description "Elasticsearch rollout"
+
+# Copy untracked/gitignored files from the current workspace
+g workspace create feature-payments --copy
+
+# Combine flags
+g workspace create feature-x -b feat/x --description "New feature" --copy
+```
+
+Branch resolution order:
+1. Exists locally → check out directly.
+2. Exists on `origin` only → create a local tracking branch.
+3. Neither → create a fresh branch (optionally from a start point).
+
+### `g workspace switch`
+
+```bash
+g workspace switch              # interactive fuzzy picker
+g workspace switch feature-auth # direct by name (fuzzy matched)
+```
+
+Opens a subshell in the workspace directory. Exit with `exit` or Ctrl+D to return.
+
+### `g workspace status`
+
+Show what workspace you are currently inside, its branch, path, creation time, and a change summary.
+
+```bash
 g workspace status
 ```
 
-Example mental model of output:
+Run this from any linked worktree — useful when you forget which checkout you are in.
 
-```text
-  ● myapp          main       ~/projects/myapp
-  ○ feature-auth   feat/auth  ~/projects/myapp--feature-auth
-```
+### `g workspace rename`
 
-## Switch context
-
-Open a **subshell** in the workspace directory (exit with `exit` or Ctrl+D):
-
-```bash
-g workspace switch feature-auth
-pwd    # now inside the worktree
-g status
-```
-
-## Rename & remove
+Rename a workspace — moves the directory on disk and runs `git worktree repair` to update git's internal tracking.
 
 ```bash
 g workspace rename feature-auth auth-v2
-g workspace delete auth-v2
-g workspace delete auth-v2 --force   # when worktree has local changes you accept losing
 ```
+
+### `g workspace delete`
+
+```bash
+g workspace delete auth-v2
+g workspace delete auth-v2 --force    # remove even with uncommitted changes
+```
+
+---
+
+## Remote branch auto-tracking
+
+When you pass `-b <branch>` to `create` and that branch does not exist locally, `g` checks `origin/<branch>` before creating a fresh branch:
+
+```bash
+# origin/feat/payments exists locally
+g workspace create payments -b feat/payments
+# → git worktree add ... -b feat/payments --track origin/feat/payments
+```
+
+If neither local nor remote is found, a new branch is created from the current HEAD (or from `start_point` if given).
+
+---
+
+## Clone with workspace layout
+
+```bash
+g clone <url> [dest] --workspace
+```
+
+`g` determines the remote's default branch via `git ls-remote` before cloning, so the first worktree always has the right name. Extra flags (`--depth`, `--branch`, `-q`) are forwarded to `git clone`:
+
+```bash
+g clone https://github.com/org/repo.git            --workspace
+g clone https://github.com/org/repo.git my-project --workspace
+g clone https://github.com/org/repo.git            --workspace --depth 1
+```
+
+---
 
 ## Configuration
 
 ```toml
 [workspace]
-separator = "--"    # myapp--workspace-name
+separator = "--"    # sibling layout only: myapp--workspace-name
 ```
 
-## Under the hood (plain Git)
+The separator has no effect in container layout — workspace names become directory names directly.
 
-Roughly equivalent operations (names vary):
+---
+
+## Under the hood
+
+`g workspace` is a thin layer on top of standard `git worktree` commands:
 
 ```bash
-git worktree add ../myapp--feature-auth feat/auth-branch
-git worktree list
-git worktree remove ../myapp--feature-auth
+git worktree add <path> <branch>                         # existing local branch
+git worktree add -b <branch> --track origin/<b> <path>  # remote tracking branch
+git worktree add -b <branch> <path> <start-point>        # new branch from commit
+git worktree list --porcelain                             # list (for display)
+git worktree remove [--force] <path>                     # delete
+git worktree repair                                       # after rename or init
+git ls-remote --symref <url> HEAD                        # clone: detect default branch
 ```
 
-`g` adds **metadata** (description, friendly labels) in `~/.config/g/` on top of what Git already stores.
+Metadata (friendly names, descriptions, creation timestamps, container root) is stored in `~/.config/g/workspaces.toml` alongside the rest of your local developer state. It is **not** part of the repository and is **not** committed.
+
+---
 
 ## Tips
 
-- Run **`g workspace status`** from **any** linked worktree to see which checkout you are in.
-- Prefer **one workspace per long-running branch** (feature, hotfix) instead of recloning.
-- See [Git flows](./git-flows/) for how worktrees complement **stack** workflows (e.g. fix `main` in a hotfix worktree while a feature stack stays open).
+- **`g workspace status`** tells you which checkout you are in from any linked worktree — useful when you have three terminals open on the same repo.
+- **`g workspace switch`** (no argument) is faster than `list` for navigating: just type a fragment of the name or branch.
+- **One workspace per long-running branch** beats stashing. Stashes accumulate; workspaces have names.
+- **Preview destructive operations** with `g --dry-run workspace init` to see exactly what will move before it moves.
+- See [Git flows](./git-flows/) for how worktrees complement **stack** workflows — for example, fixing `main` in a hotfix workspace while a feature stack stays open in another directory.

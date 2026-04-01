@@ -93,6 +93,14 @@ pub enum Commands {
 /// Workspace-related subcommands for git worktree management.
 #[derive(Subcommand)]
 pub enum WorkspaceCommands {
+    /// Reorganise an existing repo into a container/worktree layout
+    ///
+    /// Moves the repo root into a new sub-directory named after the default
+    /// branch (e.g. `main`), then recreates the original path as a container
+    /// directory.  After `init`, new workspaces created with `g workspace
+    /// create` are placed inside the container.
+    Init,
+
     /// List all workspaces (git worktrees)
     List,
 
@@ -101,17 +109,22 @@ pub enum WorkspaceCommands {
         /// Name for the new workspace
         name: String,
         /// Branch to check out (defaults to creating a new branch with the workspace name)
-        #[arg(short, long)]
+        #[arg(short = 'b', long)]
         branch: Option<String>,
+        /// Starting commit or tag when creating a new branch (e.g. `abc1234`)
+        start_point: Option<String>,
         /// Description of this workspace
         #[arg(short, long)]
         description: Option<String>,
+        /// Show an interactive picker to copy untracked/gitignored files into the new workspace
+        #[arg(long)]
+        copy: bool,
     },
 
     /// Open a subshell in a workspace directory
     Switch {
-        /// Workspace name (fuzzy matched)
-        name: String,
+        /// Workspace name (fuzzy matched). Omit to open an interactive picker.
+        name: Option<String>,
     },
 
     /// Remove a workspace (git worktree remove)
