@@ -139,6 +139,19 @@ fn run() -> Result<()> {
     // users supply no known subcommand (e.g., `g -m "msg" -A`).
     let raw_args: Vec<String> = std::env::args().skip(1).collect();
 
+    // Intercept `g clone --workspace` before clap or git passthrough.
+    // Strip the `--workspace` flag and delegate to the workspace handler.
+    if raw_args.first().map(|s| s.as_str()) == Some("clone")
+        && raw_args.iter().any(|a| a == "--workspace")
+    {
+        let clone_args: Vec<String> = raw_args
+            .iter()
+            .filter(|a| a.as_str() != "--workspace")
+            .cloned()
+            .collect();
+        return commands::workspace::clone_with_workspace(&clone_args);
+    }
+
     // Attempt to parse using clap.  If parsing fails because the user didn't
     // choose one of our built-in subcommands, forward everything to git.
     let cli = match Cli::try_parse_from(iter::once(bin_name().to_string()).chain(raw_args.clone()))
@@ -174,16 +187,25 @@ fn run() -> Result<()> {
     match cli.command {
         // ─── Workspace ────────────────────────────────────────────────────────
         Commands::Workspace(cmd) => match cmd {
+            WorkspaceCommands::Init => commands::workspace::init()?,
             WorkspaceCommands::List => commands::workspace::list()?,
             WorkspaceCommands::Create {
                 name,
                 branch,
+                start_point,
                 description,
+                copy,
             } => {
                 // `as_deref()` turns `Option<String>` into `Option<&str>` without cloning.
-                commands::workspace::create(&name, branch.as_deref(), description.as_deref())?
+                commands::workspace::create(
+                    &name,
+                    branch.as_deref(),
+                    start_point.as_deref(),
+                    description.as_deref(),
+                    copy,
+                )?
             }
-            WorkspaceCommands::Switch { name } => commands::workspace::switch(&name)?,
+            WorkspaceCommands::Switch { name } => commands::workspace::switch(name.as_deref())?,
             WorkspaceCommands::Delete { name, force } => commands::workspace::delete(&name, force)?,
             WorkspaceCommands::Status => commands::workspace::status()?,
             WorkspaceCommands::Rename { old, new } => commands::workspace::rename(&old, &new)?,

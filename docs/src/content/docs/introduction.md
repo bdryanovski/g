@@ -38,7 +38,7 @@ g commit              # interactive conventional commit (when no -m)
 
 ## What you get beyond plain Git
 
-- **Workspaces** — parallel checkouts with `git worktree`, friendly names, and predictable sibling paths.
+- **Workspaces** — parallel checkouts with `git worktree`, friendly names, interactive fuzzy switching, and container or sibling directory layouts. Clone with `--workspace` or run `g workspace init` to reorganise an existing repo.
 - **Stacks** — ordered branch chains for stacked PRs, with sync, push, and GitHub PR wiring.
 - **Guided commits** — conventional-commit prompts with validation and previews.
 - **Compare** — branch comparison with file stats, commit lists, or full diff through your configured tool.

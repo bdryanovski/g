@@ -221,7 +221,70 @@ g workspace create billing-ui -b feat/billing-shell
 g workspace list
 ```
 
-Switch with `g workspace switch …` and `exit` when done. Delete a workspace when that line of work ships: `g workspace delete billing-ui`.
+Switch with `g workspace switch` (no argument opens the fuzzy picker) and `exit` when done. Delete a workspace when that line of work ships: `g workspace delete billing-ui`.
+
+---
+
+## Start a project workspace-first
+
+**Who:** You are cloning a repo that you know will involve parallel branches — a client project, a new service, a long engagement.
+
+**Goal:** Get the container layout (all worktrees as named sub-directories) from the very first `clone`.
+
+**What to do**
+
+```bash
+g clone https://github.com/org/api-service.git --workspace
+cd api-service/main
+```
+
+`g` detects the remote default branch before cloning, creates the container, and places the primary checkout at `api-service/main/`. From now on `g workspace create <name>` puts new worktrees at `api-service/<name>/`.
+
+---
+
+## Convert an existing repo to workspace layout
+
+**Who:** You cloned the repo months ago. You have started accumulating stashes and losing track of which terminal is on which branch.
+
+**Goal:** Reorganise the existing clone in place without losing work.
+
+**What to do**
+
+1. Commit or stash anything in progress, then run:
+
+   ```bash
+   cd ~/projects/myapp
+   g workspace init
+   ```
+
+2. `init` prints exactly what will move and asks for confirmation. After you approve, navigate to the new inner location:
+
+   ```bash
+   cd ~/projects/myapp/main
+   ```
+
+3. Create your first extra workspace — it lands inside the container automatically:
+
+   ```bash
+   g workspace create feature-x
+   # → ~/projects/myapp/feature-x/
+   ```
+
+---
+
+## Copy local config files to a new workspace
+
+**Who:** Your project uses `.env` and `config/local.yml` that are gitignored and only live in your checkout. You need them in every new worktree.
+
+**Goal:** New workspace with all your local config files already in place — no manual copying.
+
+**What to do**
+
+```bash
+g workspace create feature-payments --copy
+```
+
+An interactive checklist shows every untracked and gitignored file from your current workspace. Toggle with Space, confirm with Enter. Only the files you select are copied.
 
 ---
 
@@ -272,6 +335,11 @@ g compare --diff main release/1.4   # optional full patch
 |------------|------------|
 | Split a giant PR | `g stack new` / `g stack add` / `g stack pr` |
 | Fix prod while coding a feature | `g workspace create` / `g workspace switch` |
+| Clone a repo workspace-ready | `g clone <url> --workspace` |
+| Convert an existing repo to worktree layout | `g workspace init` |
+| Navigate between workspaces interactively | `g workspace switch` (no argument) |
+| Copy `.env` and local config to a new workspace | `g workspace create <name> --copy` |
+| Check out a remote branch as a workspace | `g workspace create <name> -b <branch>` (auto-tracks `origin/`) |
 | Read branch history fast | `g log`, `g compare --commits` |
 | Unify diff appearance | `[diff] tool` in config |
 | Fix stack after amending mid-stack | `g stack sync` |
