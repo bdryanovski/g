@@ -58,12 +58,11 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
     let staged = gitcmd::git_output_lossy(&["diff", "--cached", "--name-only"]);
     if staged.is_empty() && !args.amend {
         ui::print_warning("Nothing staged to commit.");
-        println!(
-            "  {} Use {} or {} to stage changes.",
-            "tip:".bright_black(),
+        ui::print_tip(&format!(
+            "Use {} or {} to stage changes.",
             "git add <file>".yellow(),
             format!("{} commit -a", crate::bin_name()).yellow()
-        );
+        ));
         return Ok(());
     }
 
@@ -106,24 +105,25 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
         git_args.push("-S");
     }
 
-    println!();
+    ui::print_blank();
     let pb = ui::spinner("Committing…");
     let result = gitcmd::git_output(&git_args);
-    pb.finish_and_clear();
 
     match result {
         Ok(out) => {
             let hash = gitcmd::git_output_lossy(&["rev-parse", "--short", "HEAD"]);
-            println!();
-            ui::print_success(&format!(
-                "{} {}",
-                hash.yellow().bold(),
-                ui::color_subject(subject_line)
-            ));
+            ui::spinner_success(
+                pb,
+                &format!(
+                    "{} {}",
+                    hash.yellow().bold(),
+                    ui::color_subject(subject_line)
+                ),
+            );
             if !out.is_empty() {
-                println!("     {}", out.lines().last().unwrap_or("").bright_black());
+                println!("  {}", out.lines().last().unwrap_or("").bright_black());
             }
-            println!();
+            ui::print_blank();
 
             // Record stats — best-effort, never fails the commit.
             let (commit_type, scope) = parse_conventional_type(subject_line);
@@ -144,7 +144,7 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
             }
         }
         Err(e) => {
-            ui::print_error(&format!("Commit failed: {}", e));
+            ui::spinner_error(pb, &format!("Commit failed: {}", e));
         }
     }
 
@@ -263,17 +263,16 @@ fn show_staged_summary() -> Result<()> {
         return Ok(());
     }
 
-    println!();
-    println!("  {}", "Staged changes:".bold().white());
+    ui::print_section("Staged changes", None);
     // Show at most 12 file lines to keep the output concise.
     for line in stat.lines().take(12) {
         let colored = colorize_stat_line(line);
-        println!("     {}", colored);
+        println!("  {}", colored);
     }
     if stat.lines().count() > 12 {
-        println!("     {}", "…and more".bright_black());
+        println!("  {}", "…and more".bright_black());
     }
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -311,8 +310,8 @@ fn colorize_stat_line(line: &str) -> String {
 fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<String> {
     let theme = ColorfulTheme::default();
 
-    println!("  {}", "Building commit message…".bold().cyan());
-    println!();
+    ui::print_info("Building commit message…");
+    ui::print_blank();
 
     // Step 1: Choose commit type.
     let commit_type = if let Some(t) = &args.r#type {
@@ -384,13 +383,9 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
     };
 
     // Show a preview before asking for the body.
-    println!();
-    println!(
-        "  {} {}",
-        "Preview:".bright_black(),
-        ui::color_subject(&first_line).bold()
-    );
-    println!();
+    ui::print_blank();
+    ui::print_key_value_pairs(&[("Preview", ui::color_subject(&first_line).bold().to_string())]);
+    ui::print_blank();
 
     // Step 4: Optional body.
     let body = if cfg.commit.require_body {
@@ -456,13 +451,13 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
     }
 
     // Final full preview before confirmation.
-    println!();
-    println!("  {}", "─".repeat(60).bright_black());
+    ui::print_blank();
+    ui::print_divider();
     for line in message.lines() {
         println!("  {}", line.white());
     }
-    println!("  {}", "─".repeat(60).bright_black());
-    println!();
+    ui::print_divider();
+    ui::print_blank();
 
     let confirm = Confirm::with_theme(&theme)
         .with_prompt("  Commit with this message?")

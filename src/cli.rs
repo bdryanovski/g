@@ -13,6 +13,62 @@
 
 use clap::{Args, Parser, Subcommand};
 
+// ─── Help styles ─────────────────────────────────────────────────────────────
+
+/// Build the colour palette used for `--help` output.
+///
+/// Applied via `#[command(styles = get_styles())]` on the top-level [`Cli`]
+/// struct.  Clap 4 calls this function when it first constructs the command
+/// object, so the styles are applied consistently to every `--help` page in
+/// the hierarchy.
+///
+/// | Element       | Style                    |
+/// |---------------|--------------------------|
+/// | Section heads | bold bright-white        |
+/// | Usage line    | bold bright-white        |
+/// | Literals      | bold bright-cyan         |
+/// | Placeholders  | cyan                     |
+/// | Errors        | bold bright-red          |
+/// | Valid values  | bold bright-green        |
+/// | Invalid       | bold bright-yellow       |
+fn get_styles() -> clap::builder::Styles {
+    use clap::builder::styling::{AnsiColor, Style, Styles};
+    Styles::styled()
+        .header(
+            Style::new()
+                .fg_color(Some(AnsiColor::BrightWhite.into()))
+                .bold(),
+        )
+        .usage(
+            Style::new()
+                .fg_color(Some(AnsiColor::BrightWhite.into()))
+                .bold(),
+        )
+        .literal(
+            Style::new()
+                .fg_color(Some(AnsiColor::BrightCyan.into()))
+                .bold(),
+        )
+        .placeholder(Style::new().fg_color(Some(AnsiColor::Cyan.into())))
+        .error(
+            Style::new()
+                .fg_color(Some(AnsiColor::BrightRed.into()))
+                .bold(),
+        )
+        .valid(
+            Style::new()
+                .fg_color(Some(AnsiColor::BrightGreen.into()))
+                .bold(),
+        )
+        .invalid(
+            Style::new()
+                .fg_color(Some(AnsiColor::BrightYellow.into()))
+                .bold(),
+        )
+}
+
+// ─── Top-level CLI ────────────────────────────────────────────────────────────
+
 /// A beautiful Git CLI with stacked PRs, workspace management, and enhanced UX.
 /// All standard git commands are passed through transparently.
 ///
@@ -24,10 +80,30 @@ use clap::{Args, Parser, Subcommand};
 #[derive(Parser)]
 #[command(
     about = "Enhanced Git with stacked PRs, workspaces, and beautiful output",
-    long_about = None,
+    long_about = "An enhanced Git CLI that layers powerful workflows on top of git.\n\
+                  \n\
+                  All standard git commands are forwarded transparently — just swap\n\
+                  'git' for this tool and everything continues to work as expected.\n\
+                  \n\
+                  Enhanced commands add colour, icons, and smarter output.  New\n\
+                  commands add stacked-PR workflows, parallel worktree workspaces,\n\
+                  and an interactive conventional-commit builder.",
+    after_help = "Examples:\n\
+                  \n\
+                  \x20 g log                       enhanced git log with graph\n\
+                  \x20 g status                    enhanced status with icons\n\
+                  \x20 g commit                    interactive conventional commit\n\
+                  \x20 g diff                      enhanced diff\n\
+                  \x20 g branch                    list branches with ahead/behind\n\
+                  \x20 g compare main              compare current branch to main\n\
+                  \x20 g stack new my-feature      start a stacked PR workflow\n\
+                  \x20 g workspace create api      create a parallel workspace\n\
+                  \n\
+                  Pass --help to any subcommand for detailed usage and examples.",
     version,
     propagate_version = true,
     color = clap::ColorChoice::Auto,
+    styles = get_styles(),
 )]
 pub struct Cli {
     /// Run as if git was started in <path>
@@ -46,6 +122,8 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 }
+
+// ─── Top-level commands ───────────────────────────────────────────────────────
 
 /// Top-level command set for `g`.
 #[derive(Subcommand)]
@@ -96,6 +174,16 @@ pub enum Commands {
 
 /// Workspace-related subcommands for git worktree management.
 #[derive(Subcommand)]
+#[command(after_help = "Examples:\n\
+                  \n\
+                  \x20 g workspace list                        list all workspaces\n\
+                  \x20 g workspace create feature              create workspace on a new branch\n\
+                  \x20 g workspace create -b existing feature  use an existing branch\n\
+                  \x20 g workspace switch                      fuzzy-pick a workspace\n\
+                  \x20 g workspace switch api                  switch to a named workspace\n\
+                  \x20 g workspace status                      show current workspace info\n\
+                  \x20 g workspace rename old new              rename a workspace\n\
+                  \x20 g workspace delete api                  remove a workspace")]
 pub enum WorkspaceCommands {
     /// Reorganise an existing repo into a container/worktree layout
     ///
@@ -156,6 +244,21 @@ pub enum WorkspaceCommands {
 
 /// Stack-related subcommands for stacked PR workflows.
 #[derive(Subcommand)]
+#[command(after_help = "Workflow overview:\n\
+                  \n\
+                  \x20 1. g stack new my-feature    create a stack from current branch\n\
+                  \x20 2. g stack add next-step      add a dependent branch on top\n\
+                  \x20 3. (work, commit on each branch)\n\
+                  \x20 4. g stack sync               rebase all branches in order\n\
+                  \x20 5. g stack push               push all branches\n\
+                  \x20 6. g stack pr                 open GitHub PRs for every branch\n\
+                  \n\
+                  Other useful commands:\n\
+                  \n\
+                  \x20 g stack view                  show the stack as a tree\n\
+                  \x20 g stack details               show per-branch commit lists\n\
+                  \x20 g stack squash                squash current branch to one commit\n\
+                  \x20 g stack fold                  merge current branch into its parent")]
 pub enum StackCommands {
     /// Initialize a new stack starting from the current branch
     New {
@@ -250,6 +353,8 @@ pub enum StackCommands {
     Up,
     Down,
 }
+
+// ─── Commit ───────────────────────────────────────────────────────────────────
 
 /// Arguments for the interactive and non-interactive commit flow.
 #[derive(Args)]

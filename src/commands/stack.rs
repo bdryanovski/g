@@ -122,15 +122,12 @@ fn print_conflict_instructions(branch: &str) {
         branch.yellow(),
         cmd
     ));
-    println!();
-    println!("  {} After resolving conflicts:", "\u{2192}".cyan());
-    println!("    {} git add <files>", "1.".bright_black());
-    println!("    {} git rebase --continue", "2.".bright_black());
-    println!(
-        "    {} {cmd} stack sync  (to straighten any remaining branches)",
-        "3.".bright_black()
-    );
-    println!();
+    ui::print_blank();
+    ui::print_info("After resolving conflicts:");
+    ui::print_step(1, 3, "git add <files>");
+    ui::print_step(2, 3, "git rebase --continue");
+    ui::print_step(3, 3, &format!("{cmd} stack sync  (to continue restacking)"));
+    ui::print_blank();
 }
 
 // ─── Commands ─────────────────────────────────────────────────────────────────
@@ -158,13 +155,13 @@ pub fn new_stack(conn: &Connection, name: &str) -> Result<()> {
         stacks_store::set_branches(conn, stack_id, &branches)?;
         stats::record_stack_event(conn, Some(stack_id), Some(repo_id), "create").ok();
 
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Created stack {} rooted at {}",
             name.cyan().bold(),
             branch.green().bold()
         ));
-        println!();
+        ui::print_blank();
     } else {
         gitcmd::dry_run_action(
             "Create stack metadata",
@@ -217,12 +214,12 @@ pub fn add_branch(conn: &Connection, branch_name: &str) -> Result<()> {
         stats::record_stack_event(conn, Some(stack.id), Some(repo_id), "add").ok();
         stats::record_branch_event(conn, repo_id, branch_name, "create").ok();
 
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Created branch {} and added to stack",
             branch_name.green().bold()
         ));
-        println!();
+        ui::print_blank();
     } else {
         gitcmd::dry_run_action(
             "Update stack metadata",
@@ -248,25 +245,25 @@ pub fn list(conn: &Connection) -> Result<()> {
     let current_branch = gitcmd::current_branch().unwrap_or_default();
 
     if stacks.is_empty() {
-        println!();
-        println!("  {}", "No stacks yet.".bright_black());
+        ui::print_blank();
+        ui::print_info("No stacks yet.");
         ui::print_tip(&format!(
             "{} stack new <name>  to create a stack from the current branch",
             crate::bin_name()
         ));
-        println!();
+        ui::print_blank();
         return Ok(());
     }
 
     for stack in &stacks {
-        println!();
+        ui::print_blank();
         println!(
             "  {} {}  {}",
             "Stack:".bright_black(),
             stack.name.cyan().bold(),
             format!("(root: {})", stack.root_branch).bright_black()
         );
-        println!();
+        ui::print_blank();
 
         let last = stack.branches.len().saturating_sub(1);
         for (i, branch) in stack.branches.iter().enumerate() {
@@ -293,7 +290,7 @@ pub fn list(conn: &Connection) -> Result<()> {
             if is_current {
                 print!("  {}", "\u{2190} you are here".bright_black());
             }
-            println!();
+            ui::print_blank();
 
             if i < last {
                 println!(
@@ -304,7 +301,7 @@ pub fn list(conn: &Connection) -> Result<()> {
             }
         }
     }
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -328,14 +325,14 @@ pub fn details(conn: &Connection) -> Result<()> {
 
     let open_prs = fetch_open_prs_for_details();
 
-    println!();
+    ui::print_blank();
     println!(
         "  {} {}  {}",
         "Stack:".bright_black(),
         stack.name.cyan().bold(),
         format!("(root: {})", stack.root_branch).bright_black()
     );
-    println!();
+    ui::print_blank();
 
     let last_branch = stack.branches.len().saturating_sub(1);
 
@@ -355,7 +352,7 @@ pub fn details(conn: &Connection) -> Result<()> {
         if is_current {
             print!("  {}", "(current)".green().dimmed());
         }
-        println!();
+        ui::print_blank();
 
         let branch_time = gitcmd::git_output_lossy(&["log", "-1", "--format=%ar", &branch.name]);
         if !branch_time.is_empty() {
@@ -445,7 +442,7 @@ pub fn details(conn: &Connection) -> Result<()> {
         }
     }
 
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -491,13 +488,13 @@ pub fn switch_stack(conn: &Connection, name: &str) -> Result<()> {
 
     let current = gitcmd::current_branch().unwrap_or_default();
     if current == top_branch.name && !gitcmd::is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_info(&format!(
             "Already on stack {} (branch {})",
             stack.name.cyan().bold(),
             top_branch.name.green().bold()
         ));
-        println!();
+        ui::print_blank();
         return Ok(());
     }
 
@@ -511,13 +508,13 @@ pub fn switch_stack(conn: &Connection, name: &str) -> Result<()> {
     .with_context(|| format!("Failed to checkout branch '{}'", top_branch.name))?;
 
     if !gitcmd::is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Switched to stack {} \u{2192} branch {}",
             stack.name.cyan().bold(),
             top_branch.name.green().bold()
         ));
-        println!();
+        ui::print_blank();
     }
     Ok(())
 }
@@ -547,9 +544,9 @@ pub fn absorb(conn: &Connection) -> Result<()> {
         .with_context(|| format!("Branch '{}' not found in stack", current_branch))?;
 
     if pos == 0 {
-        println!();
+        ui::print_blank();
         ui::print_warning("This is the bottom branch of the stack — nothing below to absorb into.");
-        println!();
+        ui::print_blank();
         return Ok(());
     }
 
@@ -594,7 +591,7 @@ pub fn absorb(conn: &Connection) -> Result<()> {
         stats::record_stack_event(conn, Some(stack.id), Some(stack.repo_id), "absorb").ok();
         stats::record_branch_event(conn, stack.repo_id, &absorbed_branch, "delete").ok();
 
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Absorbed {} into {}",
             absorbed_branch.green().bold(),
@@ -606,7 +603,7 @@ pub fn absorb(conn: &Connection) -> Result<()> {
             remaining.to_string().yellow(),
             if remaining == 1 { "" } else { "es" }
         );
-        println!();
+        ui::print_blank();
     } else {
         gitcmd::dry_run_action(
             "Update stack metadata",
@@ -736,7 +733,7 @@ pub fn fold(conn: &Connection, keep: bool, no_interactive: bool) -> Result<()> {
 
     let saved_branch = current.clone();
 
-    println!();
+    ui::print_blank();
     println!(
         "  {} {} {} {}",
         "Folding:".bold().white(),
@@ -751,7 +748,7 @@ pub fn fold(conn: &Connection, keep: bool, no_interactive: bool) -> Result<()> {
             "combined branch will keep the current branch name (--keep)".cyan()
         );
     }
-    println!();
+    ui::print_blank();
 
     if !keep {
         gitcmd::git_mutate(
@@ -836,12 +833,12 @@ pub fn fold(conn: &Connection, keep: bool, no_interactive: bool) -> Result<()> {
     let restack_done = restack_branches_from(&restack_stack, restack_start, no_interactive)?;
 
     if !restack_done && !gitcmd::is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_warning(&format!(
             "Fold merge finished; resolve the rebase conflict, then `{} stack sync` if needed.",
             crate::bin_name()
         ));
-        println!();
+        ui::print_blank();
         return Ok(());
     }
 
@@ -851,13 +848,13 @@ pub fn fold(conn: &Connection, keep: bool, no_interactive: bool) -> Result<()> {
     )?;
 
     if !gitcmd::is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Folded {} into {}",
             child.green().bold(),
             result_branch.cyan().bold()
         ));
-        println!();
+        ui::print_blank();
     }
 
     Ok(())
@@ -919,7 +916,7 @@ pub fn squash(conn: &Connection, message: Option<&str>, no_interactive: bool) ->
 
     let commit_msg = gitcmd::resolve_squash_message(message, &range, &branch)?;
 
-    println!();
+    ui::print_blank();
     println!(
         "  {} {} \u{2192} {}",
         "Squashing branch:".bold().white(),
@@ -927,7 +924,7 @@ pub fn squash(conn: &Connection, message: Option<&str>, no_interactive: bool) ->
         "one commit".cyan()
     );
     println!("  {} {}", "Base:".bright_black(), base_ref.cyan());
-    println!();
+    ui::print_blank();
 
     gitcmd::git_mutate(
         &["checkout", &branch],
@@ -962,7 +959,7 @@ pub fn squash(conn: &Connection, message: Option<&str>, no_interactive: bool) ->
     )?;
 
     if !gitcmd::is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Squashed {} onto {}",
             branch.green().bold(),
@@ -971,7 +968,7 @@ pub fn squash(conn: &Connection, message: Option<&str>, no_interactive: bool) ->
         if pos + 1 < stack.branches.len() {
             ui::print_success("Restacked branches above.");
         }
-        println!();
+        ui::print_blank();
     }
     Ok(())
 }
@@ -1040,9 +1037,9 @@ pub fn sync(conn: &Connection, no_interactive: bool) -> Result<()> {
         if let Ok(s) = current_stack(conn) {
             stats::record_stack_event(conn, Some(s.id), Some(s.repo_id), "sync").ok();
         }
-        println!();
+        ui::print_blank();
         ui::print_success("Stack sync complete!");
-        println!();
+        ui::print_blank();
     }
     Ok(())
 }
@@ -1086,17 +1083,16 @@ pub fn push(conn: &Connection, force: bool) -> Result<()> {
             Err(e) => {
                 ui::print_error(&format!("Failed to push {}: {}", branch.red(), e));
                 if !force {
-                    println!(
-                        "  {}  try {}",
-                        "tip:".bright_black(),
+                    ui::print_tip(&format!(
+                        "try {} to force-push with lease",
                         format!("{} stack push --force", crate::bin_name()).yellow()
-                    );
+                    ));
                 }
             }
         }
     }
 
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -1112,7 +1108,7 @@ pub fn create_prs(conn: &Connection, open: bool, draft: bool) -> Result<()> {
 
     let (owner, repo_name) = github::detect_repo()?;
 
-    println!();
+    ui::print_blank();
     println!(
         "  {} {} \u{2192} {}/{}",
         "Creating PRs for stack:".bold().white(),
@@ -1120,7 +1116,7 @@ pub fn create_prs(conn: &Connection, open: bool, draft: bool) -> Result<()> {
         owner.bright_white(),
         repo_name.bright_white()
     );
-    println!();
+    ui::print_blank();
 
     if gitcmd::is_dry_run() {
         for i in 1..stack.branches.len() {
@@ -1237,7 +1233,7 @@ pub fn create_prs(conn: &Connection, open: bool, draft: bool) -> Result<()> {
         }
     }
 
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -1356,9 +1352,9 @@ fn move_branch(conn: &Connection, direction: Direction) -> Result<()> {
     let direction_label = match direction {
         Direction::Up => {
             if pos == 0 {
-                println!();
+                ui::print_blank();
                 ui::print_warning("This is the bottom branch of the stack — cannot move up.");
-                println!();
+                ui::print_blank();
                 return Ok(());
             }
             let mut new_branches = stack.branches.clone();
@@ -1369,9 +1365,9 @@ fn move_branch(conn: &Connection, direction: Direction) -> Result<()> {
         }
         Direction::Down => {
             if pos == stack.branches.len() - 1 {
-                println!();
+                ui::print_blank();
                 ui::print_warning("This is the top branch of the stack — cannot move down.");
-                println!();
+                ui::print_blank();
                 return Ok(());
             }
             let mut new_branches = stack.branches.clone();
@@ -1382,13 +1378,13 @@ fn move_branch(conn: &Connection, direction: Direction) -> Result<()> {
         }
     };
 
-    println!();
+    ui::print_blank();
     ui::print_success(&format!(
         "Moved '{}' {} in the stack order",
         current_branch.green().bold(),
         direction_label
     ));
-    println!();
+    ui::print_blank();
     Ok(())
 }
 

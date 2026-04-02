@@ -305,14 +305,14 @@ pub fn init(conn: &Connection) -> Result<()> {
     }
 
     // Show the plan.
-    println!();
-    println!("  {} workspace init", "g".green().bold());
-    println!();
+    ui::print_blank();
+    println!("  {} workspace init", crate::bin_name().green().bold());
+    ui::print_blank();
     println!(
         "  This will reorganise '{}' into a container layout:",
         repo_root.display().to_string().cyan()
     );
-    println!();
+    ui::print_blank();
     println!(
         "    {} {}  →  {}",
         "move".bright_black(),
@@ -330,12 +330,12 @@ pub fn init(conn: &Connection) -> Result<()> {
         temp_path.display().to_string().bright_black(),
         inner_dir.display().to_string().green()
     );
-    println!();
+    ui::print_blank();
     println!(
         "  After this, new workspaces will be created inside '{}'.",
         container_dir.display().to_string().cyan()
     );
-    println!();
+    ui::print_blank();
 
     if gitcmd::is_dry_run() {
         gitcmd::dry_run_action(
@@ -364,9 +364,9 @@ pub fn init(conn: &Connection) -> Result<()> {
         .context("Confirmation prompt failed")?;
 
     if !confirmed {
-        println!();
-        println!("  {}", "Cancelled.".bright_black());
-        println!();
+        ui::print_blank();
+        ui::print_info("Cancelled.");
+        ui::print_blank();
         return Ok(());
     }
 
@@ -437,23 +437,22 @@ pub fn init(conn: &Connection) -> Result<()> {
 
     stats::record_workspace_event(conn, None, Some(repo_id), "init").ok();
 
-    println!();
+    ui::print_blank();
     ui::print_success(&format!(
         "Repository reorganised into container layout at {}",
         container_dir.display().to_string().cyan()
     ));
-    println!(
-        "     {} {}",
-        "main workspace:".bright_black(),
-        inner_dir_str.cyan().underline()
-    );
-    println!();
-    println!(
-        "  {} cd {}",
-        "next:".bright_black(),
-        inner_dir.display().to_string().green()
-    );
-    println!();
+    ui::print_key_value_pairs(&[
+        (
+            "main workspace",
+            inner_dir_str.cyan().underline().to_string(),
+        ),
+        (
+            "next",
+            format!("cd {}", inner_dir.display().to_string().green()),
+        ),
+    ]);
+    ui::print_blank();
 
     Ok(())
 }
@@ -558,7 +557,7 @@ pub fn clone_with_workspace(conn: &Connection, args: &[String]) -> Result<()> {
 
         stats::record_workspace_event(conn, None, Some(repo_id), "clone").ok();
 
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Cloned '{}' into container workspace at {}",
             url,
@@ -569,13 +568,13 @@ pub fn clone_with_workspace(conn: &Connection, args: &[String]) -> Result<()> {
             "main workspace:".bright_black(),
             inner_dir_str.cyan().underline()
         );
-        println!();
+        ui::print_blank();
         println!(
             "  {} cd {}",
             "next:".bright_black(),
             inner_dir.display().to_string().green()
         );
-        println!();
+        ui::print_blank();
     }
 
     Ok(())
@@ -614,13 +613,13 @@ pub fn list(conn: &Connection) -> Result<()> {
     let cwd = std::env::current_dir()?;
 
     if worktrees.is_empty() {
-        println!();
-        println!("  {}", "No worktrees found.".bright_black());
-        println!();
+        ui::print_blank();
+        ui::print_info("No worktrees found.");
+        ui::print_blank();
         return Ok(());
     }
 
-    println!();
+    ui::print_blank();
     let mut table = ui::Table::new(vec!["", "Name", "Branch", "Path", "HEAD", "Created"]);
 
     for wt in &worktrees {
@@ -678,19 +677,14 @@ pub fn list(conn: &Connection) -> Result<()> {
     }
 
     table.print();
-    println!();
+    ui::print_blank();
 
     if workspaces.is_empty() {
-        println!(
-            "  {} {}",
-            "tip:".bright_black(),
-            format!(
-                "{} workspace create <name>  to create a worktree workspace",
-                crate::bin_name()
-            )
-            .bright_black()
-        );
-        println!();
+        ui::print_tip(&format!(
+            "{} workspace create <name>  to create a worktree workspace",
+            crate::bin_name()
+        ));
+        ui::print_blank();
     }
 
     Ok(())
@@ -825,29 +819,20 @@ pub fn create(
     }
 
     if !gitcmd::is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Created workspace {} on branch {}",
             name.green().bold(),
             branch_name.cyan()
         ));
-        println!(
-            "     {} {}",
-            "path:".bright_black(),
-            wt_path_str.cyan().underline()
-        );
-        println!();
-        println!(
-            "  {} {}",
-            "tip:".bright_black(),
-            format!(
-                "{} workspace switch {}  to open a shell there",
-                crate::bin_name(),
-                name
-            )
-            .bright_black()
-        );
-        println!();
+        ui::print_key_value_pairs(&[("path", wt_path_str.cyan().underline().to_string())]);
+        ui::print_blank();
+        ui::print_tip(&format!(
+            "{} workspace switch {}  to open a shell there",
+            crate::bin_name(),
+            name
+        ));
+        ui::print_blank();
     }
 
     Ok(())
@@ -880,7 +865,7 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
         return Ok(());
     }
 
-    println!();
+    ui::print_blank();
     let selections = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt(
             "Select files to copy into the new workspace (space to toggle, enter to confirm)",
@@ -1012,13 +997,13 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
                 .collect();
 
             if candidates.is_empty() {
-                println!();
+                ui::print_blank();
                 println!(
                     "  {}",
                     "No workspaces found. Use `g workspace create <name>` to create one."
                         .bright_black()
                 );
-                println!();
+                ui::print_blank();
                 return Ok(());
             }
 
@@ -1063,9 +1048,9 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
 
             match selection {
                 None => {
-                    println!();
-                    println!("  {}", "Cancelled.".bright_black());
-                    println!();
+                    ui::print_blank();
+                    ui::print_info("Cancelled.");
+                    ui::print_blank();
                     return Ok(());
                 }
                 Some(idx) => candidates[idx],
@@ -1087,25 +1072,23 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
 
     stats::record_workspace_event(conn, Some(workspace.id), Some(workspace.repo_id), "switch").ok();
 
-    println!();
+    ui::print_blank();
     ui::print_info(&format!(
         "Opening shell in workspace {} \u{2192} {}",
         workspace.name.green().bold(),
         workspace.path.cyan().underline()
     ));
+    let mut pairs: Vec<(&str, String)> =
+        vec![("branch", workspace.branch.green().bold().to_string())];
     if let Some(desc) = &workspace.description {
-        println!("     {} {}", "desc:".bright_black(), desc.bright_white());
+        pairs.insert(0, ("desc", desc.bright_white().to_string()));
     }
-    println!(
-        "     {} {}",
-        "branch:".bright_black(),
-        workspace.branch.green().bold()
-    );
-    println!(
-        "     {}",
-        "Exit the shell (Ctrl+D or `exit`) to return.".bright_black()
-    );
-    println!();
+    pairs.push((
+        "hint",
+        "Ctrl+D or `exit` to return".bright_black().to_string(),
+    ));
+    ui::print_key_value_pairs(&pairs);
+    ui::print_blank();
 
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
 
@@ -1120,15 +1103,15 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
     if !status.success() {
         if let Some(code) = status.code() {
             if code != 0 {
-                println!();
+                ui::print_blank();
                 ui::print_info(&format!("Shell exited with code {}", code));
             }
         }
     }
 
-    println!();
+    ui::print_blank();
     ui::print_info("Returned to original directory.");
-    println!();
+    ui::print_blank();
 
     Ok(())
 }
@@ -1189,9 +1172,9 @@ pub fn delete(conn: &Connection, name: &str, force: bool) -> Result<()> {
     if !gitcmd::is_dry_run() {
         stats::record_workspace_event(conn, Some(ws_id), None, "delete").ok();
         ws_store::delete(conn, ws_id)?;
-        println!();
+        ui::print_blank();
         ui::print_success(&format!("Deleted workspace '{}'", name.red()));
-        println!();
+        ui::print_blank();
     } else {
         gitcmd::dry_run_action(
             "Remove workspace metadata",
@@ -1214,46 +1197,42 @@ pub fn status(conn: &Connection) -> Result<()> {
 
     let current_wt = worktrees.iter().find(|wt| cwd.starts_with(&wt.path));
 
-    println!();
+    ui::print_blank();
 
     if let Some(wt) = current_wt {
         let branch = wt.branch.as_deref().unwrap_or("(detached)");
         let meta = workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
 
         if let Some(ws) = meta {
-            println!(
-                "  {} {} {}",
-                "Workspace:".bright_black(),
-                ws.name.green().bold(),
-                format!("({})", ws.branch).bright_black()
-            );
+            let mut pairs: Vec<(&str, String)> = vec![
+                (
+                    "Workspace",
+                    format!(
+                        "{} {}",
+                        ws.name.green().bold(),
+                        format!("({})", ws.branch).bright_black()
+                    ),
+                ),
+                ("Path", ws.path.cyan().underline().to_string()),
+                ("Created", format_relative_time(ws.created_at)),
+            ];
             if let Some(desc) = &ws.description {
-                println!("  {} {}", "Description:".bright_black(), desc);
+                pairs.insert(1, ("Description", desc.to_string()));
             }
-            println!(
-                "  {} {}",
-                "Path:".bright_black(),
-                ws.path.cyan().underline()
-            );
-            println!(
-                "  {} {}",
-                "Created:".bright_black(),
-                format_relative_time(ws.created_at)
-            );
+            ui::print_key_value_pairs(&pairs);
         } else {
-            println!(
-                "  {} {}",
-                "Worktree:".bright_black(),
-                "(main repository)".green().bold()
-            );
+            ui::print_key_value_pairs(&[(
+                "Worktree",
+                "(main repository)".green().bold().to_string(),
+            )]);
         }
 
-        println!("  {} {}", "Branch:".bright_black(), branch.cyan().bold());
+        ui::print_key_value_pairs(&[("Branch", branch.cyan().bold().to_string())]);
 
         let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
         let changes: Vec<&str> = porcelain.lines().collect();
         if changes.is_empty() {
-            println!("  {} {}", "Status:".bright_black(), "clean".green());
+            ui::print_key_value_pairs(&[("Status", "clean".green().to_string())]);
         } else {
             let staged = changes
                 .iter()
@@ -1264,9 +1243,8 @@ pub fn status(conn: &Connection) -> Result<()> {
                 .filter(|l| l.len() >= 2 && &l[1..2] != " " && &l[0..1] != "?")
                 .count();
             let untracked = changes.iter().filter(|l| l.starts_with("??")).count();
-            println!(
-                "  {} {} change{}{}{}",
-                "Status:".bright_black(),
+            let status_val = format!(
+                "{} change{}{}{}",
                 changes.len().to_string().yellow(),
                 if changes.len() == 1 { "" } else { "s" },
                 if staged > 0 {
@@ -1284,12 +1262,13 @@ pub fn status(conn: &Connection) -> Result<()> {
                     String::new()
                 },
             );
+            ui::print_key_value_pairs(&[("Status", status_val)]);
         }
     } else {
-        println!("  {}", "Not inside any known worktree.".bright_black());
+        ui::print_info("Not inside any known worktree.");
     }
 
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -1344,23 +1323,19 @@ pub fn rename(conn: &Connection, old: &str, new: &str) -> Result<()> {
         gitcmd::git_output(&["worktree", "repair"])
             .context("Failed to repair worktree tracking after move")?;
 
-        pb.finish_and_clear();
-
         ws_store::update_name_and_path(conn, ws_id, new, &new_path.to_string_lossy())?;
         stats::record_workspace_event(conn, Some(ws_id), None, "rename").ok();
 
-        println!();
-        ui::print_success(&format!(
-            "Renamed workspace '{}' \u{2192} '{}'",
-            old,
-            new.green()
-        ));
+        ui::spinner_success(
+            pb,
+            &format!("Renamed workspace '{}' \u{2192} '{}'", old, new.green()),
+        );
         println!(
-            "     {} {}",
+            "  {} {}",
             "path:".bright_black(),
             new_path.display().to_string().cyan().underline()
         );
-        println!();
+        ui::print_blank();
     } else {
         gitcmd::dry_run_action(
             &format!("mv {} {}", old_path.display(), new_path.display()),

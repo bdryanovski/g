@@ -6,10 +6,12 @@
 //! consistent look and feel.  It provides:
 //!
 //! - High-level "message" helpers (`print_info`, `print_success`, …).
+//! - Layout helpers (`print_blank`, `print_rule`, `print_step`, `print_header`).
 //! - A flexible [`Table`] renderer that accounts for ANSI color codes when
 //!   calculating column widths.
 //! - A [`CommitEntry`] value type for rendering individual git log entries.
-//! - Spinners and progress bars via the `indicatif` crate.
+//! - Spinners and progress bars via the `indicatif` crate, including
+//!   `spinner_success` / `spinner_error` for clean finish-in-place transitions.
 //! - Colour helpers for git-specific data: hashes, branch names, commit
 //!   subjects following the Conventional Commits convention, etc.
 //!
@@ -25,26 +27,40 @@
 use colored::Colorize;
 use std::fmt::Write as FmtWrite;
 
+// ─── Layout constants ─────────────────────────────────────────────────────────
+
+/// Standard left-margin indent applied to all output lines.
+pub const INDENT: &str = "  ";
+
+// ─── Terminal geometry ────────────────────────────────────────────────────────
+
+/// Return the current terminal width in columns, falling back to 80 if the
+/// width cannot be determined (e.g. when stdout is not a TTY).
+#[allow(dead_code)]
+pub fn terminal_width() -> usize {
+    console::Term::stdout().size().1 as usize
+}
+
 // ─── Status-message helpers ──────────────────────────────────────────────────
 
 /// Print an info message with a cyan bullet to stdout.
 pub fn print_info(msg: &str) {
-    println!("  {} {}", "ℹ".cyan(), msg);
+    println!("{} {} {}", INDENT, "ℹ".cyan(), msg);
 }
 
 /// Print a success message with a bold green checkmark to stdout.
 pub fn print_success(msg: &str) {
-    println!("  {} {}", "✓".green().bold(), msg);
+    println!("{} {} {}", INDENT, "✓".green().bold(), msg);
 }
 
 /// Print a warning message with a bold yellow warning sign to stderr.
 pub fn print_warning(msg: &str) {
-    eprintln!("  {} {}", "⚠".yellow().bold(), msg);
+    eprintln!("{} {} {}", INDENT, "⚠".yellow().bold(), msg);
 }
 
 /// Print an error message with a bold red × to stderr.
 pub fn print_error(msg: &str) {
-    eprintln!("  {} {}", "✗".red().bold(), msg);
+    eprintln!("{} {} {}", INDENT, "✗".red().bold(), msg);
 }
 
 /// Print a dim `tip:` hint line to stdout.
@@ -57,11 +73,79 @@ pub fn print_error(msg: &str) {
 ///
 /// ```text
 /// print_tip("g commit  — commit staged changes");
-/// // →   tip:  g commit  — commit staged changes
+/// // →   tip: ▶ g commit  — commit staged changes
 /// ```
 pub fn print_tip(msg: &str) {
-    println!("  {}  {}", "tip:".bright_black(), msg.bright_black());
+    println!(
+        "{} {}  {}",
+        INDENT,
+        "tip:".bright_black().bold(),
+        msg.bright_black()
+    );
 }
+
+/// Print a blank line to stdout.
+#[allow(dead_code)]
+pub fn print_blank() {
+    println!();
+}
+
+/// Print a full-width horizontal rule scaled to the terminal width.
+///
+/// Falls back to 60 characters when the terminal width cannot be detected.
+#[allow(dead_code)]
+pub fn print_rule() {
+    let width = terminal_width().saturating_sub(INDENT.len()).max(10);
+    println!("{}{}", INDENT, "─".repeat(width).bright_black());
+}
+
+/// Print a numbered step indicator for multi-step operations.
+///
+/// # Example
+///
+/// ```text
+/// print_step(1, 3, "Fetching remote…");
+/// // →   [1/3] Fetching remote…
+/// ```
+#[allow(dead_code)]
+pub fn print_step(step: usize, total: usize, msg: &str) {
+    let counter = format!("[{}/{}]", step, total)
+        .bright_black()
+        .bold()
+        .to_string();
+    println!("{}{} {}", INDENT, counter, msg);
+}
+
+/// Print a set of key-value pairs with the value column auto-aligned.
+///
+/// Keys are rendered in dim grey; values are rendered as-is (ANSI codes in the
+/// value strings are respected).  All keys are measured with plain `len()` since
+/// they are expected to be plain ASCII without escape codes.
+///
+/// # Example
+///
+/// ```text
+/// print_key_value_pairs(&[
+///     ("Config file", "/path/to/config.toml".cyan().underline().to_string()),
+///     ("Default branch", "main".green().to_string()),
+/// ]);
+/// ```
+pub fn print_key_value_pairs(pairs: &[(&str, String)]) {
+    let max_key = pairs.iter().map(|(k, _)| k.len()).max().unwrap_or(0);
+    for (key, val) in pairs {
+        let padding = " ".repeat(max_key - key.len());
+        println!(
+            "{}{}{} {}  {}",
+            INDENT,
+            key.bright_black(),
+            padding,
+            " ".bright_black(),
+            val
+        );
+    }
+}
+
+// ─── Branch / stack markers ───────────────────────────────────────────────────
 
 /// Return the Unicode marker (`◉` / `◯`) for a branch row, coloured by state.
 ///
@@ -95,49 +179,65 @@ pub fn branch_name_colored(name: &str, is_current: bool) -> String {
 /// helper gives it a single source of truth.
 pub fn print_stack_banner(verb: &str, stack_name: &str) {
     println!();
-    println!("  {} {}", verb.bold().white(), stack_name.cyan().bold());
+    println!(
+        "{}  {} {}",
+        INDENT,
+        verb.bold().white(),
+        stack_name.cyan().bold()
+    );
     println!();
 }
 
 /// Print a section header inside a Unicode box to stdout.
+///
+/// The box width adjusts to the title length.  Left-margin indent is applied
+/// so the box aligns with all other output.
 #[allow(dead_code)]
 pub fn print_header(title: &str) {
-    let width = title.len() + 4;
-    let line = "─".repeat(width);
-    println!("{}", format!("╭{}╮", line).bright_black());
+    let title_width = console::measure_text_width(title);
+    let inner = title_width + 2; // one space padding on each side
+    let line = "─".repeat(inner);
+    println!("{}{}", INDENT, format!("╭{}╮", line).bright_black());
     println!(
-        "{} {} {}",
+        "{}{} {} {}",
+        INDENT,
         "│".bright_black(),
         title.bold().white(),
         "│".bright_black()
     );
-    println!("{}", format!("╰{}╯", line).bright_black());
+    println!("{}{}", INDENT, format!("╰{}╯", line).bright_black());
 }
 
 /// Print a section title with an optional item count in parentheses.
+///
+/// A blank line is emitted before the title so sections are visually separated.
 ///
 /// # Examples
 ///
 /// ```text
 /// print_section("Staged Changes", Some(3));
+/// // →
 /// // →   Staged Changes (3)
 /// ```
 pub fn print_section(title: &str, count: Option<usize>) {
     if let Some(n) = count {
         println!(
-            "\n  {} {}",
+            "\n{} {} {}",
+            INDENT,
             title.bold().white(),
             format!("({})", n).bright_black()
         );
     } else {
-        println!("\n  {}", title.bold().white());
+        println!("\n{} {}", INDENT, title.bold().white());
     }
 }
 
-/// Print a horizontal divider line (60 em-dashes) in dim colour.
+/// Print a horizontal divider line in dim colour.
+///
+/// Delegates to [`print_rule`] so the width tracks the terminal.
 #[allow(dead_code)]
 pub fn print_divider() {
-    println!("  {}", "─".repeat(60).bright_black());
+    print_rule();
 }
 
 // ─── Git colour helpers ───────────────────────────────────────────────────────
@@ -265,32 +365,105 @@ pub fn status_icon(code: &str) -> (&'static str, String) {
 
 // ─── Progress / spinner ───────────────────────────────────────────────────────
 
+/// Braille tick characters used by all spinners for a consistent animation.
+const SPINNER_TICKS: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+/// Build the shared spinner style so all spinners look identical.
+fn spinner_style() -> indicatif::ProgressStyle {
+    indicatif::ProgressStyle::with_template(&format!("{}{{spinner:.cyan}} {{msg}}", INDENT))
+        .expect("spinner template is valid")
+        .tick_strings(SPINNER_TICKS)
+}
+
+/// Build the minimal "finish" style used by [`spinner_success`] and
+/// [`spinner_error`] to replace the animated line with a static result.
+fn spinner_finish_style() -> indicatif::ProgressStyle {
+    indicatif::ProgressStyle::with_template(&format!("{} {{msg}}", INDENT))
+        .expect("spinner finish template is valid")
+}
+
 /// Create and start a braille-spinner progress bar with `msg` as its label.
 ///
-/// The spinner ticks automatically every 80 ms.  Call `.finish_and_clear()` on
-/// the returned [`indicatif::ProgressBar`] when the operation completes.
+/// The spinner ticks automatically every 80 ms.  Finish with one of:
+/// - [`spinner_success`] — replaces spinner with a `✓` success line.
+/// - [`spinner_error`]   — replaces spinner with a `✗` error line.
+/// - `.finish_and_clear()` — removes the spinner silently.
 pub fn spinner(msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new_spinner();
-    // `.expect` is appropriate here because the template string is a compile-time
-    // constant; a panic would only occur if we introduced a typo in the template.
-    pb.set_style(
-        indicatif::ProgressStyle::with_template("  {spinner:.cyan} {msg}")
-            .expect("spinner template is valid")
-            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
-    );
+    pb.set_style(spinner_style());
+    pb.set_message(msg.to_string());
+    pb.enable_steady_tick(std::time::Duration::from_millis(80));
+    pb
+}
+
+/// Finish a spinner in-place with a bold green `✓` success message.
+///
+/// The animated spinner line is replaced with a static success line so there
+/// is no flicker or blank-line gap between the spinner and the result.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// let pb = ui::spinner("Pushing…");
+/// do_work();
+/// ui::spinner_success(pb, "Pushed to origin");
+/// ```
+pub fn spinner_success(pb: indicatif::ProgressBar, msg: &str) {
+    pb.set_style(spinner_finish_style());
+    pb.finish_with_message(format!("{} {}", "✓".green().bold(), msg));
+}
+
+/// Finish a spinner in-place with a bold red `✗` error message.
+///
+/// Use this when the operation the spinner was tracking has failed, so the
+/// terminal shows an error icon without requiring a separate `print_error` call.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// let pb = ui::spinner("Pushing…");
+/// if let Err(e) = do_work() {
+///     ui::spinner_error(pb, &format!("Push failed: {}", e));
+/// }
+/// ```
+pub fn spinner_error(pb: indicatif::ProgressBar, msg: &str) {
+    pb.set_style(spinner_finish_style());
+    pb.finish_with_message(format!("{} {}", "✗".red().bold(), msg));
+}
+
+/// Create a [`indicatif::MultiProgress`] for displaying several concurrent
+/// spinners or bars without interleaving their output.
+///
+/// Add individual spinners with [`multi_spinner`].
+#[allow(dead_code)]
+pub fn multi_progress() -> indicatif::MultiProgress {
+    indicatif::MultiProgress::new()
+}
+
+/// Add a new spinner to an existing [`indicatif::MultiProgress`] group.
+///
+/// The spinner starts ticking immediately.  Finish it with [`spinner_success`]
+/// or [`spinner_error`] as you would a standalone spinner.
+#[allow(dead_code)]
+pub fn multi_spinner(mp: &indicatif::MultiProgress, msg: &str) -> indicatif::ProgressBar {
+    let pb = mp.add(indicatif::ProgressBar::new_spinner());
+    pb.set_style(spinner_style());
     pb.set_message(msg.to_string());
     pb.enable_steady_tick(std::time::Duration::from_millis(80));
     pb
 }
 
 /// Create a fixed-length progress bar with `len` steps and `msg` as its label.
-#[allow(dead_code)]
+///
+/// The bar shows the current position, total, estimated time remaining, and
+/// a smooth Unicode block-fill animation.
 pub fn progress_bar(len: u64, msg: &str) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new(len);
     pb.set_style(
-        indicatif::ProgressStyle::with_template(
-            "  {spinner:.cyan} [{bar:40.cyan/blue}] {pos}/{len} {msg}",
-        )
+        indicatif::ProgressStyle::with_template(&format!(
+            "{}{{spinner:.cyan}} [{{bar:40.cyan/blue}}] {{pos}}/{{len}}  {{eta_precise}}  {{msg}}",
+            INDENT
+        ))
         .expect("progress bar template is valid")
         .progress_chars("█▉▊▋▌▍▎▏  "),
     );
@@ -420,7 +593,7 @@ impl Table {
             .enumerate()
             .map(|(i, h)| pad_cell(&h.bold().bright_white().to_string(), i))
             .collect();
-        println!("  {}", header_cells.join("  "));
+        println!("{}{}", INDENT, header_cells.join("  "));
 
         // Divider.
         let divider: Vec<String> = self
@@ -428,7 +601,7 @@ impl Table {
             .iter()
             .map(|w| "─".repeat(*w).bright_black().to_string())
             .collect();
-        println!("  {}", divider.join("  "));
+        println!("{}{}", INDENT, divider.join("  "));
 
         // Data rows.
         for row in &self.rows {
@@ -437,7 +610,7 @@ impl Table {
                 .enumerate()
                 .map(|(i, cell)| pad_cell(cell, i))
                 .collect();
-            println!("  {}", cells.join("  "));
+            println!("{}{}", INDENT, cells.join("  "));
         }
     }
 }
@@ -458,7 +631,7 @@ pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
         (a, 0) => format!("{} {}", "↑".green(), format!("{} ahead", a).green()),
         (0, b) => format!("{} {}", "↓".red(), format!("{} behind", b).red()),
         (a, b) => format!(
-            "{} {} {} {}",
+            "{} {}  {} {}",
             "↑".green(),
             format!("{} ahead", a).green(),
             "↓".red(),
@@ -475,7 +648,8 @@ pub fn format_ahead_behind(ahead: usize, behind: usize) -> String {
 #[allow(dead_code)]
 pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<String>)]) {
     println!(
-        "\n  {} {}",
+        "\n{}  {} {}",
+        INDENT,
         "Stack:".bold().bright_white(),
         stack_name.cyan().bold()
     );
@@ -491,7 +665,8 @@ pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<Stri
         };
 
         print!(
-            "  {}── {} {}",
+            "{}{}── {} {}",
+            INDENT,
             connector.bright_black(),
             marker,
             if *is_current {
@@ -507,7 +682,7 @@ pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<Stri
         println!();
 
         if i < last {
-            println!("  {}   {}", pipe.bright_black(), "│".bright_black());
+            println!("{}{}   {}", INDENT, pipe.bright_black(), "│".bright_black());
         }
     }
     println!();
