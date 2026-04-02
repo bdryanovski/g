@@ -207,9 +207,9 @@ const useCaseChips = [
       border: 1px solid var(--border);
       background: linear-gradient(
         135deg,
-        rgba(0, 245, 255, 0.06),
-        rgba(192, 132, 252, 0.05),
-        rgba(251, 113, 133, 0.04)
+        rgba(37, 99, 235, 0.05),
+        rgba(124, 58, 237, 0.04),
+        rgba(248, 245, 241, 0.95)
       );
       box-shadow: var(--shadow-glow);
       backdrop-filter: blur(12px);
@@ -230,6 +230,8 @@ const useCaseChips = [
       color: var(--accent);
       font-weight: 700;
     }
+
+
 
     .doc-usecases-sub {
       margin: 0;
@@ -263,7 +265,7 @@ const useCaseChips = [
       padding: 0.85rem 1rem;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
-      background: rgba(4, 5, 12, 0.45);
+      background: rgba(255, 253, 250, 0.85);
       text-decoration: none !important;
       transition:
         border-color 0.15s ease,
@@ -272,9 +274,9 @@ const useCaseChips = [
     }
 
     .doc-usecase-card:hover {
-      border-color: rgba(0, 245, 255, 0.35);
+      border-color: rgba(37, 99, 235, 0.28);
       transform: translateY(-2px);
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     }
 
     .doc-usecase-title {
@@ -288,6 +290,7 @@ const useCaseChips = [
       line-height: 1.45;
       color: var(--muted);
     }
+
 
     .docs-shell {
       display: grid;
@@ -342,7 +345,7 @@ const useCaseChips = [
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #6b7088;
+      color: #8a8aa2;
     }
 
     .doc-nav-list {
@@ -357,7 +360,7 @@ const useCaseChips = [
       border-radius: 8px;
       font-size: 0.88rem;
       font-weight: 500;
-      color: #a8adbf;
+      color: #6a6a82;
       text-decoration: none !important;
       border: 1px solid transparent;
       transition:
@@ -368,13 +371,13 @@ const useCaseChips = [
 
     .docnav-link:hover {
       color: var(--text);
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(0, 0, 0, 0.04);
     }
 
     .docnav-link--active {
-      color: var(--text);
+      color: var(--accent);
       background: linear-gradient(90deg, var(--accent-dim), var(--accent-2-dim));
-      border-color: rgba(0, 245, 255, 0.22);
+      border-color: rgba(37, 99, 235, 0.2);
     }
 
     .doc-article {
@@ -390,7 +393,7 @@ const useCaseChips = [
     .doc-article-head {
       padding: 1.75rem 2rem 1.25rem;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(0, 245, 255, 0.04), transparent);
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.03), transparent);
     }
 
     .doc-article-title {
@@ -418,7 +421,7 @@ const useCaseChips = [
       margin-top: 2.25rem;
       font-size: 1.28rem;
       letter-spacing: -0.025em;
-      color: #fff;
+      color: var(--text);
       border-left: 3px solid var(--accent);
       padding-left: 0.75rem;
       margin-left: -0.1rem;
@@ -431,12 +434,12 @@ const useCaseChips = [
     .doc-article.prose h3 {
       margin-top: 1.5rem;
       font-size: 1.05rem;
-      color: #e6e8f2;
+      color: #2a2d4a;
     }
 
     .doc-article.prose p,
     .doc-article.prose li {
-      color: #b4b8ca;
+      color: #3e3e56;
     }
 
     .doc-article.prose a {
@@ -445,7 +448,7 @@ const useCaseChips = [
     }
 
     .doc-article.prose strong {
-      color: #e8eaf4;
+      color: var(--text);
     }
 
     .doc-article.prose table {
@@ -463,16 +466,16 @@ const useCaseChips = [
 
     .doc-article.prose th {
       background: var(--bg-elevated);
-      color: #d8dae8;
+      color: #2a2d4a;
     }
 
     .doc-article.prose blockquote {
       margin: 1.25rem 0;
       padding: 0.65rem 1rem;
       border-left: 3px solid var(--accent-2);
-      background: rgba(192, 132, 252, 0.06);
+      background: rgba(124, 58, 237, 0.06);
       border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      color: #c2c6d6;
+      color: #3e3e56;
     }
   </style>
 </Layout>
