@@ -168,6 +168,19 @@ fn run() -> Result<()> {
     {
         Ok(cli) => cli,
         Err(err) => {
+            // Always honour explicit --help / --version requests before any
+            // passthrough logic.  Without this guard, `g --help` would fall
+            // through to `should_passthrough_to_git` (which returns `true`
+            // when no known subcommand is found), and git's help would be
+            // shown instead of ours.
+            if matches!(
+                err.kind(),
+                clap::error::ErrorKind::DisplayHelp
+                    | clap::error::ErrorKind::DisplayVersion
+                    | clap::error::ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+            ) {
+                err.exit();
+            }
             if should_passthrough_to_git(&raw_args) || should_passthrough_on_parse_error(&err) {
                 return commands::git::passthrough(&raw_args);
             }
@@ -469,39 +482,28 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     // Default: show config path and a human-readable summary.
     let path = config::config_path()?;
     let cfg = config::load()?;
-    println!();
-    println!(
-        "  {} {}",
-        "Config file:".bright_black(),
-        path.display().to_string().cyan().underline()
-    );
-    println!(
-        "  {} {}",
-        "Default branch:".bright_black(),
-        cfg.general.default_branch.green()
-    );
-    println!(
-        "  {} {}",
-        "Diff tool:".bright_black(),
-        cfg.diff.tool.yellow()
-    );
-    println!(
-        "  {} {}",
-        "Aliases:".bright_black(),
-        cfg.aliases.len().to_string().yellow()
-    );
-    println!(
-        "  {} {}",
-        "Commit types:".bright_black(),
-        cfg.commit.types.join(", ").bright_black()
-    );
-    println!();
-    println!(
-        "  {} {}",
-        "tip:".bright_black(),
-        format!("{} config --edit  to open in $EDITOR", bin_name()).bright_black()
-    );
-    println!();
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        (
+            "Config file",
+            path.display().to_string().cyan().underline().to_string(),
+        ),
+        (
+            "Default branch",
+            cfg.general.default_branch.green().to_string(),
+        ),
+        ("Diff tool", cfg.diff.tool.yellow().to_string()),
+        (
+            "Aliases",
+            cfg.aliases.len().to_string().yellow().to_string(),
+        ),
+        (
+            "Commit types",
+            cfg.commit.types.join(", ").bright_black().to_string(),
+        ),
+    ]);
+    ui::print_blank();
+    ui::print_tip(&format!("{} config --edit  to open in $EDITOR", bin_name()));
     Ok(())
 }
 

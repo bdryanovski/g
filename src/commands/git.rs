@@ -92,7 +92,7 @@ pub fn dry_run_action(action: &str, explanation: &str) {
     if is_dry_run() {
         let step = next_step();
         let label = format!("Step {}", step);
-        println!();
+        ui::print_blank();
         println!(
             "  {} {} {}",
             label.cyan().bold(),
@@ -118,7 +118,7 @@ fn print_dry_run_git(args: &[&str], explanation: &str) {
 
 /// Print the dry-run banner shown at the start of a `--dry-run` invocation.
 pub fn dry_run_banner() {
-    println!();
+    ui::print_blank();
     println!(
         "  {} {}",
         "⚡".yellow().bold(),
@@ -137,7 +137,7 @@ pub fn dry_run_banner() {
 /// Summarises the number of operations that would be performed.
 pub fn dry_run_footer() {
     let steps = step_count();
-    println!();
+    ui::print_blank();
     println!(
         "  {}",
         "───────────────────────────────────────────────────────────────".bright_black()
@@ -161,7 +161,7 @@ pub fn dry_run_footer() {
             "This command has no mutating operations to preview.".bright_black()
         );
     }
-    println!();
+    ui::print_blank();
 }
 
 // ─── Git executable ───────────────────────────────────────────────────────────
@@ -431,7 +431,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    println!(); // top padding
+    ui::print_blank(); // top padding
 
     for line in output.lines() {
         // Lines that contain a commit record are bounded by two \x02 bytes.
@@ -469,7 +469,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
         }
     }
 
-    println!(); // bottom padding
+    ui::print_blank(); // bottom padding
     Ok(())
 }
 
@@ -562,25 +562,25 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     // ─── Print output ─────────────────────────────────────────────────────────
 
-    println!();
+    ui::print_blank();
     print!("  {} {}", "On branch".bright_black(), branch.green().bold());
     if let Some(up) = &upstream {
         print!("  {}", format!("tracking {}", up).bright_black());
     }
-    println!();
+    ui::print_blank();
 
     if ahead > 0 || behind > 0 {
         println!("  {}", ui::format_ahead_behind(ahead, behind));
     }
 
     if staged.is_empty() && unstaged.is_empty() && untracked.is_empty() && unmerged.is_empty() {
-        println!();
+        ui::print_blank();
         println!(
             "  {} {}",
             "✓".green().bold(),
             "Working tree is clean".green()
         );
-        println!();
+        ui::print_blank();
         return Ok(());
     }
 
@@ -632,22 +632,17 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         }
     }
 
-    println!();
+    ui::print_blank();
 
     if !staged.is_empty() {
-        println!(
-            "  {}  {}",
-            "tip:".bright_black(),
-            format!("{} commit  — commit staged changes", crate::bin_name()).bright_black()
-        );
+        ui::print_tip(&format!(
+            "{}  commit staged changes",
+            format!("{} commit", crate::bin_name()).yellow()
+        ));
     } else if !unstaged.is_empty() || !untracked.is_empty() {
-        println!(
-            "  {}  {}",
-            "tip:".bright_black(),
-            "git add <file>  or  git add -A  to stage".bright_black()
-        );
+        ui::print_tip("git add <file>  or  git add -A  to stage");
     }
-    println!();
+    ui::print_blank();
 
     Ok(())
 }
@@ -846,19 +841,15 @@ pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
 
     let fork_short = git_output(&["rev-parse", "--short", &fork]).unwrap_or(fork.clone());
 
-    println!();
-    println!(
-        "  {} {}",
-        "Squashing branch:".bold().white(),
-        branch.green().bold()
-    );
-    println!(
-        "  {} {} ({})",
-        "Merge-base with".bright_black(),
-        mainline.cyan(),
-        fork_short.cyan()
-    );
-    println!();
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        ("Squashing branch", branch.green().bold().to_string()),
+        (
+            "Merge-base with",
+            format!("{} ({})", mainline.cyan(), fork_short.cyan()),
+        ),
+    ]);
+    ui::print_blank();
 
     git_mutate(
         &["reset", "--soft", &fork],
@@ -875,12 +866,12 @@ pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
     .context("Failed to commit squashed changes")?;
 
     if !is_dry_run() {
-        println!();
+        ui::print_blank();
         ui::print_success(&format!(
             "Squashed {} into one commit",
             branch.green().bold()
         ));
-        println!();
+        ui::print_blank();
     }
     Ok(())
 }
@@ -922,7 +913,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         "-a",
     ]);
 
-    println!();
+    ui::print_blank();
     let mut table = ui::Table::new(vec![
         "",
         "Branch",
@@ -1000,7 +991,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     }
 
     table.print();
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -1029,7 +1020,7 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
                 fields[7], fields[8],
             );
 
-            println!();
+            ui::print_blank();
             println!(
                 "  {} {}{}",
                 "commit".bright_black(),
@@ -1047,15 +1038,15 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
                 date_iso.bright_black(),
                 format!("({})", date_rel).bright_black()
             );
-            println!();
+            ui::print_blank();
             println!("      {}", ui::color_subject(subject).bold());
             if !body.trim().is_empty() {
-                println!();
+                ui::print_blank();
                 for body_line in body.lines() {
                     println!("      {}", body_line.white());
                 }
             }
-            println!();
+            ui::print_blank();
             break;
         }
     }

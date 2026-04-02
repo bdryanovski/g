@@ -47,7 +47,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
 
     let head = args.head.clone().unwrap_or_else(|| current.clone());
 
-    println!();
+    ui::print_blank();
     println!(
         "  {} {} {} {}",
         "Comparing".bright_black(),
@@ -60,7 +60,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
         if !gitcmd::is_dry_run() {
             let pb = ui::spinner("Fetching remotes…");
             let _ = gitcmd::git_output(&["fetch", "--all", "--quiet"]);
-            pb.finish_and_clear();
+            ui::spinner_success(pb, "Fetched");
         } else {
             let _ = gitcmd::git_mutate(
                 &["fetch", "--all", "--quiet"],
@@ -78,7 +78,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
     let ahead: usize = ahead_output.trim().parse().unwrap_or(0);
     let behind: usize = behind_output.trim().parse().unwrap_or(0);
 
-    println!();
+    ui::print_blank();
     println!("  {}", ui::format_ahead_behind(ahead, behind));
 
     // ─── Commits ──────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
         show_full_diff(&base, &head)?;
     }
 
-    println!();
+    ui::print_blank();
     Ok(())
 }
 
@@ -166,7 +166,7 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
     ]);
 
     if stat_raw.trim().is_empty() {
-        println!();
+        ui::print_blank();
         println!("  {}", "No file changes between branches.".bright_black());
         return Ok(());
     }
@@ -179,7 +179,7 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
     for (i, line) in lines.iter().enumerate() {
         if i == last {
             // Summary line: "12 files changed, 345 insertions(+), 67 deletions(-)"
-            println!();
+            ui::print_blank();
             println!("  {}", colorize_summary_line(line));
         } else {
             // File line: "  path/to/file.rs | 12 +++---"
@@ -195,7 +195,7 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
 ///
 /// Propagates any error from [`gitcmd::enhanced_diff`].
 fn show_full_diff(base: &str, head: &str) -> Result<()> {
-    println!();
+    ui::print_blank();
     let diff_args = vec![format!("{}...{}", base, head)];
     crate::commands::git::enhanced_diff(&diff_args)
 }
