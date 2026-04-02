@@ -2,47 +2,58 @@ import { useEffect, useMemo, useState } from "react";
 
 type DemoId = "log" | "diff" | "workspace" | "stack";
 
+// Lines are faithful to the actual CLI output format:
+//
+// log       — CommitEntry::render(): graph + hash (yellow) + subject (conventional
+//             commit type colored) + author (cyan) + date (dim)
+// diff      — enhanced_diff() routed through delta: file header (▌, cyan),
+//             + lines (green), - lines (red), context note (dim)
+// workspace — workspace::list() Table with columns: marker ◉/◯, Name, Branch,
+//             Path (dim), HEAD hash (yellow·dim), Created (dim)
+// stack     — stack::list(): "Stack: <name> (root: …)", then ├──/└── tree with
+//             ◉ on current branch and "← you are here" (all dim connectors)
 const DEMOS: Record<
   DemoId,
   { label: string; cmd: string; lines: string[] }
 > = {
   log: {
     label: "Log",
-    cmd: "g log -n 4 --oneline",
+    cmd: "g log",
     lines: [
-      "* ··\x1b[36m●\x1b[0m \x1b[33mfeat(auth)\x1b[0m add session refresh   \x1b[90m· 2h\x1b[0m",
-      "│ * \x1b[33mfix(ui)\x1b[0m align modal footer        \x1b[90m· 5h\x1b[0m",
-      "│/  ",
-      "* \x1b[33mchore\x1b[0m bump deps                    \x1b[90m· 1d\x1b[0m",
+      "\x1b[33m*\x1b[0m \x1b[33ma4f2b3c\x1b[0m  \x1b[32mfeat\x1b[0m(auth): add session refresh  \x1b[36mJane Doe\x1b[0m  \x1b[90m2 hours ago\x1b[0m",
+      "\x1b[33m│\x1b[0m \x1b[32m*\x1b[0m \x1b[33m9d1e56f\x1b[0m  \x1b[31mfix\x1b[0m(ui): align modal footer   \x1b[36mBob Smith\x1b[0m  \x1b[90m5 hours ago\x1b[0m",
+      "\x1b[33m│\x1b[0m\x1b[32m/\x1b[0m",
+      "  \x1b[33m*\x1b[0m \x1b[33m3c8a901\x1b[0m  \x1b[90mchore\x1b[0m: bump lockfile          \x1b[36mJane Doe\x1b[0m  \x1b[90m1 day ago\x1b[0m",
     ],
   },
   diff: {
     label: "Diff",
-    cmd: "g diff src/main.rs",
+    cmd: "g diff",
     lines: [
-      "\x1b[36m▌ src/main.rs\x1b[0m",
-      "\x1b[32m+    println!(\"g\");\x1b[0m",
-      "\x1b[31m-    println!(\"hello\");\x1b[0m",
-      "\x1b[90m  … 3 lines hidden · delta\x1b[0m",
+      "\x1b[36m▌ src/commands/git.rs\x1b[0m",
+      "\x1b[32m+  args.push(format!(\"-n{}\", cfg.ui.log_limit));\x1b[0m",
+      "\x1b[31m-  args.push(\"-n20\".to_string());\x1b[0m",
+      "\x1b[90m  … 4 lines context · delta\x1b[0m",
     ],
   },
   workspace: {
     label: "Workspace",
     cmd: "g workspace list",
     lines: [
-      "\x1b[1mworkspaces\x1b[0m",
-      "  \x1b[32m●\x1b[0m \x1b[1mmyapp\x1b[0m        \x1b[90mmain\x1b[0m     \x1b[90m~/proj/myapp\x1b[0m",
-      "  \x1b[36m○\x1b[0m \x1b[1mfeature-auth\x1b[0m \x1b[90mfeat/a\x1b[0m \x1b[90m~/proj/myapp--feature-auth\x1b[0m",
+      "  \x1b[1m  Name          Branch      Path            HEAD     Created\x1b[0m",
+      "  \x1b[90m── ──────────── ─────────── ─────────────── ──────── ─────────────\x1b[0m",
+      "  \x1b[32m◉\x1b[0m \x1b[32mmain\x1b[0m          \x1b[32mmain\x1b[0m        ~/vcli/main     a4f2b3c  \x1b[90mjust now\x1b[0m",
+      "  \x1b[90m◯\x1b[0m feature-auth  \x1b[32mfeat/auth\x1b[0m   ~/vcli/f-auth   9d1e567  \x1b[90m2 hours ago\x1b[0m",
     ],
   },
   stack: {
     label: "Stack",
     cmd: "g stack view",
     lines: [
-      "\x1b[1mauth-stack\x1b[0m",
-      "  \x1b[90m├\x1b[0m \x1b[36mmain\x1b[0m",
-      "  \x1b[90m├\x1b[0m \x1b[35mfeat/models\x1b[0m",
-      "  \x1b[90m└\x1b[0m \x1b[35mfeat/api\x1b[0m  \x1b[90m← HEAD\x1b[0m",
+      "  \x1b[90mStack:\x1b[0m \x1b[36mauth-stack\x1b[0m  \x1b[90m(root: main)\x1b[0m",
+      "  \x1b[90m├──\x1b[0m \x1b[90m◯\x1b[0m main",
+      "  \x1b[90m├──\x1b[0m \x1b[90m◯\x1b[0m feat/models",
+      "  \x1b[90m└──\x1b[0m \x1b[32m◉\x1b[0m \x1b[32mfeat/api\x1b[0m  \x1b[90m← you are here\x1b[0m",
     ],
   },
 };
@@ -151,40 +162,52 @@ export default function TerminalDemo() {
       </div>
       <style>{`
         .td-root { display: flex; flex-direction: column; gap: 1rem; }
-        .td-tabs {
-          display: flex; flex-wrap: wrap; gap: 0.5rem;
-        }
+        .td-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+        /* Tab buttons live outside the dark shell — use light-theme colours */
         .td-tab {
           font: inherit;
           cursor: pointer;
-          border: 1px solid rgba(255,255,255,0.12);
-          background: rgba(255,255,255,0.04);
-          color: #b7b9c5;
+          border: 1px solid rgba(0,0,0,0.1);
+          background: rgba(255,255,255,0.72);
+          color: #52526a;
           padding: 0.45rem 0.9rem;
           border-radius: 999px;
+          font-size: 0.84rem;
+          font-weight: 500;
           transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
-        .td-tab:hover { color: #f4f4f8; border-color: rgba(0,245,255,0.45); }
+        .td-tab:hover {
+          color: #1e1e30;
+          background: rgba(0,0,0,0.06);
+          border-color: rgba(37,99,235,0.3);
+        }
         .td-tab-on {
-          color: #050508;
-          background: linear-gradient(115deg, #00f5ff, #c084fc, #fb7185);
+          color: #fff;
+          background: linear-gradient(115deg, #2563eb, #7c3aed, #e11d48);
           background-size: 160% 160%;
           border-color: transparent;
           font-weight: 600;
-          box-shadow: 0 0 20px rgba(0,245,255,0.25);
+          box-shadow: 0 2px 12px rgba(37,99,235,0.25);
         }
+        .td-tab-on:hover {
+          color: #fff;
+          filter: brightness(1.06);
+        }
+
+        /* The terminal window itself stays dark */
         .td-shell {
           border-radius: 14px;
-          border: 1px solid rgba(0,245,255,0.12);
-          background: linear-gradient(165deg, rgba(10,12,22,0.96), rgba(5,6,12,0.99));
-          box-shadow: 0 28px 90px rgba(0,0,0,0.55), 0 0 40px rgba(192,132,252,0.06), inset 0 1px 0 rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          background: linear-gradient(165deg, #0d0f1c, #08090f);
+          box-shadow: 0 16px 48px rgba(0,0,0,0.28), 0 0 32px rgba(124,58,237,0.05), inset 0 1px 0 rgba(255,255,255,0.05);
           overflow: hidden;
         }
         .td-chrome {
           display: flex; align-items: center; gap: 0.45rem;
           padding: 0.65rem 1rem;
           border-bottom: 1px solid rgba(255,255,255,0.06);
-          background: rgba(0,0,0,0.25);
+          background: rgba(0,0,0,0.28);
         }
         .td-dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.85; }
         .td-r { background: #fb7185; }
@@ -194,25 +217,43 @@ export default function TerminalDemo() {
           margin-left: 0.5rem; font-size: 0.72rem; letter-spacing: 0.12em;
           text-transform: uppercase; color: #6b6d7a;
         }
-        .td-body { padding: 1rem 1.1rem 1.25rem; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.82rem; line-height: 1.55; }
-        .td-prompt { color: #00f5ff; margin-right: 0.25rem; text-shadow: 0 0 12px rgba(0,245,255,0.35); }
+        .td-body {
+          padding: 1rem 1.1rem 1.25rem;
+          font-family: "JetBrains Mono", ui-monospace, monospace;
+          font-size: 0.82rem;
+          line-height: 1.6;
+        }
+        .td-prompt { color: #60a5fa; margin-right: 0.25rem; }
         .td-cmd { color: #e8e9ef; white-space: pre-wrap; word-break: break-all; }
-        .td-out { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.08); }
+        .td-out {
+          margin-top: 0.65rem;
+          padding-top: 0.65rem;
+          border-top: 1px dashed rgba(255,255,255,0.07);
+        }
+        /* Reset every global pre override — each line is just a terminal row */
         .td-pre {
-          margin: 0 0 0.2rem;
+          margin: 0;
+          padding: 0 !important;
+          background: none !important;
+          border: none !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
           font-family: inherit;
           font-size: inherit;
+          line-height: 1.6;
           white-space: pre-wrap;
           word-break: break-word;
-          color: #d1d3de;
+          color: #c8cad8;
         }
-        :global(.t-cyan) { color: #67e8f9; }
-        :global(.t-yellow) { color: #fcd34d; }
-        :global(.t-green) { color: #86efac; }
-        :global(.t-red) { color: #fca5a5; }
+
+        /* ANSI colour spans */
+        :global(.t-cyan)    { color: #67e8f9; }
+        :global(.t-yellow)  { color: #fcd34d; }
+        :global(.t-green)   { color: #86efac; }
+        :global(.t-red)     { color: #fca5a5; }
         :global(.t-magenta) { color: #e879f9; }
-        :global(.t-bold) { font-weight: 600; color: #f4f4f8; }
-        :global(.t-dim) { color: #7c7f8e; }
+        :global(.t-bold)    { font-weight: 600; color: #f4f4f8; }
+        :global(.t-dim)     { color: #7c7f8e; }
       `}</style>
     </div>
   );

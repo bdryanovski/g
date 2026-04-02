@@ -1,27 +1,27 @@
 :root {
-  --bg-deep: #040508;
-  --bg-surface: rgba(12, 14, 22, 0.65);
-  --bg-card: rgba(16, 18, 30, 0.78);
-  --bg-elevated: rgba(26, 28, 44, 0.95);
-  --bg-sidebar: rgba(10, 11, 20, 0.72);
-  --border: rgba(255, 255, 255, 0.09);
-  --border-glow: rgba(0, 245, 255, 0.22);
-  --text: #f0f1f7;
-  --muted: #8b8fa3;
-  --accent: #00f5ff;
-  --accent-dim: rgba(0, 245, 255, 0.12);
-  --accent-2: #c084fc;
-  --accent-2-dim: rgba(192, 132, 252, 0.14);
-  --accent-3: #fb7185;
-  --accent-4: #a3e635;
-  --success: #4ade80;
-  --warning: #fbbf24;
+  --bg-deep: #f8f5f1;
+  --bg-surface: rgba(255, 253, 250, 0.88);
+  --bg-card: rgba(255, 253, 250, 0.95);
+  --bg-elevated: rgba(242, 238, 232, 0.98);
+  --bg-sidebar: rgba(248, 245, 241, 0.92);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(37, 99, 235, 0.18);
+  --text: #1e1e30;
+  --muted: #72728a;
+  --accent: #2563eb;
+  --accent-dim: rgba(37, 99, 235, 0.1);
+  --accent-2: #7c3aed;
+  --accent-2-dim: rgba(124, 58, 237, 0.1);
+  --accent-3: #e11d48;
+  --accent-4: #16a34a;
+  --success: #16a34a;
+  --warning: #d97706;
   --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 16px;
   --radius-sm: 10px;
-  --shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
-  --shadow-glow: 0 0 60px rgba(0, 245, 255, 0.08);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 40px rgba(37, 99, 235, 0.06);
 }
 
 *,
@@ -32,25 +32,16 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5rem; /* offset for sticky topbar (~4rem tall) */
   min-height: 100%;
-  /* Mesh lives on the root so it always paints (not hidden behind opaque body) */
-  background-color: #03040a;
+  /* Warm milky-white mesh background */
+  background-color: #f8f5f1;
   background-image:
-    radial-gradient(ellipse 110% 85% at 0% -5%, rgba(0, 245, 255, 0.55), transparent 42%),
-    radial-gradient(ellipse 95% 75% at 100% 0%, rgba(192, 132, 252, 0.52), transparent 45%),
-    radial-gradient(ellipse 70% 55% at 100% 100%, rgba(251, 113, 133, 0.38), transparent 48%),
-    radial-gradient(ellipse 65% 50% at 0% 100%, rgba(163, 230, 53, 0.22), transparent 50%),
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(0, 245, 255, 0.08), transparent 65%),
-    conic-gradient(
-      from 210deg at 50% 120%,
-      rgba(0, 245, 255, 0.14),
-      transparent 28%,
-      rgba(192, 132, 252, 0.12),
-      transparent 62%,
-      rgba(251, 113, 133, 0.1),
-      transparent
-    ),
-    linear-gradient(165deg, #020308 0%, #0b0d18 42%, #05040f 100%);
+    radial-gradient(ellipse 90% 70% at 0% 0%, rgba(200, 215, 255, 0.32), transparent 50%),
+    radial-gradient(ellipse 75% 55% at 100% 0%, rgba(210, 195, 255, 0.26), transparent 50%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgba(255, 210, 220, 0.2), transparent 52%),
+    radial-gradient(ellipse 55% 40% at 0% 100%, rgba(195, 240, 215, 0.16), transparent 52%),
+    radial-gradient(ellipse 50% 35% at 50% 55%, rgba(230, 225, 255, 0.1), transparent 60%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }
@@ -71,7 +62,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Texture + light edge darkening (fixed, above html gradient) */
+/* Texture + light edge softening (fixed, above html gradient) */
 .site-backdrop {
   position: fixed;
   inset: 0;
@@ -81,31 +72,31 @@ body {
   isolation: isolate;
 }
 
-/* SVG fractal noise — visible grain */
+/* SVG fractal noise — very subtle grain for paper-like texture */
 .site-noise {
   position: absolute;
   inset: 0;
-  opacity: 0.22;
-  mix-blend-mode: overlay;
+  opacity: 0.07;
+  mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 180px 180px;
 }
 
-/* CSS micro-grid so texture still shows if SVG filter is blocked */
+/* CSS micro-grid — subtle paper texture */
 .site-noise-fine {
   position: absolute;
   inset: 0;
-  opacity: 0.35;
-  mix-blend-mode: soft-light;
+  opacity: 0.1;
+  mix-blend-mode: multiply;
   background-image:
     repeating-linear-gradient(
       -80deg,
-      rgba(255, 255, 255, 0.04) 0 0.5px,
+      rgba(0, 0, 0, 0.018) 0 0.5px,
       transparent 0.5px 3px
     ),
     repeating-linear-gradient(
       10deg,
-      rgba(0, 0, 0, 0.12) 0 0.5px,
+      rgba(0, 0, 0, 0.015) 0 0.5px,
       transparent 0.5px 4px
     );
   background-size: 100% 100%, 100% 100%;
@@ -117,8 +108,8 @@ body {
   background: radial-gradient(
     ellipse 85% 75% at 50% 42%,
     transparent 0%,
-    transparent 45%,
-    rgba(2, 3, 10, 0.38) 100%
+    transparent 55%,
+    rgba(180, 170, 160, 0.1) 100%
   );
   pointer-events: none;
 }
@@ -148,7 +139,7 @@ code {
   padding: 0.14em 0.42em;
   border-radius: 6px;
   border: 1px solid var(--border);
-  color: #e2e4f0;
+  color: #2d3265;
 }
 
 pre {
@@ -157,19 +148,19 @@ pre {
   line-height: 1.55;
   padding: 1.1rem 1.2rem;
   border-radius: var(--radius-sm);
-  background: rgba(4, 5, 12, 0.92);
+  background: rgba(238, 234, 228, 0.96);
   border: 1px solid var(--border);
   overflow-x: auto;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(0, 245, 255, 0.04);
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 pre code {
   background: none;
   border: 0;
   padding: 0;
-  color: #d4d6e4;
+  color: #2a2d4a;
 }
 
 .wrap {
@@ -196,12 +187,12 @@ pre code {
 /* —— Shared chrome (marketing + docs) —— */
 .topbar {
   border-bottom: 1px solid var(--border);
-  background: rgba(6, 7, 14, 0.72);
-  backdrop-filter: blur(16px) saturate(1.35);
+  background: rgba(250, 248, 244, 0.88);
+  backdrop-filter: blur(16px) saturate(1.2);
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 1px 0 rgba(0, 245, 255, 0.06);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .topbar-inner {
@@ -230,11 +221,11 @@ pre code {
   font-weight: 800;
   font-size: 1.05rem;
   letter-spacing: -0.06em;
-  color: #050508;
+  color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow:
-    0 0 24px rgba(0, 245, 255, 0.35),
-    0 0 48px rgba(192, 132, 252, 0.15);
+    0 2px 12px rgba(37, 99, 235, 0.28),
+    0 0 24px rgba(124, 58, 237, 0.12);
 }
 
 .brand-text {
@@ -279,18 +270,18 @@ pre code {
 
 .nav-link:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .nav-link--accent {
   color: var(--accent);
   background: var(--accent-dim);
-  border: 1px solid rgba(0, 245, 255, 0.25);
+  border: 1px solid rgba(37, 99, 235, 0.22);
 }
 
 .nav-link--accent:hover {
-  color: #fff;
-  background: rgba(0, 245, 255, 0.2);
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.15);
 }
 
 .btn {
@@ -316,27 +307,27 @@ pre code {
 }
 
 .btn-primary {
-  color: #050508 !important;
-  background: linear-gradient(115deg, #00f5ff, #c084fc, #fb7185);
+  color: #fff !important;
+  background: linear-gradient(115deg, #2563eb, #7c3aed, #e11d48);
   background-size: 160% 160%;
   box-shadow:
-    0 14px 44px rgba(0, 245, 255, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    0 8px 24px rgba(37, 99, 235, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset;
 }
 
 .btn-primary:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.08);
 }
 
 .btn-ghost {
   border: 1px solid var(--border);
   color: var(--text) !important;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .btn-ghost:hover {
-  border-color: rgba(0, 245, 255, 0.25);
-  background: rgba(0, 245, 255, 0.06);
+  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .tag {
@@ -354,26 +345,26 @@ pre code {
 
 .tag--cyan {
   color: var(--accent);
-  border-color: rgba(0, 245, 255, 0.35);
+  border-color: rgba(37, 99, 235, 0.28);
   background: var(--accent-dim);
 }
 
 .tag--violet {
   color: var(--accent-2);
-  border-color: rgba(192, 132, 252, 0.35);
+  border-color: rgba(124, 58, 237, 0.28);
   background: var(--accent-2-dim);
 }
 
 .tag--rose {
-  color: #fda4af;
-  border-color: rgba(251, 113, 133, 0.35);
-  background: rgba(251, 113, 133, 0.1);
+  color: #be123c;
+  border-color: rgba(225, 29, 72, 0.28);
+  background: rgba(225, 29, 72, 0.08);
 }
 
 .tag--lime {
-  color: var(--accent-4);
-  border-color: rgba(163, 230, 53, 0.35);
-  background: rgba(163, 230, 53, 0.1);
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(22, 163, 74, 0.08);
 }
 
 .doc-footer {
@@ -382,7 +373,7 @@ pre code {
   padding: 1.5rem 0;
   color: var(--muted);
   font-size: 0.88rem;
-  background: rgba(4, 5, 10, 0.45);
+  background: rgba(242, 238, 232, 0.55);
   backdrop-filter: blur(10px);
 }
 
