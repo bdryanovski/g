@@ -92,6 +92,7 @@ fn get_styles() -> clap::builder::Styles {
                   \n\
                   \x20 g log                       enhanced git log with graph\n\
                   \x20 g status                    enhanced status with icons\n\
+                  \x20 g add                       interactive file picker to stage\n\
                   \x20 g commit                    interactive conventional commit\n\
                   \x20 g diff                      enhanced diff\n\
                   \x20 g branch                    list branches with ahead/behind\n\
@@ -138,6 +139,13 @@ pub enum Commands {
 
     /// Interactive guided commit with message templates
     Commit(CommitArgs),
+
+    /// Stage files interactively, or forward arguments to `git add`
+    ///
+    /// With no arguments an interactive multi-select picker is shown so you
+    /// can choose exactly which files to stage using ↑↓ / j k and Space.
+    /// Any flags or paths you supply are forwarded to `git add` unchanged.
+    Add(GitPassArgs),
 
     /// Compare two branches visually
     Compare(CompareArgs),
