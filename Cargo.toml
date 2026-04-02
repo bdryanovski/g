@@ -42,6 +42,9 @@ regex = "1"
 # HTTP (for GitHub API)
 ureq = { version = "2", features = ["json"] }
 
+# Embedded database
+rusqlite = { version = "0.31", features = ["bundled"] }
+
 [profile.release]
 opt-level = 3
 # "fat" LTO merges all crate codegen units into a single module so the

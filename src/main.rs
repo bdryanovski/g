@@ -38,6 +38,7 @@ mod cli;
 mod commands;
 mod config;
 mod github;
+mod storage;
 mod ui;
 
 use std::error::Error;
@@ -48,7 +49,8 @@ use anyhow::{Context, Result};
 use clap::{error::ErrorKind, Parser};
 use colored::Colorize;
 
-use cli::{BranchSquashCmd, Cli, Commands, StackCommands, WorkspaceCommands};
+use cli::{BranchSquashCmd, Cli, Commands, DeveloperCommands, StackCommands, WorkspaceCommands};
+use storage::{db, stats};
 
 // ─── Application identity ─────────────────────────────────────────────────────
 
@@ -139,6 +141,14 @@ fn run() -> Result<()> {
     // users supply no known subcommand (e.g., `g -m "msg" -A`).
     let raw_args: Vec<String> = std::env::args().skip(1).collect();
 
+    // Ensure the config directory and default config file exist before anything
+    // else — db::open() needs the directory to already exist for config.toml.
+    config::ensure_config()?;
+
+    // Open (or create) the SQLite database.  This also runs any pending
+    // migrations and performs the one-time TOML import if needed.
+    let conn = db::open()?;
+
     // Intercept `g clone --workspace` before clap or git passthrough.
     // Strip the `--workspace` flag and delegate to the workspace handler.
     if raw_args.first().map(|s| s.as_str()) == Some("clone")
@@ -149,7 +159,7 @@ fn run() -> Result<()> {
             .filter(|a| a.as_str() != "--workspace")
             .cloned()
             .collect();
-        return commands::workspace::clone_with_workspace(&clone_args);
+        return commands::workspace::clone_with_workspace(&conn, &clone_args);
     }
 
     // Attempt to parse using clap.  If parsing fails because the user didn't
@@ -166,10 +176,6 @@ fn run() -> Result<()> {
         }
     };
 
-    // Ensure the config directory and default config file exist.
-    // `?` means: if this returns `Err`, bubble it up to `main`.
-    config::ensure_config()?;
-
     // Apply -C (change directory) if specified.
     // `Option<T>` is Rust's "maybe" type; `if let Some(dir)` extracts the value.
     if let Some(dir) = &cli.directory {
@@ -183,106 +189,156 @@ fn run() -> Result<()> {
         commands::git::dry_run_banner();
     }
 
+    // Resolve repo_id best-effort — upsert so every command run registers the
+    // repo and updates last_seen.  Returns None when not inside a git repo.
+    let repo_id = commands::git::repo_root()
+        .ok()
+        .and_then(|root| storage::repos::upsert(&conn, &root).ok());
+
+    // Record the command name and subcommand for stats.
+    let (cmd_name, sub_name) = command_names(&cli.command);
+
+    // Start wall-clock timer.
+    let start = std::time::Instant::now();
+
     // Dispatch by top-level command.
-    match cli.command {
-        // ─── Workspace ────────────────────────────────────────────────────────
-        Commands::Workspace(cmd) => match cmd {
-            WorkspaceCommands::Init => commands::workspace::init()?,
-            WorkspaceCommands::List => commands::workspace::list()?,
-            WorkspaceCommands::Create {
-                name,
-                branch,
-                start_point,
-                description,
-                copy,
-            } => {
-                // `as_deref()` turns `Option<String>` into `Option<&str>` without cloning.
-                commands::workspace::create(
-                    &name,
-                    branch.as_deref(),
-                    start_point.as_deref(),
-                    description.as_deref(),
+    let dispatch_result: Result<()> = (|| {
+        match cli.command {
+            // ─── Workspace ────────────────────────────────────────────────────────
+            Commands::Workspace(cmd) => match cmd {
+                WorkspaceCommands::Init => commands::workspace::init(&conn)?,
+                WorkspaceCommands::List => commands::workspace::list(&conn)?,
+                WorkspaceCommands::Create {
+                    name,
+                    branch,
+                    start_point,
+                    description,
                     copy,
-                )?
-            }
-            WorkspaceCommands::Switch { name } => commands::workspace::switch(name.as_deref())?,
-            WorkspaceCommands::Delete { name, force } => commands::workspace::delete(&name, force)?,
-            WorkspaceCommands::Status => commands::workspace::status()?,
-            WorkspaceCommands::Rename { old, new } => commands::workspace::rename(&old, &new)?,
-        },
+                } => {
+                    // `as_deref()` turns `Option<String>` into `Option<&str>` without cloning.
+                    commands::workspace::create(
+                        &conn,
+                        &name,
+                        branch.as_deref(),
+                        start_point.as_deref(),
+                        description.as_deref(),
+                        copy,
+                    )?
+                }
+                WorkspaceCommands::Switch { name } => {
+                    commands::workspace::switch(&conn, name.as_deref())?
+                }
+                WorkspaceCommands::Delete { name, force } => {
+                    commands::workspace::delete(&conn, &name, force)?
+                }
+                WorkspaceCommands::Status => commands::workspace::status(&conn)?,
+                WorkspaceCommands::Rename { old, new } => {
+                    commands::workspace::rename(&conn, &old, &new)?
+                }
+            },
 
-        // ─── Stack ────────────────────────────────────────────────────────────
-        Commands::Stack(cmd) => match cmd {
-            StackCommands::New { name } => commands::stack::new_stack(&name)?,
-            StackCommands::Add { branch } => commands::stack::add_branch(&branch)?,
-            StackCommands::List => commands::stack::list()?,
-            StackCommands::View => commands::stack::view()?,
-            StackCommands::Details => commands::stack::details()?,
-            StackCommands::Switch { name } => commands::stack::switch_stack(&name)?,
-            StackCommands::Absorb => commands::stack::absorb()?,
-            StackCommands::Squash {
-                message,
-                no_interactive,
-            } => commands::stack::squash(message.as_deref(), no_interactive)?,
-            StackCommands::Fold {
-                keep,
-                no_interactive,
-            } => commands::stack::fold(keep, no_interactive)?,
-            StackCommands::Sync { no_interactive } => commands::stack::sync(no_interactive)?,
-            StackCommands::Push { force } => commands::stack::push(force)?,
-            StackCommands::Pr { open, draft } => commands::stack::create_prs(open, draft)?,
-            StackCommands::Remove { branch } => commands::stack::remove_branch(&branch)?,
-            StackCommands::Delete { name, branches } => {
-                commands::stack::delete_stack(&name, branches)?
-            }
-            StackCommands::Up => commands::stack::move_up()?,
-            StackCommands::Down => commands::stack::move_down()?,
-        },
+            // ─── Stack ────────────────────────────────────────────────────────────
+            Commands::Stack(cmd) => match cmd {
+                StackCommands::New { name } => commands::stack::new_stack(&conn, &name)?,
+                StackCommands::Add { branch } => commands::stack::add_branch(&conn, &branch)?,
+                StackCommands::List => commands::stack::list(&conn)?,
+                StackCommands::View => commands::stack::view(&conn)?,
+                StackCommands::Details => commands::stack::details(&conn)?,
+                StackCommands::Switch { name } => commands::stack::switch_stack(&conn, &name)?,
+                StackCommands::Absorb => commands::stack::absorb(&conn)?,
+                StackCommands::Squash {
+                    message,
+                    no_interactive,
+                } => commands::stack::squash(&conn, message.as_deref(), no_interactive)?,
+                StackCommands::Fold {
+                    keep,
+                    no_interactive,
+                } => commands::stack::fold(&conn, keep, no_interactive)?,
+                StackCommands::Sync { no_interactive } => {
+                    commands::stack::sync(&conn, no_interactive)?
+                }
+                StackCommands::Push { force } => commands::stack::push(&conn, force)?,
+                StackCommands::Pr { open, draft } => {
+                    commands::stack::create_prs(&conn, open, draft)?
+                }
+                StackCommands::Remove { branch } => commands::stack::remove_branch(&conn, &branch)?,
+                StackCommands::Delete { name, branches } => {
+                    commands::stack::delete_stack(&conn, &name, branches)?
+                }
+                StackCommands::Up => commands::stack::move_up(&conn)?,
+                StackCommands::Down => commands::stack::move_down(&conn)?,
+            },
 
-        // ─── Commit ───────────────────────────────────────────────────────────
-        Commands::Commit(args) => commands::commit::commit(&args)?,
+            // ─── Commit ───────────────────────────────────────────────────────────
+            Commands::Commit(args) => commands::commit::commit(&conn, &args)?,
 
-        // ─── Compare ─────────────────────────────────────────────────────────
-        Commands::Compare(args) => commands::compare::compare(&args)?,
+            // ─── Compare ─────────────────────────────────────────────────────────
+            Commands::Compare(args) => commands::compare::compare(&args)?,
 
-        // ─── Enhanced Git Commands ────────────────────────────────────────────
-        Commands::Log(args) => commands::git::enhanced_log(&args.args)?,
-        Commands::Status(args) => commands::git::enhanced_status(&args.args)?,
-        Commands::Diff(args) => commands::git::enhanced_diff(&args.args)?,
-        Commands::Branch(args) => {
-            if let Some(BranchSquashCmd::Squash { message, base }) = args.cmd {
-                commands::git::branch_squash(message.as_deref(), base.as_deref())?;
-            } else {
-                commands::git::enhanced_branch(&args.rest)?;
-            }
-        }
-        Commands::Show(args) => commands::git::enhanced_show(&args.args)?,
-
-        // ─── Config ───────────────────────────────────────────────────────────
-        Commands::Config(args) => handle_config(args)?,
-
-        // ─── Passthrough ─────────────────────────────────────────────────────
-        Commands::Git(args) => {
-            // Check aliases before passing through.
-            let cfg = config::load().unwrap_or_default();
-            if let Some(first) = args.first() {
-                if let Some(alias_target) = cfg.aliases.get(first) {
-                    // Split the alias into words and append the original args.
-                    let mut new_args: Vec<String> =
-                        alias_target.split_whitespace().map(String::from).collect();
-                    new_args.extend_from_slice(&args[1..]);
-                    return commands::git::passthrough(&new_args);
+            // ─── Enhanced Git Commands ────────────────────────────────────────────
+            Commands::Log(args) => commands::git::enhanced_log(&args.args)?,
+            Commands::Status(args) => commands::git::enhanced_status(&args.args)?,
+            Commands::Diff(args) => commands::git::enhanced_diff(&args.args)?,
+            Commands::Branch(args) => {
+                if let Some(BranchSquashCmd::Squash { message, base }) = args.cmd {
+                    commands::git::branch_squash(message.as_deref(), base.as_deref())?;
+                } else {
+                    commands::git::enhanced_branch(&args.rest)?;
                 }
             }
-            commands::git::passthrough(&args)?
+            Commands::Show(args) => commands::git::enhanced_show(&args.args)?,
+
+            // ─── Config ───────────────────────────────────────────────────────────
+            Commands::Config(args) => handle_config(args)?,
+
+            // ─── Developer ────────────────────────────────────────────────────────
+            Commands::Developer(cmd) => match cmd {
+                DeveloperCommands::Db { path } => commands::developer::db(path)?,
+                DeveloperCommands::Repos => commands::developer::repos(&conn)?,
+            },
+
+            // ─── Passthrough ─────────────────────────────────────────────────────
+            Commands::Git(args) => {
+                // Check aliases before passing through.
+                let cfg = config::load().unwrap_or_default();
+                if let Some(first) = args.first() {
+                    if let Some(alias_target) = cfg.aliases.get(first) {
+                        // Split the alias into words and append the original args.
+                        let mut new_args: Vec<String> =
+                            alias_target.split_whitespace().map(String::from).collect();
+                        new_args.extend_from_slice(&args[1..]);
+                        return commands::git::passthrough(&new_args);
+                    }
+                }
+                commands::git::passthrough(&args)?
+            }
         }
-    }
 
-    if dry_run {
-        commands::git::dry_run_footer();
-    }
+        if dry_run {
+            commands::git::dry_run_footer();
+        }
 
-    Ok(())
+        Ok(())
+    })();
+
+    // Record the command run — best-effort, never fails the CLI.
+    let duration_ms = start.elapsed().as_millis() as u64;
+    let (exit_code, error_msg) = match &dispatch_result {
+        Ok(_) => (0i32, None),
+        Err(e) => (1i32, Some(e.to_string())),
+    };
+    stats::record_command(
+        &conn,
+        cmd_name,
+        sub_name,
+        repo_id,
+        Some(duration_ms),
+        exit_code,
+        error_msg.as_deref(),
+    )
+    .ok();
+
+    dispatch_result
 }
 
 /// Returns `true` if we should skip our CLI handling and forward args straight to git.
@@ -308,6 +364,7 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "branch",
         "show",
         "config",
+        "developer",
     ];
 
     match first_non_global_token(raw_args) {
@@ -446,4 +503,71 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     );
     println!();
     Ok(())
+}
+
+/// Return the top-level command name and optional subcommand name for stats recording.
+///
+/// Examples:
+/// - `g commit`            → `("commit", None)`
+/// - `g workspace create`  → `("workspace", Some("create"))`
+/// - `g stack pr`          → `("stack", Some("pr"))`
+/// - `g log`               → `("log", None)`
+fn command_names(cmd: &Commands) -> (&'static str, Option<&'static str>) {
+    match cmd {
+        Commands::Workspace(sub) => {
+            let sub_name = match sub {
+                WorkspaceCommands::Init => "init",
+                WorkspaceCommands::List => "list",
+                WorkspaceCommands::Create { .. } => "create",
+                WorkspaceCommands::Switch { .. } => "switch",
+                WorkspaceCommands::Delete { .. } => "delete",
+                WorkspaceCommands::Status => "status",
+                WorkspaceCommands::Rename { .. } => "rename",
+            };
+            ("workspace", Some(sub_name))
+        }
+        Commands::Stack(sub) => {
+            let sub_name = match sub {
+                StackCommands::New { .. } => "new",
+                StackCommands::Add { .. } => "add",
+                StackCommands::List => "list",
+                StackCommands::View => "view",
+                StackCommands::Details => "details",
+                StackCommands::Switch { .. } => "switch",
+                StackCommands::Absorb => "absorb",
+                StackCommands::Squash { .. } => "squash",
+                StackCommands::Fold { .. } => "fold",
+                StackCommands::Sync { .. } => "sync",
+                StackCommands::Push { .. } => "push",
+                StackCommands::Pr { .. } => "pr",
+                StackCommands::Remove { .. } => "remove",
+                StackCommands::Delete { .. } => "delete",
+                StackCommands::Up => "up",
+                StackCommands::Down => "down",
+            };
+            ("stack", Some(sub_name))
+        }
+        Commands::Commit(_) => ("commit", None),
+        Commands::Compare(_) => ("compare", None),
+        Commands::Log(_) => ("log", None),
+        Commands::Status(_) => ("status", None),
+        Commands::Diff(_) => ("diff", None),
+        Commands::Branch(_) => ("branch", None),
+        Commands::Show(_) => ("show", None),
+        Commands::Config(_) => ("config", None),
+        Commands::Developer(sub) => {
+            let sub_name = match sub {
+                DeveloperCommands::Db { .. } => "db",
+                DeveloperCommands::Repos => "repos",
+            };
+            ("developer", Some(sub_name))
+        }
+        Commands::Git(args) => {
+            // For passthrough commands, record the first arg as the subcommand.
+            // We return a static "git" here; the subcommand is dynamic so we
+            // record it as None (dynamic strings can't be &'static str).
+            let _ = args;
+            ("git", None)
+        }
+    }
 }

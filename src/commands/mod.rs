@@ -11,6 +11,7 @@
 
 pub mod commit;
 pub mod compare;
+pub mod developer;
 pub mod git;
 pub mod stack;
 pub mod workspace;
