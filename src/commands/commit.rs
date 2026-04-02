@@ -18,10 +18,12 @@
 use anyhow::{bail, Result};
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
+use rusqlite::Connection;
 
 use crate::cli::CommitArgs;
 use crate::commands::git as gitcmd;
 use crate::config;
+use crate::storage::{repos, stats};
 use crate::ui;
 
 /// Entry point for `g commit`.
@@ -36,7 +38,7 @@ use crate::ui;
 /// - Staging with `-a` fails.
 /// - Any interactive prompt fails (e.g. EOF on stdin).
 /// - The commit message is rejected or the user cancels.
-pub fn commit(args: &CommitArgs) -> Result<()> {
+pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
     let cfg = config::load()?;
 
     if !gitcmd::is_inside_git_repo() {
@@ -122,6 +124,24 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
                 println!("     {}", out.lines().last().unwrap_or("").bright_black());
             }
             println!();
+
+            // Record stats — best-effort, never fails the commit.
+            let (commit_type, scope) = parse_conventional_type(subject_line);
+            let has_body = message.lines().count() > 2;
+            let repo_id = gitcmd::repo_root()
+                .ok()
+                .and_then(|r| repos::find_id(conn, &r).ok().flatten());
+            if let Some(rid) = repo_id {
+                stats::record_commit(
+                    conn,
+                    rid,
+                    commit_type.as_deref(),
+                    scope.as_deref(),
+                    has_body,
+                    cfg.commit.gpg_sign,
+                )
+                .ok();
+            }
         }
         Err(e) => {
             ui::print_error(&format!("Commit failed: {}", e));
@@ -129,6 +149,34 @@ pub fn commit(args: &CommitArgs) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Parse an optional conventional commit type and scope from a subject line.
+///
+/// `"feat(auth): add login"` → `(Some("feat"), Some("auth"))`
+/// `"fix: typo"`             → `(Some("fix"), None)`
+/// `"random message"`        → `(None, None)`
+fn parse_conventional_type(subject: &str) -> (Option<String>, Option<String>) {
+    // Match `type(scope): ...` or `type: ...`
+    let before_colon = match subject.split_once(':') {
+        Some((lhs, _)) => lhs,
+        None => return (None, None),
+    };
+
+    if let Some((t, rest)) = before_colon.split_once('(') {
+        let t = t.trim();
+        let scope = rest.trim_end_matches(')').trim();
+        if !t.is_empty() && t.chars().all(|c| c.is_alphanumeric() || c == '-') {
+            return (Some(t.to_string()), Some(scope.to_string()));
+        }
+    }
+
+    let t = before_colon.trim();
+    if !t.is_empty() && t.chars().all(|c| c.is_alphanumeric() || c == '-') {
+        return (Some(t.to_string()), None);
+    }
+
+    (None, None)
 }
 
 /// Build a commit message from the `--message` / `--body` CLI flags, if set.

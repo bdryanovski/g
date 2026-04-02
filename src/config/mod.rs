@@ -303,6 +303,16 @@ pub fn stacks_path() -> Result<PathBuf> {
     Ok(config_dir()?.join("stacks.toml"))
 }
 
+/// Return the full path to the `g.db` SQLite database file.
+///
+/// # Errors
+///
+/// Propagates any error from [`config_dir`].
+#[must_use = "use the returned path or it is wasted"]
+pub fn db_path() -> Result<PathBuf> {
+    Ok(config_dir()?.join("g.db"))
+}
+
 /// Ensure the config directory and a default `config.toml` exist on disk.
 ///
 /// This is called once at startup.  If the directory or file are missing they

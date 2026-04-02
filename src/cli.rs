@@ -82,6 +82,10 @@ pub enum Commands {
     /// Open interactive config editor
     Config(ConfigArgs),
 
+    /// Developer / debugging utilities
+    #[command(subcommand)]
+    Developer(DeveloperCommands),
+
     /// Passthrough: all other git commands are forwarded transparently
     #[command(external_subcommand)]
     // This collects any unknown subcommand + args into a Vec<String>.
@@ -354,6 +358,29 @@ pub struct ConfigArgs {
 
     /// Get a config value
     pub key: Option<String>,
+}
+
+// ─── Developer ───────────────────────────────────────────────────────────────
+
+/// Developer / debugging utilities for inspecting internal tool state.
+#[derive(Subcommand)]
+pub enum DeveloperCommands {
+    /// Open an interactive SQLite shell connected to the internal g.db database
+    ///
+    /// Launches `sqlite3` with the path to `~/.config/g/g.db` so you can run
+    /// arbitrary SQL queries for debugging.  Pass `--path` to print the
+    /// database path without opening a shell.
+    Db {
+        /// Print the database path and exit (don't open the shell)
+        #[arg(long)]
+        path: bool,
+    },
+
+    /// List all repositories tracked in the internal database
+    ///
+    /// Shows every repo root path that has been seen by the tool, along with
+    /// the first and most recent time it was active.
+    Repos,
 }
 
 // TODO(cli): Add `--json` output flags for commands that are easy to serialize (list/status).
