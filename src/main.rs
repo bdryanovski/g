@@ -285,6 +285,18 @@ fn run() -> Result<()> {
             // ─── Commit ───────────────────────────────────────────────────────────
             Commands::Commit(args) => commands::commit::commit(&conn, &args)?,
 
+            // ─── Add ──────────────────────────────────────────────────────────────
+            Commands::Add(args) => {
+                if args.args.is_empty() {
+                    commands::git::interactive_add()?
+                } else {
+                    // Any flags or paths: forward straight to git add.
+                    let mut git_args = vec!["add".to_string()];
+                    git_args.extend(args.args.clone());
+                    commands::git::passthrough(&git_args)?
+                }
+            }
+
             // ─── Compare ─────────────────────────────────────────────────────────
             Commands::Compare(args) => commands::compare::compare(&args)?,
 
@@ -370,6 +382,7 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "workspace",
         "stack",
         "commit",
+        "add",
         "compare",
         "log",
         "status",
@@ -550,6 +563,7 @@ fn command_names(cmd: &Commands) -> (&'static str, Option<&'static str>) {
             ("stack", Some(sub_name))
         }
         Commands::Commit(_) => ("commit", None),
+        Commands::Add(_) => ("add", None),
         Commands::Compare(_) => ("compare", None),
         Commands::Log(_) => ("log", None),
         Commands::Status(_) => ("status", None),

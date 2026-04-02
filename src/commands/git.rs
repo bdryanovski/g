@@ -647,6 +647,333 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     Ok(())
 }
 
+// ─── Interactive add ──────────────────────────────────────────────────────────
+
+/// Present an interactive multi-select picker of all stageable files.
+///
+/// Called by `g add` when no arguments are supplied.  Parses
+/// `git status --porcelain` to build the candidate list, which includes:
+///
+/// - Untracked files (`??`)
+/// - Working-tree modifications / deletions (column Y is non-blank)
+///
+/// Files that are already fully staged (column Y is a space) are omitted
+/// because they don't need `git add`.
+///
+/// ## Navigation
+///
+/// | Key            | Action                    |
+/// |----------------|---------------------------|
+/// | `↑` / `k`      | move up                   |
+/// | `↓` / `j`      | move down                 |
+/// | `Space`        | toggle selection          |
+/// | `a`            | toggle all                |
+/// | `Enter`        | confirm and stage         |
+/// | `Esc` / `q`    | cancel                    |
+///
+/// # Errors
+///
+/// Returns an error if the current directory is not a git repo, if
+/// `git status` or `git add` fails, or if the TTY prompt cannot be shown.
+pub fn interactive_add() -> Result<()> {
+    if !is_inside_git_repo() {
+        bail!("Not inside a git repository.");
+    }
+
+    if is_dry_run() {
+        dry_run_action(
+            "git add <interactive>",
+            "Launch interactive file picker and stage the selected files",
+        );
+        return Ok(());
+    }
+
+    // ── Fetch raw porcelain output ────────────────────────────────────────────
+    //
+    // IMPORTANT: do NOT use `git_output_lossy` here.  That helper calls
+    // `.trim()` on the entire output string, which strips the leading space
+    // from the *first* line.  In porcelain format column-1 is the index
+    // status and column-2 is the working-tree status; a leading space in
+    // column-1 means "no index change".  Trimming " M src/cli.rs" →
+    // "M src/cli.rs" makes the parser read X='M', Y=' ' (space) and skip
+    // the file as "already staged".  The first file alphabetically is always
+    // the victim, which is why some files disappeared from the picker.
+    let raw_out = Command::new(git_exe())
+        .args(["status", "--porcelain"])
+        .output()
+        .context("Failed to run `git status --porcelain`")?;
+
+    let raw = String::from_utf8_lossy(&raw_out.stdout);
+
+    if raw.trim().is_empty() {
+        ui::print_blank();
+        ui::print_info("Nothing to add — working tree is clean.");
+        ui::print_blank();
+        return Ok(());
+    }
+
+    // ── Parse porcelain lines ─────────────────────────────────────────────────
+    struct Entry {
+        x: String,
+        y: String,
+        path: String,
+    }
+
+    let mut raw_entries: Vec<Entry> = Vec::new();
+    for line in raw.lines() {
+        if line.len() < 3 {
+            continue;
+        }
+        let x = line[0..1].to_string();
+        let y = line[1..2].to_string();
+        let path = unquote_path(line[3..].trim());
+        if x == "!" && y == "!" {
+            continue;
+        }
+        if (x == "?" && y == "?") || (y != " " && y != "?" && y != "!") {
+            raw_entries.push(Entry { x, y, path });
+        }
+    }
+
+    if raw_entries.is_empty() {
+        ui::print_blank();
+        ui::print_info("Nothing to stage — all changes are already staged.");
+        ui::print_blank();
+        return Ok(());
+    }
+
+    // ── Build plain-text labels (no embedded ANSI) ────────────────────────────
+    //
+    // The custom picker below applies bold/dim/colour itself, so labels must be
+    // plain text so those styles aren't fought by inner escape codes.
+    //
+    // Format mirrors `g status` unstaged-changes rows:
+    //   ├ M  ✎  src/cli.rs    (connector · code · icon · path)
+    //
+    // The picker renders each row as:
+    //   "  ◯  " + label    or    "  ◉  " + label
+    // which puts the ├/└ connector three chars after the check symbol, matching
+    // the section-header indentation of "Unstaged Changes".
+    let last = raw_entries.len().saturating_sub(1);
+    let entries: Vec<(String, String)> = raw_entries
+        .iter()
+        .enumerate()
+        .map(|(i, e)| {
+            let connector = if i == last { "└" } else { "├" };
+            let (icon, _) = ui::status_icon(&e.y);
+            let label = if e.x == "?" && e.y == "?" {
+                format!("{connector} ?  {}", e.path)
+            } else {
+                format!("{connector} {}  {}  {}", e.y, icon, e.path)
+            };
+            (label, e.path.clone())
+        })
+        .collect();
+
+    // ── Show section header then run the picker ───────────────────────────────
+    let n = entries.len();
+    ui::print_section("Unstaged Changes", Some(n));
+
+    let selection = pick_files(&entries)?;
+    ui::print_blank();
+
+    // ── Act on the selection ──────────────────────────────────────────────────
+    match selection {
+        None => {
+            ui::print_info("Cancelled.");
+            ui::print_blank();
+        }
+        Some(ref paths) if paths.is_empty() => {
+            ui::print_info("No files selected — nothing staged.");
+            ui::print_blank();
+        }
+        Some(paths) => {
+            let count = paths.len();
+            let pb = ui::spinner(&format!(
+                "Staging {} file{}…",
+                count,
+                if count == 1 { "" } else { "s" }
+            ));
+
+            let mut git_args = vec!["add", "--"];
+            git_args.extend(paths.iter().map(String::as_str));
+
+            match git_output(&git_args) {
+                Ok(_) => {
+                    ui::spinner_success(
+                        pb,
+                        &format!(
+                            "Staged {}  {}",
+                            count.to_string().yellow().bold(),
+                            if count == 1 { "file" } else { "files" },
+                        ),
+                    );
+                    ui::print_tip(&format!(
+                        "{}  commit staged changes",
+                        format!("{} commit", crate::bin_name()).yellow()
+                    ));
+                }
+                Err(e) => {
+                    ui::spinner_error(pb, &format!("Failed to stage: {e}"));
+                }
+            }
+            ui::print_blank();
+        }
+    }
+
+    Ok(())
+}
+
+/// Custom crossterm-based multi-select picker.
+///
+/// Renders with the hint bar **below** the file list so the layout is:
+///
+/// ```text
+///   ◯   ├ M  ✎  src/cli.rs
+///   ◉   ├ M  ✎  src/commands/git.rs     ← selected (◉ green)
+///   ◯   └ M  ✎  src/main.rs             ← cursor (bold)
+///   space toggle · a all · enter stage · esc cancel
+/// ```
+///
+/// ## Keys
+/// | Key              | Action         |
+/// |------------------|----------------|
+/// | `↓` / `j`        | move down      |
+/// | `↑` / `k`        | move up        |
+/// | `Space`          | toggle select  |
+/// | `a`              | toggle all     |
+/// | `Enter`          | confirm        |
+/// | `Esc` / `q`      | cancel         |
+///
+/// Returns `None` on cancel, `Some(paths)` on confirm (may be empty).
+fn pick_files(entries: &[(String, String)]) -> Result<Option<Vec<String>>> {
+    use crossterm::{
+        cursor::{Hide, MoveToColumn, MoveUp, Show},
+        event::{self, Event, KeyCode, KeyEventKind},
+        execute,
+        terminal::{disable_raw_mode, enable_raw_mode},
+    };
+    use std::io::Write;
+
+    let n = entries.len();
+    let mut selected = vec![false; n];
+    let mut cursor = 0usize;
+    let mut err = std::io::stderr();
+
+    // ── Draw all rows + hint bar ──────────────────────────────────────────────
+    // Each call renders exactly `n + 1` lines so the caller can MoveUp(n+1)
+    // to return to the top before the next redraw.
+    let draw = |err: &mut dyn Write, selected: &[bool], cursor: usize| {
+        for (i, (label, _)) in entries.iter().enumerate() {
+            let (check, label_styled) = if selected[i] && i == cursor {
+                // selected + cursor: green ◉, bold text
+                (
+                    "\x1b[1;32m◉\x1b[0m".to_string(),
+                    format!("\x1b[1m{label}\x1b[0m"),
+                )
+            } else if selected[i] {
+                // selected, not cursor: green ◉, normal text
+                ("\x1b[32m◉\x1b[0m".to_string(), label.to_string())
+            } else if i == cursor {
+                // cursor, not selected: bright ◯, bold text
+                (
+                    "\x1b[1m◯\x1b[0m".to_string(),
+                    format!("\x1b[1m{label}\x1b[0m"),
+                )
+            } else {
+                // inactive, unselected: dim ◯, dim text
+                (
+                    "\x1b[2m◯\x1b[0m".to_string(),
+                    format!("\x1b[2m{label}\x1b[0m"),
+                )
+            };
+
+            // Two leading spaces align the check symbol with g status item indent.
+            let _ = write!(err, "  {check}  {label_styled}\r\n");
+        }
+
+        // Blank separator then hint bar — dim, styled like `g status`'s tip line.
+        let _ = write!(err, "\r\n");
+        let _ = write!(
+            err,
+            "\x1b[2m  space toggle  ·  j/k navigate  ·  a select all  ·  enter stage  ·  esc cancel\x1b[0m\r\n"
+        );
+        let _ = err.flush();
+    };
+
+    // ── Run the picker loop ───────────────────────────────────────────────────
+    enable_raw_mode().context("Failed to enable raw terminal mode")?;
+    execute!(err, Hide).ok();
+
+    // Initial render.
+    draw(&mut err, &selected, cursor);
+
+    let result = (|| -> Option<Vec<String>> {
+        loop {
+            let ev = match event::read() {
+                Ok(e) => e,
+                Err(_) => break None,
+            };
+
+            let Event::Key(key) = ev else { continue };
+            if key.kind != KeyEventKind::Press {
+                continue;
+            }
+
+            match key.code {
+                KeyCode::Char('j') | KeyCode::Down => {
+                    cursor = (cursor + 1).min(n - 1);
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    cursor = cursor.saturating_sub(1);
+                }
+                KeyCode::Char(' ') => {
+                    selected[cursor] = !selected[cursor];
+                }
+                KeyCode::Char('a') => {
+                    let all = selected.iter().all(|&s| s);
+                    selected.iter_mut().for_each(|s| *s = !all);
+                }
+                KeyCode::Enter => {
+                    break Some(
+                        entries
+                            .iter()
+                            .zip(&selected)
+                            .filter_map(|((_, p), &s)| if s { Some(p.clone()) } else { None })
+                            .collect(),
+                    );
+                }
+                KeyCode::Esc | KeyCode::Char('q') => break None,
+                _ => continue,
+            }
+
+            // Redraw: move cursor back to the top of our n+2 rendered lines
+            // (n items + 1 blank separator + 1 hint bar).
+            execute!(err, MoveUp((n + 2) as u16), MoveToColumn(0)).ok();
+            draw(&mut err, &selected, cursor);
+        }
+    })();
+
+    // ── Cleanup ───────────────────────────────────────────────────────────────
+    disable_raw_mode().ok();
+    execute!(err, Show).ok();
+
+    Ok(result)
+}
+
+/// Strip git's double-quote wrapping from a path, if present.
+///
+/// `git status --porcelain` quotes paths that contain special characters
+/// (spaces, newlines, non-ASCII bytes) with double quotes.  This removes
+/// the outer quotes so the path can be passed to `git add` as a plain string.
+fn unquote_path(p: &str) -> String {
+    if p.starts_with('"') && p.ends_with('"') && p.len() >= 2 {
+        p[1..p.len() - 1].to_string()
+    } else {
+        p.to_string()
+    }
+}
+
 // ─── Enhanced diff ────────────────────────────────────────────────────────────
 
 /// Run diff using a configured external tool if available, otherwise passthrough.
