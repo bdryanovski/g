@@ -54,6 +54,9 @@ pub struct Config {
     /// Log-output formatting settings.
     #[serde(default)]
     pub log: LogConfig,
+    /// Interactive staging / unstaging settings.
+    #[serde(default)]
+    pub stage: StageConfig,
     /// User-defined command aliases (`co = "checkout"`, etc.).
     #[serde(default)]
     pub aliases: HashMap<String, String>,
@@ -200,6 +203,23 @@ impl Default for DiffConfig {
             tool: "auto".into(),
             tool_args: vec![],
             context_lines: 3,
+        }
+    }
+}
+
+/// Interactive `g stage` settings.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct StageConfig {
+    /// When `true` (default), pressing `d` to revert a file shows a
+    /// confirmation popup before discarding changes.  Set to `false`
+    /// to revert immediately without asking.
+    pub confirm_revert: bool,
+}
+
+impl Default for StageConfig {
+    fn default() -> Self {
+        Self {
+            confirm_revert: true,
         }
     }
 }
@@ -429,6 +449,12 @@ show_graph = true           # Show branch graph in log
 commit_mode = "interactive"  # "interactive" | "inline" (both use full-screen TUI)
 theme = "dark"              # "dark" | "light"
 
+# ─── Stage ────────────────────────────────────────────────────────────────────
+[stage]
+# When true, pressing `d` to revert a file asks for confirmation.
+# Set to false to revert immediately without a popup.
+confirm_revert = true
+
 # ─── Commit Templates ─────────────────────────────────────────────────────────
 [commit]
 # Conventional commit types shown in interactive mode
@@ -516,6 +542,7 @@ impl Default for Config {
             github: GithubConfig::default(),
             workspace: WorkspaceConfig::default(),
             log: LogConfig::default(),
+            stage: StageConfig::default(),
             aliases: HashMap::new(),
             plugins: PluginsConfig::default(),
         })
