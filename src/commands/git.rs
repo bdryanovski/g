@@ -568,19 +568,6 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    if !unmerged.is_empty() {
-        ui::print_section("Conflicts", Some(unmerged.len()));
-        for (code, path) in &unmerged {
-            let (icon, _) = ui::status_icon(code);
-            ui::print_indented(&format!(
-                "{} {} {}",
-                ui::danger_bold("  ⚡"),
-                icon,
-                ui::danger_bold(path)
-            ));
-        }
-    }
-
     if !staged.is_empty() {
         ui::print_section("Staged Changes", Some(staged.len()));
         let last = staged.len() - 1;
@@ -623,6 +610,19 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
                 connector,
                 ui::muted("?"),
                 ui::muted(path)
+            ));
+        }
+    }
+
+    if !unmerged.is_empty() {
+        ui::print_section("Conflicts", Some(unmerged.len()));
+        for (code, path) in &unmerged {
+            let (icon, _) = ui::status_icon(code);
+            ui::print_indented(&format!(
+                "{} {} {}",
+                ui::danger_bold("  ⚡"),
+                icon,
+                ui::danger_bold(path)
             ));
         }
     }
