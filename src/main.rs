@@ -307,6 +307,9 @@ fn run() -> Result<()> {
                 }
             }
 
+            // ─── Stage ───────────────────────────────────────────────────────────
+            Commands::Stage => commands::stage::stage()?,
+
             // ─── Compare ─────────────────────────────────────────────────────────
             Commands::Compare(args) => commands::compare::compare(&args)?,
 
@@ -650,6 +653,7 @@ fn command_names(cmd: &Commands) -> (&'static str, Option<&'static str>) {
         }
         Commands::Commit(_) => ("commit", None),
         Commands::Add(_) => ("add", None),
+        Commands::Stage => ("stage", None),
         Commands::Compare(_) => ("compare", None),
         Commands::Log(_) => ("log", None),
         Commands::Status(_) => ("status", None),

@@ -153,6 +153,17 @@ pub enum Commands {
     /// Any flags or paths you supply are forwarded to `git add` unchanged.
     Add(GitPassArgs),
 
+    /// Interactive file-tree picker for staging and unstaging
+    ///
+    /// Opens a full-screen tree view of every changed file (staged, unstaged
+    /// and untracked).  Navigate with j/k, toggle with Space, confirm with
+    /// Enter.  Press `d` on any tracked file to revert it to its last known
+    /// state.
+    ///
+    /// Already-staged files start pre-checked so running `g stage` a second
+    /// time lets you adjust your selection without losing what you staged.
+    Stage,
+
     /// Compare two branches visually
     Compare(CompareArgs),
 
