@@ -5,7 +5,6 @@
 //! their short description — they are power-user tools, not everyday workflows.
 
 use anyhow::{bail, Context, Result};
-use colored::Colorize;
 use rusqlite::Connection;
 use std::process::{Command, Stdio};
 
@@ -124,7 +123,7 @@ fn print_db_banner(db_path: &std::path::Path) {
     // Header: database path above the art block.
     ui::print_blank();
     let path_str = db_path.display().to_string();
-    ui::print_info(&format!("Database  {}", path_str.cyan().underline()));
+    ui::print_info(&format!("Database  {}", ui::link_primary_bold(&path_str)));
     ui::print_blank();
 
     let rows = art_lines.len().max(DB_TIPS.len());
@@ -143,15 +142,15 @@ fn print_db_banner(db_path: &std::path::Path) {
 
         if let Some((cmd, desc)) = DB_TIPS.get(i) {
             let cmd_pad = " ".repeat(cmd_width.saturating_sub(cmd.len()));
-            println!(
+            ui::print_line(&format!(
                 "{}{}{}{cmd_pad}  {}",
                 art_col,
                 GAP,
-                cmd.cyan().bold(),
-                desc.bright_black(),
-            );
+                ui::primary_bold(cmd),
+                ui::muted(desc),
+            ));
         } else {
-            println!("{}", art_col);
+            ui::print_line(&art_col);
         }
     }
 
@@ -176,7 +175,7 @@ pub fn db(path_only: bool) -> Result<()> {
     let db_path = config::db_path().context("Could not determine database path")?;
 
     if path_only {
-        println!("{}", db_path.display());
+        ui::print_line(&db_path.display().to_string());
         return Ok(());
     }
 
@@ -185,7 +184,7 @@ pub fn db(path_only: bool) -> Result<()> {
         bail!(
             "Database not found at {}.\n\
              Run any {} command first to initialise it.",
-            db_path.display().to_string().cyan(),
+            ui::primary(&db_path.display().to_string()),
             crate::bin_name()
         );
     }
@@ -198,9 +197,7 @@ pub fn db(path_only: bool) -> Result<()> {
              {}  brew install sqlite  (macOS)\n\
              {}  apt install sqlite3  (Debian/Ubuntu)\n\
              {}  dnf install sqlite   (Fedora)",
-            "  ".bright_black(),
-            "  ".bright_black(),
-            "  ".bright_black(),
+            "  ", "  ", "  ",
         )
     })?;
 
@@ -255,17 +252,17 @@ pub fn repos(conn: &Connection) -> Result<()> {
     }
 
     ui::print_blank();
+    ui::print_fieldset(&format!("Tracked Repositories ({})", rows.len()));
+    ui::print_blank();
     let mut table = ui::Table::new(vec!["ID", "Name", "Path", "First seen", "Last seen"]);
 
     for row in &rows {
-        // Humanise timestamps to relative strings.
         let first = humanise_dt(row.first_seen);
         let last = humanise_dt(row.last_seen);
-
         table.add_row(vec![
-            row.id.to_string().bright_black().to_string(),
-            row.name.green().bold().to_string(),
-            row.path.bright_black().to_string(),
+            ui::muted(&row.id.to_string()),
+            ui::success_bold(&row.name),
+            ui::muted(&row.path),
             first,
             last,
         ]);
@@ -281,7 +278,7 @@ fn humanise_dt(dt: chrono::DateTime<chrono::Utc>) -> String {
     let now = chrono::Utc::now();
     let diff = now.signed_duration_since(dt);
 
-    if diff.num_days() > 365 {
+    let relative = if diff.num_days() > 365 {
         format!("{} years ago", diff.num_days() / 365)
     } else if diff.num_days() > 30 {
         format!("{} months ago", diff.num_days() / 30)
@@ -291,7 +288,6 @@ fn humanise_dt(dt: chrono::DateTime<chrono::Utc>) -> String {
         format!("{} hours ago", diff.num_hours())
     } else {
         format!("{} min ago", diff.num_minutes().max(1))
-    }
-    .bright_black()
-    .to_string()
+    };
+    ui::muted(&relative)
 }

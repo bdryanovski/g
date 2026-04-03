@@ -15,9 +15,9 @@
 //!
 //! [Conventional Commit]: https://www.conventionalcommits.org/
 
+use std::io::IsTerminal;
+
 use anyhow::{bail, Result};
-use colored::Colorize;
-use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use rusqlite::Connection;
 
 use crate::cli::CommitArgs;
@@ -60,8 +60,8 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
         ui::print_warning("Nothing staged to commit.");
         ui::print_tip(&format!(
             "Use {} or {} to stage changes.",
-            "git add <file>".yellow(),
-            format!("{} commit -a", crate::bin_name()).yellow()
+            ui::warning("git add <file>"),
+            ui::warning(&format!("{} commit -a", crate::bin_name()))
         ));
         return Ok(());
     }
@@ -72,7 +72,19 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
     // Build the commit message — either from flags or interactively.
     let message = match message_from_flags(args) {
         Some(m) => m,
-        None => build_commit_message(args, &cfg)?,
+        None => {
+            if !std::io::stdin().is_terminal() {
+                bail!(
+                    "Interactive commit requires a TTY.\n\
+                     Use `{} commit --message \"your message\"` for non-interactive use.",
+                    crate::bin_name()
+                );
+            }
+            // "interactive" = full-screen ratatui TUI (default)
+            // "inline"      = same ratatui TUI but via sequential full-screen
+            //                 steps (same UX, different config label for future use)
+            build_commit_message_interactive(args, &cfg)?
+        }
     };
 
     // Warn if the subject line exceeds the configured maximum length.
@@ -83,11 +95,7 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
             subject_line.len(),
             cfg.commit.max_subject_length
         ));
-        let proceed = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Commit anyway?")
-            .default(false)
-            .interact()?;
-        if !proceed {
+        if !ui::confirm("Subject is long — commit anyway?", false) {
             return Ok(());
         }
     }
@@ -116,12 +124,12 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
                 pb,
                 &format!(
                     "{} {}",
-                    hash.yellow().bold(),
+                    ui::warning_bold(&hash),
                     ui::color_subject(subject_line)
                 ),
             );
             if !out.is_empty() {
-                println!("  {}", out.lines().last().unwrap_or("").bright_black());
+                ui::print_indented(&ui::muted(out.lines().last().unwrap_or("")));
             }
             ui::print_blank();
 
@@ -240,17 +248,17 @@ fn commit_dry_run(args: &CommitArgs, cfg: &config::Config) -> Result<()> {
     gitcmd::git_mutate(&git_args, explanation)?;
 
     if args.message.is_some() {
-        println!(
+        ui::print_line(&format!(
             "           {} {}",
-            "message:".bright_black(),
-            message_desc.bright_black()
-        );
+            ui::muted("message:"),
+            ui::muted(&message_desc)
+        ));
     } else {
-        println!(
+        ui::print_line(&format!(
             "           {} {}",
-            "note:".bright_black(),
-            "Commit message would be built via interactive prompts".bright_black()
-        );
+            ui::muted("note:"),
+            ui::muted("Commit message would be built via interactive prompts")
+        ));
     }
 
     Ok(())
@@ -266,11 +274,10 @@ fn show_staged_summary() -> Result<()> {
     ui::print_section("Staged changes", None);
     // Show at most 12 file lines to keep the output concise.
     for line in stat.lines().take(12) {
-        let colored = colorize_stat_line(line);
-        println!("  {}", colored);
+        ui::print_indented(&colorize_stat_line(line));
     }
     if stat.lines().count() > 12 {
-        println!("  {}", "…and more".bright_black());
+        ui::print_indented(&ui::muted("…and more"));
     }
     ui::print_blank();
     Ok(())
@@ -285,75 +292,61 @@ fn colorize_stat_line(line: &str) -> String {
         let file = parts[0];
         let rest = parts[1];
         let rest_colored = rest
-            .replace('+', &"+".green().to_string())
-            .replace('-', &"-".red().to_string());
-        format!("{}{}{}", file.white(), "|".bright_black(), rest_colored)
+            .replace('+', &ui::success("+"))
+            .replace('-', &ui::danger("-"));
+        format!("{}{}{}", ui::paint_text(file), ui::muted("|"), rest_colored)
     } else {
         // Summary line, e.g. "3 files changed, 42 insertions(+), 7 deletions(-)"
-        line.bright_black().to_string()
+        ui::muted(line)
     }
 }
 
-/// Build a Conventional Commit message using interactive `dialoguer` prompts.
+/// Build a Conventional Commit message using the full-screen ratatui TUI.
 ///
-/// Steps:
-/// 1. **Type** — select from the configured commit types.
-/// 2. **Scope** — optional component/area tag (can be skipped).
-/// 3. **Subject** — imperative, present-tense description (validated for length).
-/// 4. **Body** — optional multi-line explanation of *why* the change was made.
-/// 5. **Footer** — optional `BREAKING CHANGE` or `closes #N` annotation.
+/// Used when `[ui] commit_mode = "interactive"` (default).  Each step opens
+/// a dedicated TUI screen with a ratatui-cheese Help bar at the bottom.
 ///
 /// # Errors
 ///
-/// Returns an error if any prompt interaction fails (e.g. the user sends EOF)
-/// or if the user cancels at the final confirmation.
-fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<String> {
-    let theme = ColorfulTheme::default();
-
-    ui::print_info("Building commit message…");
-    ui::print_blank();
-
-    // Step 1: Choose commit type.
+/// Returns `Err` if the user cancels at any step.
+fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> Result<String> {
+    // Step 1: Type selection.
     let commit_type = if let Some(t) = &args.r#type {
         t.clone()
     } else {
-        let type_descriptions: Vec<String> = cfg
+        let options: Vec<ui::SelectOption> = cfg
             .commit
             .types
             .iter()
-            .map(|t| format_type_label(t, cfg.commit.emoji))
+            .map(|t| {
+                let (_, description) = type_label_parts(t);
+                if description.is_empty() {
+                    ui::SelectOption::new(t.clone())
+                } else {
+                    ui::SelectOption::with_description(t.clone(), description)
+                }
+            })
             .collect();
 
-        let idx = Select::with_theme(&theme)
-            .with_prompt("  Commit type")
-            .items(&type_descriptions)
-            .default(0)
-            .interact()?;
-
+        let idx = ui::select("Commit Builder — Type", &options)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
         cfg.commit.types[idx].clone()
     };
 
-    // Step 2: Optional scope.
+    // Step 2: Scope.
     let scope = if let Some(s) = &args.scope {
         if s.is_empty() {
             None
         } else {
             Some(s.clone())
         }
-    } else if cfg.commit.require_scope {
-        let s: String = Input::with_theme(&theme)
-            .with_prompt("  Scope (component/area)")
-            .interact_text()?;
-        if s.is_empty() {
-            None
-        } else {
-            Some(s)
-        }
     } else {
-        let s: String = Input::with_theme(&theme)
-            .with_prompt("  Scope (optional, press Enter to skip)")
-            .allow_empty(true)
-            .interact_text()?;
+        let prompt = if cfg.commit.require_scope {
+            "Commit Builder — Scope (required)"
+        } else {
+            "Commit Builder — Scope (optional, Enter to skip)"
+        };
+        let s = ui::input(prompt, None).ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
         if s.is_empty() {
             None
         } else {
@@ -361,80 +354,43 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         }
     };
 
-    // Step 3: Subject line.
-    let subject: String = Input::with_theme(&theme)
-        .with_prompt("  Subject (imperative, present tense)")
-        .validate_with(|input: &String| {
-            if input.trim().is_empty() {
-                Err("Subject cannot be empty")
-            } else if input.len() > cfg.commit.max_subject_length {
-                Err("Subject is too long")
-            } else {
-                Ok(())
-            }
-        })
-        .interact_text()?;
+    // Step 3: Subject.
+    let max_len = cfg.commit.max_subject_length;
+    let subject = ui::input_validated("Commit Builder — Subject", None, move |val| {
+        if val.trim().is_empty() {
+            Err("Subject cannot be empty".to_string())
+        } else if val.len() > max_len {
+            Err(format!("Subject is too long ({}/{})", val.len(), max_len))
+        } else {
+            Ok(())
+        }
+    })
+    .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
 
-    // Build the first line of the commit message.
     let first_line = if let Some(sc) = &scope {
         format!("{}({}): {}", commit_type, sc, subject.trim())
     } else {
         format!("{}: {}", commit_type, subject.trim())
     };
 
-    // Show a preview before asking for the body.
-    ui::print_blank();
-    ui::print_key_value_pairs(&[("Preview", ui::color_subject(&first_line).bold().to_string())]);
-    ui::print_blank();
-
-    // Step 4: Optional body.
+    // Step 4: Body.
     let body = if cfg.commit.require_body {
-        let b: String = Input::with_theme(&theme)
-            .with_prompt("  Body (explain WHY, not WHAT)")
-            .interact_text()?;
-        b
+        ui::input("Commit Builder — Body (explain WHY, not WHAT)", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
+    } else if ui::confirm("Commit Builder — Add a body?", false) {
+        ui::input("Commit Builder — Body", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
-        let add_body = Confirm::with_theme(&theme)
-            .with_prompt("  Add a body? (explain WHY, motivation, context)")
-            .default(false)
-            .interact()?;
-
-        if add_body {
-            println!(
-                "  {} Enter body (empty line to finish, or single dot to skip):",
-                "→".cyan()
-            );
-            let mut lines = vec![];
-            loop {
-                let line: String = Input::with_theme(&theme)
-                    .with_prompt("  ")
-                    .allow_empty(true)
-                    .interact_text()?;
-                if line == "." || (line.is_empty() && !lines.is_empty()) {
-                    break;
-                }
-                if !line.is_empty() {
-                    lines.push(line);
-                }
-            }
-            lines.join("\n")
-        } else {
-            String::new()
-        }
+        String::new()
     };
 
-    // Step 5: Optional footer (BREAKING CHANGE, closes #N, …).
-    let add_footer = Confirm::with_theme(&theme)
-        .with_prompt("  Add footer? (BREAKING CHANGE, closes #issue, etc.)")
-        .default(false)
-        .interact()?;
-
-    let footer = if add_footer {
-        let f: String = Input::with_theme(&theme)
-            .with_prompt("  Footer")
-            .allow_empty(true)
-            .interact_text()?;
-        f
+    // Step 5: Footer.
+    let footer = if ui::confirm(
+        "Commit Builder — Add footer? (BREAKING CHANGE, closes #N…)",
+        false,
+    ) {
+        ui::input("Commit Builder — Footer", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
         String::new()
     };
@@ -450,33 +406,25 @@ fn build_commit_message(args: &CommitArgs, cfg: &config::Config) -> Result<Strin
         message.push_str(&footer);
     }
 
-    // Final full preview before confirmation.
+    // Final preview + confirmation.
     ui::print_blank();
-    ui::print_divider();
+    ui::print_fieldset("Commit Builder — Preview");
+    ui::print_blank();
     for line in message.lines() {
-        println!("  {}", line.white());
+        ui::print_indented(&ui::paint_text(line));
     }
-    ui::print_divider();
     ui::print_blank();
 
-    let confirm = Confirm::with_theme(&theme)
-        .with_prompt("  Commit with this message?")
-        .default(true)
-        .interact()?;
-
-    if !confirm {
+    if !ui::confirm("Commit with this message?", true) {
         bail!("Commit cancelled.");
     }
 
     Ok(message)
 }
 
-/// Render a commit-type label for the interactive picker.
-///
-/// When `emoji` is `true` an icon is prepended to the type name.  A
-/// description is appended in dim colour for all recognised types.
-fn format_type_label(t: &str, emoji: bool) -> String {
-    let (icon, description) = match t {
+/// Return the `(emoji_icon, description)` for a conventional commit type label.
+fn type_label_parts(t: &str) -> (&'static str, &'static str) {
+    match t {
         "feat" => ("✨", "A new feature"),
         "fix" => ("🐛", "A bug fix"),
         "docs" => ("📝", "Documentation changes"),
@@ -489,16 +437,5 @@ fn format_type_label(t: &str, emoji: bool) -> String {
         "chore" => ("🔧", "Other changes (no src/test)"),
         "revert" => ("⏪", "Reverting a previous commit"),
         _ => ("·", ""),
-    };
-    if description.is_empty() {
-        if emoji {
-            format!("{} {}", icon, t)
-        } else {
-            t.to_string()
-        }
-    } else {
-        // Both emoji=true and emoji=false produce the same output for known types,
-        // because the description column already carries the meaning.
-        format!("{} {:12}  {}", icon, t, description.bright_black())
     }
 }

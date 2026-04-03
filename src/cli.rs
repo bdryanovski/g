@@ -11,7 +11,8 @@
 //! - Attributes (`#[command(...)]`, `#[arg(...)]`) to configure parsing.
 //! - Enums with data (e.g., `Create { name, branch }`) to model subcommand payloads.
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, CommandFactory, Parser, Subcommand};
+use clap_complete::Shell;
 
 // ─── Help styles ─────────────────────────────────────────────────────────────
 
@@ -119,6 +120,11 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub dry_run: bool,
 
+    /// Disable all interactive TUI prompts; use defaults or require --flag values.
+    /// Useful for scripting and CI environments.
+    #[arg(long, global = true)]
+    pub no_interactive: bool,
+
     /// The parsed top-level command chosen by the user.
     #[command(subcommand)]
     pub command: Commands,
@@ -171,6 +177,19 @@ pub enum Commands {
     /// Developer / debugging utilities
     #[command(subcommand)]
     Developer(DeveloperCommands),
+
+    /// Print a shell completion script and exit
+    ///
+    /// Pipe the output to the right location for your shell:
+    ///
+    ///   Bash:  g completions bash  >> ~/.bash_completion
+    ///   Zsh:   g completions zsh   >  ~/.zsh/completions/_g
+    ///   Fish:  g completions fish  >  ~/.config/fish/completions/g.fish
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 
     /// Passthrough: all other git commands are forwarded transparently
     #[command(external_subcommand)]
@@ -497,4 +516,12 @@ pub enum DeveloperCommands {
 }
 
 // TODO(cli): Add `--json` output flags for commands that are easy to serialize (list/status).
-// TODO(cli): Add completion script generation (e.g., `g completions zsh`).
+
+/// Write a shell completion script for `shell` to stdout.
+///
+/// Called from `main.rs` when the user runs `g completions <shell>`.
+pub fn print_completions(shell: Shell) {
+    let mut cmd = Cli::command();
+    let name = cmd.get_name().to_string();
+    clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+}

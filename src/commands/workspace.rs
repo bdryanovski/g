@@ -16,8 +16,7 @@
 
 use anyhow::{bail, Context, Result};
 use chrono::Utc;
-use colored::Colorize;
-use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect, MultiSelect};
+
 use rusqlite::Connection;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -222,7 +221,7 @@ fn worktree_path_for(conn: &Connection, name: &str) -> Result<PathBuf> {
 fn format_relative_time(dt: chrono::DateTime<Utc>) -> String {
     let now = Utc::now();
     let diff = now.signed_duration_since(dt);
-    if diff.num_days() > 365 {
+    let relative = if diff.num_days() > 365 {
         format!("{} years ago", diff.num_days() / 365)
     } else if diff.num_days() > 30 {
         format!("{} months ago", diff.num_days() / 30)
@@ -232,9 +231,8 @@ fn format_relative_time(dt: chrono::DateTime<Utc>) -> String {
         format!("{} hours ago", diff.num_hours())
     } else {
         format!("{} min ago", diff.num_minutes().max(1))
-    }
-    .bright_black()
-    .to_string()
+    };
+    ui::muted(&relative)
 }
 
 // ─── Commands ─────────────────────────────────────────────────────────────────
@@ -306,35 +304,38 @@ pub fn init(conn: &Connection) -> Result<()> {
 
     // Show the plan.
     ui::print_blank();
-    println!("  {} workspace init", crate::bin_name().green().bold());
+    ui::print_indented(&format!(
+        "{} workspace init",
+        ui::success_bold(crate::bin_name())
+    ));
     ui::print_blank();
-    println!(
-        "  This will reorganise '{}' into a container layout:",
-        repo_root.display().to_string().cyan()
-    );
+    ui::print_indented(&format!(
+        "This will reorganise '{}' into a container layout:",
+        ui::primary(&repo_root.display().to_string())
+    ));
     ui::print_blank();
-    println!(
+    ui::print_line(&format!(
         "    {} {}  →  {}",
-        "move".bright_black(),
-        repo_root.display().to_string().yellow(),
-        temp_path.display().to_string().bright_black()
-    );
-    println!(
+        ui::muted("move"),
+        ui::warning(&repo_root.display().to_string()),
+        ui::muted(&temp_path.display().to_string())
+    ));
+    ui::print_line(&format!(
         "    {} {}",
-        "mkdir".bright_black(),
-        container_dir.display().to_string().yellow()
-    );
-    println!(
+        ui::muted("mkdir"),
+        ui::warning(&container_dir.display().to_string())
+    ));
+    ui::print_line(&format!(
         "    {} {}  →  {}",
-        "move".bright_black(),
-        temp_path.display().to_string().bright_black(),
-        inner_dir.display().to_string().green()
-    );
+        ui::muted("move"),
+        ui::muted(&temp_path.display().to_string()),
+        ui::success(&inner_dir.display().to_string())
+    ));
     ui::print_blank();
-    println!(
-        "  After this, new workspaces will be created inside '{}'.",
-        container_dir.display().to_string().cyan()
-    );
+    ui::print_indented(&format!(
+        "After this, new workspaces will be created inside '{}'.",
+        ui::primary(&container_dir.display().to_string())
+    ));
     ui::print_blank();
 
     if gitcmd::is_dry_run() {
@@ -357,13 +358,7 @@ pub fn init(conn: &Connection) -> Result<()> {
         return Ok(());
     }
 
-    let confirmed = Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("Proceed?")
-        .default(false)
-        .interact()
-        .context("Confirmation prompt failed")?;
-
-    if !confirmed {
+    if !ui::confirm("Proceed with workspace init?", false) {
         ui::print_blank();
         ui::print_info("Cancelled.");
         ui::print_blank();
@@ -440,16 +435,13 @@ pub fn init(conn: &Connection) -> Result<()> {
     ui::print_blank();
     ui::print_success(&format!(
         "Repository reorganised into container layout at {}",
-        container_dir.display().to_string().cyan()
+        ui::primary(&container_dir.display().to_string())
     ));
     ui::print_key_value_pairs(&[
-        (
-            "main workspace",
-            inner_dir_str.cyan().underline().to_string(),
-        ),
+        ("main workspace", ui::link_primary_bold(&inner_dir_str)),
         (
             "next",
-            format!("cd {}", inner_dir.display().to_string().green()),
+            format!("cd {}", ui::success(&inner_dir.display().to_string())),
         ),
     ]);
     ui::print_blank();
@@ -561,19 +553,19 @@ pub fn clone_with_workspace(conn: &Connection, args: &[String]) -> Result<()> {
         ui::print_success(&format!(
             "Cloned '{}' into container workspace at {}",
             url,
-            container_dir.display().to_string().cyan()
+            ui::primary(&container_dir.display().to_string())
         ));
-        println!(
+        ui::print_line(&format!(
             "     {} {}",
-            "main workspace:".bright_black(),
-            inner_dir_str.cyan().underline()
-        );
+            ui::muted("main workspace:"),
+            ui::link_primary_bold(&inner_dir_str)
+        ));
         ui::print_blank();
-        println!(
-            "  {} cd {}",
-            "next:".bright_black(),
-            inner_dir.display().to_string().green()
-        );
+        ui::print_indented(&format!(
+            "{} cd {}",
+            ui::muted("next:"),
+            ui::success(&inner_dir.display().to_string())
+        ));
         ui::print_blank();
     }
 
@@ -620,6 +612,8 @@ pub fn list(conn: &Connection) -> Result<()> {
     }
 
     ui::print_blank();
+    ui::print_fieldset("Workspaces");
+    ui::print_blank();
     let mut table = ui::Table::new(vec!["", "Name", "Branch", "Path", "HEAD", "Created"]);
 
     for wt in &worktrees {
@@ -630,47 +624,39 @@ pub fn list(conn: &Connection) -> Result<()> {
         let branch_display = wt.branch.as_deref().unwrap_or("(detached)");
         let is_current = cwd.starts_with(&wt.path);
 
-        let head_display = if wt.head.len() >= 7 {
-            wt.head[..7].bright_black().to_string()
+        let head_display = ui::muted(if wt.head.len() >= 7 {
+            &wt.head[..7]
         } else {
-            wt.head.bright_black().to_string()
-        };
+            &wt.head
+        });
 
         let meta = workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
 
         let (name_display, created_display) = if let Some(ws) = meta {
-            let name = if is_current {
-                ws.name.green().bold().to_string()
-            } else {
-                ws.name.white().to_string()
-            };
+            let name = ui::branch_name_colored(&ws.name, is_current);
             let label = match &ws.description {
                 Some(desc) if !desc.is_empty() => {
-                    format!("{}  {}", name, desc.bright_black())
+                    format!("{}  {}", name, ui::muted(desc))
                 }
                 _ => name,
             };
             (label, format_relative_time(ws.created_at))
         } else {
             let name = if is_current {
-                "(main)".green().bold().to_string()
+                ui::success_bold("(main)")
             } else {
-                "(main)".bright_black().to_string()
+                ui::muted("(main)")
             };
-            (name, "\u{2014}".bright_black().to_string())
+            (name, ui::muted("\u{2014}"))
         };
 
-        let marker = if is_current {
-            "\u{25c9}".green().bold().to_string()
-        } else {
-            "\u{25ef}".bright_black().to_string()
-        };
+        let marker = ui::branch_marker(is_current);
 
         table.add_row(vec![
             marker,
             name_display,
             ui::color_branch(branch_display),
-            wt.path.display().to_string().bright_black().to_string(),
+            ui::muted(&wt.path.display().to_string()),
             head_display,
             created_display,
         ]);
@@ -822,10 +808,10 @@ pub fn create(
         ui::print_blank();
         ui::print_success(&format!(
             "Created workspace {} on branch {}",
-            name.green().bold(),
-            branch_name.cyan()
+            ui::success_bold(name),
+            ui::primary(branch_name)
         ));
-        ui::print_key_value_pairs(&[("path", wt_path_str.cyan().underline().to_string())]);
+        ui::print_key_value_pairs(&[("path", ui::link_primary_bold(&wt_path_str))]);
         ui::print_blank();
         ui::print_tip(&format!(
             "{} workspace switch {}  to open a shell there",
@@ -866,19 +852,14 @@ fn copy_untracked_files(dest: &Path) -> Result<()> {
     }
 
     ui::print_blank();
-    let selections = MultiSelect::with_theme(&ColorfulTheme::default())
-        .with_prompt(
-            "Select files to copy into the new workspace (space to toggle, enter to confirm)",
-        )
-        .items(&candidates)
-        .interact_opt()
-        .context("File picker failed")?;
-
-    let selected = match selections {
-        None => return Ok(()),
-        Some(v) if v.is_empty() => return Ok(()),
-        Some(v) => v,
-    };
+    let options: Vec<ui::SelectOption> = candidates
+        .iter()
+        .map(|c| ui::SelectOption::new(c.clone()))
+        .collect();
+    let selected = ui::multi_select("Copy files to new workspace", &options);
+    if selected.is_empty() {
+        return Ok(());
+    }
 
     let repo_root = gitcmd::repo_root()?;
     let src_root = PathBuf::from(&repo_root);
@@ -935,7 +916,7 @@ fn count_files(path: &Path) -> u64 {
 }
 
 /// Copy `src` to `dst`, handling both regular files and directories.
-fn copy_path(src: &Path, dst: &Path, pb: &indicatif::ProgressBar) -> Result<()> {
+fn copy_path(src: &Path, dst: &Path, pb: &ui::ProgressBar) -> Result<()> {
     if src.is_dir() {
         fs::create_dir_all(dst)
             .with_context(|| format!("Failed to create directory '{}'", dst.display()))?;
@@ -998,11 +979,9 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
 
             if candidates.is_empty() {
                 ui::print_blank();
-                println!(
-                    "  {}",
-                    "No workspaces found. Use `g workspace create <name>` to create one."
-                        .bright_black()
-                );
+                ui::print_indented(&ui::muted(
+                    "No workspaces found. Use `g workspace create <name>` to create one.",
+                ));
                 ui::print_blank();
                 return Ok(());
             }
@@ -1034,17 +1013,8 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
                 })
                 .collect();
 
-            let default_idx = candidates
-                .iter()
-                .position(|ws| cwd.starts_with(Path::new(&ws.path)))
-                .unwrap_or(0);
-
-            let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
-                .with_prompt("Switch to workspace")
-                .items(&items)
-                .default(default_idx)
-                .interact_opt()
-                .context("Interactive workspace picker failed")?;
+            let item_strs: Vec<&str> = items.iter().map(String::as_str).collect();
+            let selection = ui::fuzzy_select("Switch to workspace", &item_strs);
 
             match selection {
                 None => {
@@ -1075,18 +1045,14 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
     ui::print_blank();
     ui::print_info(&format!(
         "Opening shell in workspace {} \u{2192} {}",
-        workspace.name.green().bold(),
-        workspace.path.cyan().underline()
+        ui::success_bold(&workspace.name),
+        ui::link_primary_bold(&workspace.path)
     ));
-    let mut pairs: Vec<(&str, String)> =
-        vec![("branch", workspace.branch.green().bold().to_string())];
+    let mut pairs: Vec<(&str, String)> = vec![("branch", ui::success_bold(&workspace.branch))];
     if let Some(desc) = &workspace.description {
-        pairs.insert(0, ("desc", desc.bright_white().to_string()));
+        pairs.insert(0, ("desc", ui::paint_text(desc)));
     }
-    pairs.push((
-        "hint",
-        "Ctrl+D or `exit` to return".bright_black().to_string(),
-    ));
+    pairs.push(("hint", ui::muted("Ctrl+D or `exit` to return")));
     ui::print_key_value_pairs(&pairs);
     ui::print_blank();
 
@@ -1173,7 +1139,7 @@ pub fn delete(conn: &Connection, name: &str, force: bool) -> Result<()> {
         stats::record_workspace_event(conn, Some(ws_id), None, "delete").ok();
         ws_store::delete(conn, ws_id)?;
         ui::print_blank();
-        ui::print_success(&format!("Deleted workspace '{}'", name.red()));
+        ui::print_success(&format!("Deleted workspace '{}'", ui::danger(name)));
         ui::print_blank();
     } else {
         gitcmd::dry_run_action(
@@ -1203,17 +1169,20 @@ pub fn status(conn: &Connection) -> Result<()> {
         let branch = wt.branch.as_deref().unwrap_or("(detached)");
         let meta = workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
 
+        ui::print_fieldset("Current Workspace");
+        ui::print_blank();
+
         if let Some(ws) = meta {
             let mut pairs: Vec<(&str, String)> = vec![
                 (
                     "Workspace",
                     format!(
                         "{} {}",
-                        ws.name.green().bold(),
-                        format!("({})", ws.branch).bright_black()
+                        ui::success_bold(&ws.name),
+                        ui::muted(&format!("({})", ws.branch))
                     ),
                 ),
-                ("Path", ws.path.cyan().underline().to_string()),
+                ("Path", ui::link_primary_bold(&ws.path)),
                 ("Created", format_relative_time(ws.created_at)),
             ];
             if let Some(desc) = &ws.description {
@@ -1221,18 +1190,15 @@ pub fn status(conn: &Connection) -> Result<()> {
             }
             ui::print_key_value_pairs(&pairs);
         } else {
-            ui::print_key_value_pairs(&[(
-                "Worktree",
-                "(main repository)".green().bold().to_string(),
-            )]);
+            ui::print_key_value_pairs(&[("Worktree", ui::success_bold("(main repository)"))]);
         }
 
-        ui::print_key_value_pairs(&[("Branch", branch.cyan().bold().to_string())]);
+        ui::print_key_value_pairs(&[("Branch", ui::primary_bold(branch))]);
 
         let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
         let changes: Vec<&str> = porcelain.lines().collect();
         if changes.is_empty() {
-            ui::print_key_value_pairs(&[("Status", "clean".green().to_string())]);
+            ui::print_key_value_pairs(&[("Status", ui::success("clean"))]);
         } else {
             let staged = changes
                 .iter()
@@ -1245,19 +1211,17 @@ pub fn status(conn: &Connection) -> Result<()> {
             let untracked = changes.iter().filter(|l| l.starts_with("??")).count();
             let status_val = format!(
                 "{} change{}{}{}",
-                changes.len().to_string().yellow(),
+                ui::warning(&changes.len().to_string()),
                 if changes.len() == 1 { "" } else { "s" },
                 if staged > 0 {
-                    format!(" ({} staged)", staged).green().to_string()
+                    ui::success(&format!(" ({} staged)", staged))
                 } else {
                     String::new()
                 },
                 if untracked > 0 {
-                    format!(" ({} untracked)", untracked)
-                        .bright_black()
-                        .to_string()
+                    ui::muted(&format!(" ({} untracked)", untracked))
                 } else if unstaged > 0 {
-                    format!(" ({} unstaged)", unstaged).yellow().to_string()
+                    ui::warning(&format!(" ({} unstaged)", unstaged))
                 } else {
                     String::new()
                 },
@@ -1328,13 +1292,17 @@ pub fn rename(conn: &Connection, old: &str, new: &str) -> Result<()> {
 
         ui::spinner_success(
             pb,
-            &format!("Renamed workspace '{}' \u{2192} '{}'", old, new.green()),
+            &format!(
+                "Renamed workspace '{}' \u{2192} '{}'",
+                old,
+                ui::success(new)
+            ),
         );
-        println!(
-            "  {} {}",
-            "path:".bright_black(),
-            new_path.display().to_string().cyan().underline()
-        );
+        ui::print_indented(&format!(
+            "{} {}",
+            ui::muted("path:"),
+            ui::link_primary_bold(&new_path.display().to_string())
+        ));
         ui::print_blank();
     } else {
         gitcmd::dry_run_action(
