@@ -23,7 +23,7 @@
 //! - `static` variables for program-wide flags that need to persist across calls.
 
 use anyhow::{bail, Context, Result};
-use colored::Colorize;
+
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
@@ -93,17 +93,17 @@ pub fn dry_run_action(action: &str, explanation: &str) {
         let step = next_step();
         let label = format!("Step {}", step);
         ui::print_blank();
-        println!(
-            "  {} {} {}",
-            label.cyan().bold(),
-            "▸".bright_black(),
-            action.yellow()
-        );
-        println!(
-            "  {}  {}",
+        ui::print_indented(&format!(
+            "{} {} {}",
+            ui::primary_bold(&label),
+            ui::muted("▸"),
+            ui::warning(action)
+        ));
+        ui::print_indented(&format!(
+            "{}  {}",
             " ".repeat(label.len()),
-            explanation.bright_black()
-        );
+            ui::muted(explanation)
+        ));
     }
 }
 
@@ -119,17 +119,7 @@ fn print_dry_run_git(args: &[&str], explanation: &str) {
 /// Print the dry-run banner shown at the start of a `--dry-run` invocation.
 pub fn dry_run_banner() {
     ui::print_blank();
-    println!(
-        "  {} {}",
-        "⚡".yellow().bold(),
-        "DRY RUN — showing what would happen without making changes"
-            .bold()
-            .white()
-    );
-    println!(
-        "  {}",
-        "───────────────────────────────────────────────────────────────".bright_black()
-    );
+    ui::print_fieldset("⚡  Dry Run — preview only, no changes will be made");
 }
 
 /// Print the dry-run footer shown at the end of a `--dry-run` invocation.
@@ -138,28 +128,18 @@ pub fn dry_run_banner() {
 pub fn dry_run_footer() {
     let steps = step_count();
     ui::print_blank();
-    println!(
-        "  {}",
-        "───────────────────────────────────────────────────────────────".bright_black()
-    );
     if steps > 0 {
-        println!(
-            "  {} {} operation{} would be performed",
-            "✓".green().bold(),
-            steps.to_string().yellow().bold(),
-            if steps == 1 { "" } else { "s" }
-        );
-        println!(
-            "  {}  {}",
-            " ".bright_black(),
-            "Re-run without --dry-run to execute.".bright_black()
-        );
+        ui::print_fieldset(&format!(
+            "{}  {} would be performed — re-run without --dry-run to execute",
+            steps,
+            if steps == 1 {
+                "operation"
+            } else {
+                "operations"
+            }
+        ));
     } else {
-        println!(
-            "  {} {}",
-            "ℹ".cyan(),
-            "This command has no mutating operations to preview.".bright_black()
-        );
+        ui::print_fieldset("No mutating operations to preview");
     }
     ui::print_blank();
 }
@@ -427,11 +407,15 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
     let output = git_output_lossy(&args.iter().map(|s| s.as_str()).collect::<Vec<_>>());
 
     if output.is_empty() {
-        println!("  {}", "No commits found.".bright_black());
+        ui::print_indented(&ui::muted("No commits found."));
         return Ok(());
     }
 
     ui::print_blank(); // top padding
+
+    // Calculate the subject column width once for the whole log run so all
+    // entries align regardless of individual graph-prefix lengths.
+    let subject_width = ui::commit_subject_width(has_graph);
 
     for line in output.lines() {
         // Lines that contain a commit record are bounded by two \x02 bytes.
@@ -457,7 +441,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
                         graph_prefix: graph_prefix.to_string(),
                     };
 
-                    println!("{}", entry.render(55));
+                    ui::print_line(&entry.render(subject_width));
                     continue;
                 }
             }
@@ -465,7 +449,7 @@ pub fn enhanced_log(extra_args: &[String]) -> Result<()> {
 
         // Graph-only lines (no commit data) — colourised and printed as-is.
         if !line.trim().is_empty() {
-            println!("{}", ui::colorize_graph(line));
+            ui::print_line(&ui::colorize_graph(line));
         }
     }
 
@@ -563,23 +547,23 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     // ─── Print output ─────────────────────────────────────────────────────────
 
     ui::print_blank();
-    print!("  {} {}", "On branch".bright_black(), branch.green().bold());
+    print!("  {} {}", ui::muted("On branch"), ui::success_bold(&branch));
     if let Some(up) = &upstream {
-        print!("  {}", format!("tracking {}", up).bright_black());
+        print!("  {}", ui::muted(&format!("tracking {}", up)));
     }
     ui::print_blank();
 
     if ahead > 0 || behind > 0 {
-        println!("  {}", ui::format_ahead_behind(ahead, behind));
+        ui::print_indented(&ui::format_ahead_behind(ahead, behind));
     }
 
     if staged.is_empty() && unstaged.is_empty() && untracked.is_empty() && unmerged.is_empty() {
         ui::print_blank();
-        println!(
-            "  {} {}",
-            "✓".green().bold(),
-            "Working tree is clean".green()
-        );
+        ui::print_indented(&format!(
+            "{} {}",
+            ui::success_bold("✓"),
+            ui::success("Working tree is clean")
+        ));
         ui::print_blank();
         return Ok(());
     }
@@ -588,7 +572,12 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         ui::print_section("Conflicts", Some(unmerged.len()));
         for (code, path) in &unmerged {
             let (icon, _) = ui::status_icon(code);
-            println!("  {} {} {}", "  ⚡".red().bold(), icon, path.red().bold());
+            ui::print_indented(&format!(
+                "{} {} {}",
+                ui::danger_bold("  ⚡"),
+                icon,
+                ui::danger_bold(path)
+            ));
         }
     }
 
@@ -596,9 +585,15 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         ui::print_section("Staged Changes", Some(staged.len()));
         let last = staged.len() - 1;
         for (i, (code, path)) in staged.iter().enumerate() {
-            let connector = if i == last { "└" } else { "├" }.bright_black();
+            let connector = ui::muted(if i == last { "└" } else { "├" });
             let (icon, code_colored) = ui::status_icon(code);
-            println!("  {} {} {} {}", connector, code_colored, icon, path.green());
+            ui::print_indented(&format!(
+                "{} {} {} {}",
+                connector,
+                code_colored,
+                icon,
+                ui::success(path)
+            ));
         }
     }
 
@@ -606,15 +601,15 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         ui::print_section("Unstaged Changes", Some(unstaged.len()));
         let last = unstaged.len() - 1;
         for (i, (code, path)) in unstaged.iter().enumerate() {
-            let connector = if i == last { "└" } else { "├" }.bright_black();
+            let connector = ui::muted(if i == last { "└" } else { "├" });
             let (icon, code_colored) = ui::status_icon(code);
-            println!(
-                "  {} {} {} {}",
+            ui::print_indented(&format!(
+                "{} {} {} {}",
                 connector,
                 code_colored,
                 icon,
-                path.yellow()
-            );
+                ui::warning(path)
+            ));
         }
     }
 
@@ -622,13 +617,13 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
         ui::print_section("Untracked Files", Some(untracked.len()));
         let last = untracked.len() - 1;
         for (i, path) in untracked.iter().enumerate() {
-            let connector = if i == last { "└" } else { "├" }.bright_black();
-            println!(
-                "  {} {} {}",
+            let connector = ui::muted(if i == last { "└" } else { "├" });
+            ui::print_indented(&format!(
+                "{} {} {}",
                 connector,
-                "?".bright_black(),
-                path.bright_black()
-            );
+                ui::muted("?"),
+                ui::muted(path)
+            ));
         }
     }
 
@@ -637,7 +632,7 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
     if !staged.is_empty() {
         ui::print_tip(&format!(
             "{}  commit staged changes",
-            format!("{} commit", crate::bin_name()).yellow()
+            ui::warning(&format!("{} commit", crate::bin_name()))
         ));
     } else if !unstaged.is_empty() || !untracked.is_empty() {
         ui::print_tip("git add <file>  or  git add -A  to stage");
@@ -649,32 +644,21 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
 // ─── Interactive add ──────────────────────────────────────────────────────────
 
-/// Present an interactive multi-select picker of all stageable files.
+/// Present full-screen ratatui pickers to stage and/or unstage files.
 ///
-/// Called by `g add` when no arguments are supplied.  Parses
-/// `git status --porcelain` to build the candidate list, which includes:
+/// Two sequential screens are shown (each only when relevant):
 ///
-/// - Untracked files (`??`)
-/// - Working-tree modifications / deletions (column Y is non-blank)
+/// 1. **Unstage picker** — shows files that are staged (index column X is
+///    non-blank); selecting them runs `git restore --staged <file>`.
+/// 2. **Stage picker** — shows untracked and working-tree-modified files
+///    (column Y is non-blank); selecting them runs `git add <file>`.
 ///
-/// Files that are already fully staged (column Y is a space) are omitted
-/// because they don't need `git add`.
-///
-/// ## Navigation
-///
-/// | Key            | Action                    |
-/// |----------------|---------------------------|
-/// | `↑` / `k`      | move up                   |
-/// | `↓` / `j`      | move down                 |
-/// | `Space`        | toggle selection          |
-/// | `a`            | toggle all                |
-/// | `Enter`        | confirm and stage         |
-/// | `Esc` / `q`    | cancel                    |
+/// Called by `g add` when no path arguments are supplied.
 ///
 /// # Errors
 ///
-/// Returns an error if the current directory is not a git repo, if
-/// `git status` or `git add` fails, or if the TTY prompt cannot be shown.
+/// Returns an error if the current directory is not a git repo or if any
+/// git command fails.
 pub fn interactive_add() -> Result<()> {
     if !is_inside_git_repo() {
         bail!("Not inside a git repository.");
@@ -682,22 +666,14 @@ pub fn interactive_add() -> Result<()> {
 
     if is_dry_run() {
         dry_run_action(
-            "git add <interactive>",
-            "Launch interactive file picker and stage the selected files",
+            "git add / restore --staged <interactive>",
+            "Launch interactive picker to stage or unstage files",
         );
         return Ok(());
     }
 
-    // ── Fetch raw porcelain output ────────────────────────────────────────────
-    //
-    // IMPORTANT: do NOT use `git_output_lossy` here.  That helper calls
-    // `.trim()` on the entire output string, which strips the leading space
-    // from the *first* line.  In porcelain format column-1 is the index
-    // status and column-2 is the working-tree status; a leading space in
-    // column-1 means "no index change".  Trimming " M src/cli.rs" →
-    // "M src/cli.rs" makes the parser read X='M', Y=' ' (space) and skip
-    // the file as "already staged".  The first file alphabetically is always
-    // the victim, which is why some files disappeared from the picker.
+    // Fetch raw porcelain output without trimming (the leading space on the first
+    // line carries the index status and must be preserved).
     let raw_out = Command::new(git_exe())
         .args(["status", "--porcelain"])
         .output()
@@ -707,19 +683,23 @@ pub fn interactive_add() -> Result<()> {
 
     if raw.trim().is_empty() {
         ui::print_blank();
-        ui::print_info("Nothing to add — working tree is clean.");
+        ui::print_info("Nothing to do — working tree is clean.");
         ui::print_blank();
         return Ok(());
     }
 
-    // ── Parse porcelain lines ─────────────────────────────────────────────────
-    struct Entry {
+    // Parsed file entry.
+    struct FileEntry {
+        /// Index status character (column 1 in porcelain).
         x: String,
+        /// Working-tree status character (column 2 in porcelain).
         y: String,
         path: String,
     }
 
-    let mut raw_entries: Vec<Entry> = Vec::new();
+    let mut staged: Vec<FileEntry> = Vec::new(); // X != ' '/'?' — can unstage
+    let mut stageable: Vec<FileEntry> = Vec::new(); // Y != ' '/'?' — can stage
+
     for line in raw.lines() {
         if line.len() < 3 {
             continue;
@@ -727,67 +707,101 @@ pub fn interactive_add() -> Result<()> {
         let x = line[0..1].to_string();
         let y = line[1..2].to_string();
         let path = unquote_path(line[3..].trim());
+
+        // Skip ignored files.
         if x == "!" && y == "!" {
             continue;
         }
+
+        // Staged changes (index modified — can unstage).
+        if x != " " && x != "?" && x != "!" {
+            staged.push(FileEntry {
+                x: x.clone(),
+                y: y.clone(),
+                path: path.clone(),
+            });
+        }
+
+        // Stageable changes: untracked OR working-tree modified/deleted.
         if (x == "?" && y == "?") || (y != " " && y != "?" && y != "!") {
-            raw_entries.push(Entry { x, y, path });
+            stageable.push(FileEntry { x, y, path });
         }
     }
 
-    if raw_entries.is_empty() {
+    let mut any_action = false;
+
+    // ── Step 1: Unstage picker ────────────────────────────────────────────────
+    if !staged.is_empty() {
+        let staged_paths: Vec<String> = staged.iter().map(|e| e.path.clone()).collect();
+        let staged_opts: Vec<ui::SelectOption> = staged
+            .iter()
+            .map(|e| {
+                let (icon, _) = ui::status_icon(&e.x);
+                ui::SelectOption::with_description(
+                    format!("{}  {}  {}", e.x, icon, e.path),
+                    "(staged — select to unstage)",
+                )
+            })
+            .collect();
+
+        let to_unstage = ui::multi_select("Unstage Files", &staged_opts);
         ui::print_blank();
-        ui::print_info("Nothing to stage — all changes are already staged.");
-        ui::print_blank();
-        return Ok(());
+
+        if !to_unstage.is_empty() {
+            let paths: Vec<&str> = to_unstage
+                .iter()
+                .map(|&i| staged_paths[i].as_str())
+                .collect();
+            let count = paths.len();
+            let pb = ui::spinner(&format!(
+                "Unstaging {} file{}…",
+                count,
+                if count == 1 { "" } else { "s" }
+            ));
+
+            let mut git_args = vec!["restore", "--staged", "--"];
+            git_args.extend(paths.iter().copied());
+
+            match git_output(&git_args) {
+                Ok(_) => ui::spinner_success(
+                    pb,
+                    &format!(
+                        "Unstaged {}  {}",
+                        ui::warning_bold(&count.to_string()),
+                        if count == 1 { "file" } else { "files" }
+                    ),
+                ),
+                Err(e) => ui::spinner_error(pb, &format!("Failed to unstage: {e}")),
+            }
+            ui::print_blank();
+            any_action = true;
+        }
     }
 
-    // ── Build plain-text labels (no embedded ANSI) ────────────────────────────
-    //
-    // The custom picker below applies bold/dim/colour itself, so labels must be
-    // plain text so those styles aren't fought by inner escape codes.
-    //
-    // Format mirrors `g status` unstaged-changes rows:
-    //   ├ M  ✎  src/cli.rs    (connector · code · icon · path)
-    //
-    // The picker renders each row as:
-    //   "  ◯  " + label    or    "  ◉  " + label
-    // which puts the ├/└ connector three chars after the check symbol, matching
-    // the section-header indentation of "Unstaged Changes".
-    let last = raw_entries.len().saturating_sub(1);
-    let entries: Vec<(String, String)> = raw_entries
-        .iter()
-        .enumerate()
-        .map(|(i, e)| {
-            let connector = if i == last { "└" } else { "├" };
-            let (icon, _) = ui::status_icon(&e.y);
-            let label = if e.x == "?" && e.y == "?" {
-                format!("{connector} ?  {}", e.path)
-            } else {
-                format!("{connector} {}  {}  {}", e.y, icon, e.path)
-            };
-            (label, e.path.clone())
-        })
-        .collect();
+    // ── Step 2: Stage picker ──────────────────────────────────────────────────
+    if !stageable.is_empty() {
+        let stageable_paths: Vec<String> = stageable.iter().map(|e| e.path.clone()).collect();
+        let stageable_opts: Vec<ui::SelectOption> = stageable
+            .iter()
+            .map(|e| {
+                let (icon, _) = ui::status_icon(&e.y);
+                let label = if e.x == "?" && e.y == "?" {
+                    format!("?  {}", e.path)
+                } else {
+                    format!("{}  {}  {}", e.y, icon, e.path)
+                };
+                ui::SelectOption::new(label)
+            })
+            .collect();
 
-    // ── Show section header then run the picker ───────────────────────────────
-    let n = entries.len();
-    ui::print_section("Unstaged Changes", Some(n));
+        let to_stage = ui::multi_select("Stage Files", &stageable_opts);
+        ui::print_blank();
 
-    let selection = pick_files(&entries)?;
-    ui::print_blank();
-
-    // ── Act on the selection ──────────────────────────────────────────────────
-    match selection {
-        None => {
-            ui::print_info("Cancelled.");
-            ui::print_blank();
-        }
-        Some(ref paths) if paths.is_empty() => {
-            ui::print_info("No files selected — nothing staged.");
-            ui::print_blank();
-        }
-        Some(paths) => {
+        if !to_stage.is_empty() {
+            let paths: Vec<&str> = to_stage
+                .iter()
+                .map(|&i| stageable_paths[i].as_str())
+                .collect();
             let count = paths.len();
             let pb = ui::spinner(&format!(
                 "Staging {} file{}…",
@@ -796,7 +810,7 @@ pub fn interactive_add() -> Result<()> {
             ));
 
             let mut git_args = vec!["add", "--"];
-            git_args.extend(paths.iter().map(String::as_str));
+            git_args.extend(paths.iter().copied());
 
             match git_output(&git_args) {
                 Ok(_) => {
@@ -804,161 +818,28 @@ pub fn interactive_add() -> Result<()> {
                         pb,
                         &format!(
                             "Staged {}  {}",
-                            count.to_string().yellow().bold(),
-                            if count == 1 { "file" } else { "files" },
+                            ui::warning_bold(&count.to_string()),
+                            if count == 1 { "file" } else { "files" }
                         ),
                     );
                     ui::print_tip(&format!(
                         "{}  commit staged changes",
-                        format!("{} commit", crate::bin_name()).yellow()
+                        ui::warning(&format!("{} commit", crate::bin_name()))
                     ));
                 }
-                Err(e) => {
-                    ui::spinner_error(pb, &format!("Failed to stage: {e}"));
-                }
+                Err(e) => ui::spinner_error(pb, &format!("Failed to stage: {e}")),
             }
             ui::print_blank();
+            any_action = true;
         }
     }
 
+    if !any_action {
+        ui::print_info("No files selected — nothing changed.");
+        ui::print_blank();
+    }
+
     Ok(())
-}
-
-/// Custom crossterm-based multi-select picker.
-///
-/// Renders with the hint bar **below** the file list so the layout is:
-///
-/// ```text
-///   ◯   ├ M  ✎  src/cli.rs
-///   ◉   ├ M  ✎  src/commands/git.rs     ← selected (◉ green)
-///   ◯   └ M  ✎  src/main.rs             ← cursor (bold)
-///   space toggle · a all · enter stage · esc cancel
-/// ```
-///
-/// ## Keys
-/// | Key              | Action         |
-/// |------------------|----------------|
-/// | `↓` / `j`        | move down      |
-/// | `↑` / `k`        | move up        |
-/// | `Space`          | toggle select  |
-/// | `a`              | toggle all     |
-/// | `Enter`          | confirm        |
-/// | `Esc` / `q`      | cancel         |
-///
-/// Returns `None` on cancel, `Some(paths)` on confirm (may be empty).
-fn pick_files(entries: &[(String, String)]) -> Result<Option<Vec<String>>> {
-    use crossterm::{
-        cursor::{Hide, MoveToColumn, MoveUp, Show},
-        event::{self, Event, KeyCode, KeyEventKind},
-        execute,
-        terminal::{disable_raw_mode, enable_raw_mode},
-    };
-    use std::io::Write;
-
-    let n = entries.len();
-    let mut selected = vec![false; n];
-    let mut cursor = 0usize;
-    let mut err = std::io::stderr();
-
-    // ── Draw all rows + hint bar ──────────────────────────────────────────────
-    // Each call renders exactly `n + 1` lines so the caller can MoveUp(n+1)
-    // to return to the top before the next redraw.
-    let draw = |err: &mut dyn Write, selected: &[bool], cursor: usize| {
-        for (i, (label, _)) in entries.iter().enumerate() {
-            let (check, label_styled) = if selected[i] && i == cursor {
-                // selected + cursor: green ◉, bold text
-                (
-                    "\x1b[1;32m◉\x1b[0m".to_string(),
-                    format!("\x1b[1m{label}\x1b[0m"),
-                )
-            } else if selected[i] {
-                // selected, not cursor: green ◉, normal text
-                ("\x1b[32m◉\x1b[0m".to_string(), label.to_string())
-            } else if i == cursor {
-                // cursor, not selected: bright ◯, bold text
-                (
-                    "\x1b[1m◯\x1b[0m".to_string(),
-                    format!("\x1b[1m{label}\x1b[0m"),
-                )
-            } else {
-                // inactive, unselected: dim ◯, dim text
-                (
-                    "\x1b[2m◯\x1b[0m".to_string(),
-                    format!("\x1b[2m{label}\x1b[0m"),
-                )
-            };
-
-            // Two leading spaces align the check symbol with g status item indent.
-            let _ = write!(err, "  {check}  {label_styled}\r\n");
-        }
-
-        // Blank separator then hint bar — dim, styled like `g status`'s tip line.
-        let _ = write!(err, "\r\n");
-        let _ = write!(
-            err,
-            "\x1b[2m  space toggle  ·  j/k navigate  ·  a select all  ·  enter stage  ·  esc cancel\x1b[0m\r\n"
-        );
-        let _ = err.flush();
-    };
-
-    // ── Run the picker loop ───────────────────────────────────────────────────
-    enable_raw_mode().context("Failed to enable raw terminal mode")?;
-    execute!(err, Hide).ok();
-
-    // Initial render.
-    draw(&mut err, &selected, cursor);
-
-    let result = (|| -> Option<Vec<String>> {
-        loop {
-            let ev = match event::read() {
-                Ok(e) => e,
-                Err(_) => break None,
-            };
-
-            let Event::Key(key) = ev else { continue };
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-
-            match key.code {
-                KeyCode::Char('j') | KeyCode::Down => {
-                    cursor = (cursor + 1).min(n - 1);
-                }
-                KeyCode::Char('k') | KeyCode::Up => {
-                    cursor = cursor.saturating_sub(1);
-                }
-                KeyCode::Char(' ') => {
-                    selected[cursor] = !selected[cursor];
-                }
-                KeyCode::Char('a') => {
-                    let all = selected.iter().all(|&s| s);
-                    selected.iter_mut().for_each(|s| *s = !all);
-                }
-                KeyCode::Enter => {
-                    break Some(
-                        entries
-                            .iter()
-                            .zip(&selected)
-                            .filter_map(|((_, p), &s)| if s { Some(p.clone()) } else { None })
-                            .collect(),
-                    );
-                }
-                KeyCode::Esc | KeyCode::Char('q') => break None,
-                _ => continue,
-            }
-
-            // Redraw: move cursor back to the top of our n+2 rendered lines
-            // (n items + 1 blank separator + 1 hint bar).
-            execute!(err, MoveUp((n + 2) as u16), MoveToColumn(0)).ok();
-            draw(&mut err, &selected, cursor);
-        }
-    })();
-
-    // ── Cleanup ───────────────────────────────────────────────────────────────
-    disable_raw_mode().ok();
-    execute!(err, Show).ok();
-
-    Ok(result)
 }
 
 /// Strip git's double-quote wrapping from a path, if present.
@@ -1170,10 +1051,10 @@ pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
 
     ui::print_blank();
     ui::print_key_value_pairs(&[
-        ("Squashing branch", branch.green().bold().to_string()),
+        ("Squashing branch", ui::success_bold(&branch)),
         (
             "Merge-base with",
-            format!("{} ({})", mainline.cyan(), fork_short.cyan()),
+            format!("{} ({})", ui::primary(&mainline), ui::primary(&fork_short)),
         ),
     ]);
     ui::print_blank();
@@ -1196,7 +1077,7 @@ pub fn branch_squash(message: Option<&str>, base: Option<&str>) -> Result<()> {
         ui::print_blank();
         ui::print_success(&format!(
             "Squashed {} into one commit",
-            branch.green().bold()
+            ui::success_bold(&branch)
         ));
         ui::print_blank();
     }
@@ -1276,19 +1157,19 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             "◯"
         };
         let marker_colored = if head_marker == "*" {
-            marker.green().bold().to_string()
+            ui::success_bold(marker)
         } else if is_remote {
-            marker.red().dimmed().to_string()
+            ui::dimmed(marker)
         } else {
-            marker.bright_black().to_string()
+            ui::muted(marker)
         };
 
         let branch_colored = if head_marker == "*" {
-            display_name.green().bold().to_string()
+            ui::success_bold(&display_name)
         } else if is_remote {
-            display_name.red().to_string()
+            ui::danger(&display_name)
         } else {
-            display_name.white().to_string()
+            ui::paint_text(&display_name)
         };
 
         // Truncate long subject lines to keep the table readable.
@@ -1310,7 +1191,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             }),
             ui::color_date(date),
             if upstream.is_empty() {
-                "—".bright_black().to_string()
+                ui::muted("—")
             } else {
                 ui::color_branch(upstream)
             },
@@ -1342,35 +1223,33 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
     for line in meta_raw.lines() {
         let fields: Vec<&str> = line.splitn(10, '\x01').collect();
         if fields.len() >= 9 {
-            let (hash, _short_hash, subject, body, author, email, date_iso, date_rel, refs) = (
+            let (_hash, _short_hash, subject, body, author, email, date_iso, date_rel, refs) = (
                 fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
                 fields[7], fields[8],
             );
 
+            // Fieldset header: "/////  abc1234  //  feat: add …  ////…"
+            let short = _short_hash;
+            let subject_preview: String = subject.chars().take(45).collect();
             ui::print_blank();
-            println!(
-                "  {} {}{}",
-                "commit".bright_black(),
-                ui::color_hash(hash),
-                ui::format_refs(refs)
-            );
-            println!(
-                "  {} {}",
-                "Author:".bright_black(),
-                format!("{} <{}>", author, email).cyan()
-            );
-            println!(
-                "  {}   {} {}",
-                "Date:".bright_black(),
-                date_iso.bright_black(),
-                format!("({})", date_rel).bright_black()
-            );
+            ui::print_fieldset(&format!("{}  {}", short, subject_preview));
             ui::print_blank();
-            println!("      {}", ui::color_subject(subject).bold());
+            ui::print_key_value_pairs(&[
+                ("Author", ui::primary(&format!("{} <{}>", author, email))),
+                ("Date", ui::muted(&format!("{}  ({})", date_iso, date_rel))),
+                (
+                    "Refs",
+                    if refs.trim().is_empty() {
+                        ui::muted("—")
+                    } else {
+                        ui::format_refs(refs)
+                    },
+                ),
+            ]);
             if !body.trim().is_empty() {
                 ui::print_blank();
                 for body_line in body.lines() {
-                    println!("      {}", body_line.white());
+                    ui::print_line(&format!("      {}", ui::paint_text(body_line)));
                 }
             }
             ui::print_blank();
@@ -1379,8 +1258,26 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
     }
 
     // Show the diff for this single commit.
-    let diff_args: Vec<String> = {
-        let mut a = vec!["-1".to_string(), rev.to_string()];
+    //
+    // `<rev>^!` is git's shorthand for "<rev>^..<rev>" — "just the changes
+    // introduced by this commit".  It works for all commits with a parent.
+    // For the initial commit (no parent), we fall back to `--root <rev>` which
+    // treats every file as added from nothing.
+    let parents_field = meta_raw
+        .lines()
+        .next()
+        .and_then(|l| l.splitn(10, '\x01').nth(9))
+        .unwrap_or("")
+        .trim();
+
+    let diff_args: Vec<String> = if parents_field.is_empty() {
+        // Initial commit — no parent exists; show everything as additions.
+        let mut a = vec!["--root".to_string(), rev.to_string()];
+        a.extend(extra_args.iter().filter(|&s| s != rev).cloned());
+        a
+    } else {
+        // Normal commit — diff against first parent using the `^!` notation.
+        let mut a = vec![format!("{}^!", rev)];
         a.extend(extra_args.iter().filter(|&s| s != rev).cloned());
         a
     };

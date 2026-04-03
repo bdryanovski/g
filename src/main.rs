@@ -47,7 +47,6 @@ use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
 use clap::{error::ErrorKind, Parser};
-use colored::Colorize;
 
 use cli::{BranchSquashCmd, Cli, Commands, DeveloperCommands, StackCommands, WorkspaceCommands};
 use storage::{db, stats};
@@ -116,11 +115,11 @@ fn main() {
         let mut source = err_ref.source();
         // `while let` keeps looping while `source` is `Some(...)`.
         while let Some(cause) = source {
-            eprintln!(
-                "  {} {}",
-                "caused by:".bright_black(),
-                cause.to_string().bright_black()
-            );
+            ui::print_warning(&format!(
+                "{} {}",
+                ui::muted("caused by:"),
+                ui::muted(&cause.to_string())
+            ));
             source = cause.source();
         }
 
@@ -144,6 +143,13 @@ fn run() -> Result<()> {
     // Ensure the config directory and default config file exist before anything
     // else — db::open() needs the directory to already exist for config.toml.
     config::ensure_config()?;
+
+    // Initialise the UI theme from config.  Must happen before any output.
+    // Falls back to Theme::default_dark() if config cannot be loaded.
+    let theme_mode = config::load()
+        .map(|c| c.ui.theme.clone())
+        .unwrap_or_else(|_| "dark".to_string());
+    ui::theme::init(ui::theme::Theme::from_config(&theme_mode));
 
     // Open (or create) the SQLite database.  This also runs any pending
     // migrations and performs the one-time TOML import if needed.
@@ -200,6 +206,10 @@ fn run() -> Result<()> {
     if dry_run {
         commands::git::set_dry_run(true);
         commands::git::dry_run_banner();
+    }
+
+    if cli.no_interactive {
+        ui::set_no_interactive();
     }
 
     // Resolve repo_id best-effort — upsert so every command run registers the
@@ -321,6 +331,12 @@ fn run() -> Result<()> {
                 DeveloperCommands::Db { path } => commands::developer::db(path)?,
                 DeveloperCommands::Repos => commands::developer::repos(&conn)?,
             },
+
+            // ─── Shell completions ────────────────────────────────────────────────
+            Commands::Completions { shell } => {
+                cli::print_completions(shell);
+                return Ok(());
+            }
 
             // ─── Passthrough ─────────────────────────────────────────────────────
             Commands::Git(args) => {
@@ -470,7 +486,7 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
 
     if args.path {
         let path = config::config_path()?;
-        println!("{}", path.display());
+        ui::print_line(&path.display().to_string());
         return Ok(());
     }
 
@@ -482,7 +498,7 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
         let mut found = false;
         for line in raw.lines() {
             if line.to_lowercase().contains(&key_lower) {
-                println!("{}", line.white());
+                ui::print_line(&ui::paint_text(line));
                 found = true;
             }
         }
@@ -495,26 +511,96 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
     // Default: show config path and a human-readable summary.
     let path = config::config_path()?;
     let cfg = config::load()?;
+    let db_path = config::db_path()
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
+
+    ui::print_blank();
+    ui::print_fieldset("Configuration");
     ui::print_blank();
     ui::print_key_value_pairs(&[
         (
             "Config file",
-            path.display().to_string().cyan().underline().to_string(),
+            ui::link_primary_bold(&path.display().to_string()),
+        ),
+        ("Database", ui::link_muted(&db_path)),
+    ]);
+
+    ui::print_blank();
+    ui::print_fieldset("General");
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        ("default_branch", ui::success(&cfg.general.default_branch)),
+        (
+            "auto_fetch",
+            ui::paint_text(&cfg.general.auto_fetch.to_string()),
         ),
         (
-            "Default branch",
-            cfg.general.default_branch.green().to_string(),
-        ),
-        ("Diff tool", cfg.diff.tool.yellow().to_string()),
-        (
-            "Aliases",
-            cfg.aliases.len().to_string().yellow().to_string(),
-        ),
-        (
-            "Commit types",
-            cfg.commit.types.join(", ").bright_black().to_string(),
+            "pager",
+            ui::muted(cfg.general.pager.as_deref().unwrap_or("(auto)")),
         ),
     ]);
+
+    ui::print_blank();
+    ui::print_fieldset("UI");
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        ("theme", ui::paint_text(&cfg.ui.theme)),
+        ("colors", ui::paint_text(&cfg.ui.colors.to_string())),
+        ("icons", ui::paint_text(&cfg.ui.icons.to_string())),
+        ("date_format", ui::paint_text(&cfg.ui.date_format)),
+        ("log_limit", ui::paint_text(&cfg.ui.log_limit.to_string())),
+        ("show_graph", ui::paint_text(&cfg.ui.show_graph.to_string())),
+        ("commit_mode", ui::paint_text(&cfg.ui.commit_mode)),
+    ]);
+
+    ui::print_blank();
+    ui::print_fieldset("Commit");
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        (
+            "require_scope",
+            ui::paint_text(&cfg.commit.require_scope.to_string()),
+        ),
+        (
+            "require_body",
+            ui::paint_text(&cfg.commit.require_body.to_string()),
+        ),
+        (
+            "max_subject",
+            ui::paint_text(&cfg.commit.max_subject_length.to_string()),
+        ),
+        ("gpg_sign", ui::paint_text(&cfg.commit.gpg_sign.to_string())),
+        ("emoji", ui::paint_text(&cfg.commit.emoji.to_string())),
+        ("types", ui::muted(&cfg.commit.types.join(", "))),
+    ]);
+
+    ui::print_blank();
+    ui::print_fieldset("Diff");
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        ("tool", ui::paint_text(&cfg.diff.tool)),
+        (
+            "context_lines",
+            ui::paint_text(&cfg.diff.context_lines.to_string()),
+        ),
+    ]);
+
+    ui::print_blank();
+    ui::print_fieldset("GitHub");
+    ui::print_blank();
+    ui::print_key_value_pairs(&[
+        ("api_base", ui::paint_text(&cfg.github.api_base)),
+        (
+            "token",
+            if cfg.github.token.is_some() {
+                ui::success("*** (set)")
+            } else {
+                ui::muted("(not set)")
+            },
+        ),
+    ]);
+
     ui::print_blank();
     ui::print_tip(&format!("{} config --edit  to open in $EDITOR", bin_name()));
     Ok(())
@@ -578,6 +664,7 @@ fn command_names(cmd: &Commands) -> (&'static str, Option<&'static str>) {
             };
             ("developer", Some(sub_name))
         }
+        Commands::Completions { .. } => ("completions", None),
         Commands::Git(args) => {
             // For passthrough commands, record the first arg as the subcommand.
             // We return a static "git" here; the subcommand is dynamic so we

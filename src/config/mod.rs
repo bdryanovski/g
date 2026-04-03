@@ -105,6 +105,22 @@ pub struct UiConfig {
     pub log_limit: usize,
     /// Show the ASCII branch graph in `g log` output.
     pub show_graph: bool,
+    /// Commit builder mode.  Currently both values use the full-screen ratatui
+    /// TUI; the distinction is reserved for a future "inline" streaming mode.
+    /// Accepted values: `"interactive"` (default) | `"inline"`.
+    #[serde(default = "default_commit_mode")]
+    pub commit_mode: String,
+    /// Color theme: `"dark"` (default) or `"light"`.
+    #[serde(default = "default_theme")]
+    pub theme: String,
+}
+
+fn default_commit_mode() -> String {
+    "interactive".to_string()
+}
+
+fn default_theme() -> String {
+    "dark".to_string()
 }
 
 impl Default for UiConfig {
@@ -115,6 +131,8 @@ impl Default for UiConfig {
             date_format: "relative".into(),
             log_limit: 30,
             show_graph: true,
+            commit_mode: default_commit_mode(), // "interactive"
+            theme: default_theme(),
         }
     }
 }
@@ -408,6 +426,8 @@ icons = true                # Unicode icons and box-drawing characters
 date_format = "relative"    # "relative" | "short" | "iso" | "rfc"
 log_limit = 30              # Default number of commits in log
 show_graph = true           # Show branch graph in log
+commit_mode = "interactive"  # "interactive" | "inline" (both use full-screen TUI)
+theme = "dark"              # "dark" | "light"
 
 # ─── Commit Templates ─────────────────────────────────────────────────────────
 [commit]

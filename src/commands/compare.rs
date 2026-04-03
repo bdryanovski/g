@@ -20,7 +20,6 @@
 //!   module rather than duplicating the diff-tool selection logic.
 
 use anyhow::Result;
-use colored::Colorize;
 
 use crate::cli::CompareArgs;
 use crate::commands::git as gitcmd;
@@ -48,13 +47,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
     let head = args.head.clone().unwrap_or_else(|| current.clone());
 
     ui::print_blank();
-    println!(
-        "  {} {} {} {}",
-        "Comparing".bright_black(),
-        base.cyan().bold(),
-        "→".bright_black(),
-        head.green().bold()
-    );
+    ui::print_fieldset(&format!("{} → {}", base, head));
 
     if cfg.general.auto_fetch {
         if !gitcmd::is_dry_run() {
@@ -79,7 +72,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
     let behind: usize = behind_output.trim().parse().unwrap_or(0);
 
     ui::print_blank();
-    println!("  {}", ui::format_ahead_behind(ahead, behind));
+    ui::print_indented(&ui::format_ahead_behind(ahead, behind));
 
     // ─── Commits ──────────────────────────────────────────────────────────────
 
@@ -112,10 +105,10 @@ fn show_commits(base: &str, head: &str, count: usize) -> Result<()> {
     ui::print_section(
         &format!(
             "Commits ahead ({}) {} {} {}",
-            count.to_string().green(),
-            head.green().bold(),
-            "not in".bright_black(),
-            base.cyan()
+            ui::success(&count.to_string()),
+            ui::success_bold(head),
+            ui::muted("not in"),
+            ui::primary(base)
         ),
         None,
     );
@@ -145,7 +138,8 @@ fn show_commits(base: &str, head: &str, count: usize) -> Result<()> {
                         refs: fields.get(4).copied().unwrap_or("").to_string(),
                         graph_prefix: "  ".to_string(),
                     };
-                    println!("{}", entry.render(55));
+                    // No graph in compare output — pass false for cleaner width.
+                    ui::print_line(&entry.render(ui::commit_subject_width(false)));
                 }
             }
         }
@@ -167,7 +161,7 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
 
     if stat_raw.trim().is_empty() {
         ui::print_blank();
-        println!("  {}", "No file changes between branches.".bright_black());
+        ui::print_indented(&ui::muted("No file changes between branches."));
         return Ok(());
     }
 
@@ -180,10 +174,10 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
         if i == last {
             // Summary line: "12 files changed, 345 insertions(+), 67 deletions(-)"
             ui::print_blank();
-            println!("  {}", colorize_summary_line(line));
+            ui::print_indented(&colorize_summary_line(line));
         } else {
             // File line: "  path/to/file.rs | 12 +++---"
-            println!("{}", colorize_file_stat_line(line));
+            ui::print_line(&colorize_file_stat_line(line));
         }
     }
     Ok(())
@@ -214,20 +208,20 @@ fn colorize_file_stat_line(line: &str) -> String {
         let bar = ui::render_stat_bar(added_count, deleted_count, 20);
         let counts = format!(
             "{} {} {}",
-            (added_count + deleted_count).to_string().bright_black(),
+            ui::muted(&(added_count + deleted_count).to_string()),
             ui::color_added(added_count as i64),
             ui::color_deleted(deleted_count as i64)
         );
 
         format!(
             "  {}{}  {} {}",
-            path_part.white(),
-            "|".bright_black(),
+            ui::paint_text(path_part),
+            ui::muted("|"),
             counts,
             bar
         )
     } else {
-        format!("  {}", line.bright_black())
+        format!("  {}", ui::muted(line))
     }
 }
 
@@ -245,13 +239,13 @@ fn colorize_summary_line(line: &str) -> String {
     line.split(", ")
         .map(|part| {
             if part.contains("insertion") {
-                part.green().to_string()
+                ui::success(part)
             } else if part.contains("deletion") {
-                part.red().to_string()
+                ui::danger(part)
             } else {
-                part.white().to_string()
+                ui::paint_text(part)
             }
         })
         .collect::<Vec<_>>()
-        .join(&", ".bright_black().to_string())
+        .join(&ui::muted(", "))
 }

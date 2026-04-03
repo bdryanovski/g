@@ -15,31 +15,37 @@ path = "src/main.rs"
 
 [dependencies]
 # CLI framework
-clap = { version = "4", features = ["derive", "color", "wrap_help"] }
+clap          = { version = "4", features = ["derive", "color", "wrap_help"] }
+# Shell completion script generation (g completions <shell>)
+clap_complete = "4"
 
-# Colors and terminal
-colored = "2"
-indicatif = "0.17"
-dialoguer = { version = "0.11", features = ["fuzzy-select"] }
-crossterm = "0.27"
+# Terminal UI — ratatui for style types + widgets; crossterm for ANSI output.
+# ratatui's Color/Style types power the theme system (theme.rs).
+# crossterm is bumped to 0.29 to unify with ratatui's transitive dependency.
+ratatui        = { version = "0.30", features = ["crossterm"] }
+ratatui-cheese = "0.6"
+crossterm      = "0.29"
+
+# ANSI-aware text width measurement and terminal size detection.
+# Used for column alignment in tables and fieldset width calculation.
 console = "0.15"
 
 # Serialization
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
+serde      = { version = "1", features = ["derive"] }
+toml       = "0.8"
 serde_json = "1"
 
 # Error handling
-anyhow = "1"
+anyhow    = "1"
 thiserror = "1"
 
 # Utilities
-dirs = "5"
+dirs   = "5"
 chrono = { version = "0.4", features = ["serde"] }
-which = "6"
-regex = "1"
+which  = "6"
+regex  = "1"
 
-# HTTP (for GitHub API)
+# HTTP (GitHub API)
 ureq = { version = "2", features = ["json"] }
 
 # Embedded database
@@ -67,6 +73,6 @@ opt-level = 0
 debug = true
 
 # Compile dependencies at opt-level 3 even in dev builds so the terminal UI
-# (indicatif, crossterm, colored) renders at full speed during development.
+# (ratatui, crossterm) renders at full speed during development.
 [profile.dev.package."*"]
 opt-level = 3
