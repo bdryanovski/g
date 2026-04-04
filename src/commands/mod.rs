@@ -15,6 +15,7 @@ pub mod developer;
 pub mod git;
 pub mod stack;
 pub mod stage;
+pub mod stats;
 pub mod workspace;
 
 // TODO(commands): Consider a shared error type for consistent UX and easier testing.

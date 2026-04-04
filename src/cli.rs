@@ -185,6 +185,21 @@ pub enum Commands {
     /// Open interactive config editor
     Config(ConfigArgs),
 
+    /// Display a rich usage-statistics report
+    ///
+    /// Aggregates data from the internal SQLite database (command runs, commits
+    /// recorded via `g commit`) and the current repository's git history to
+    /// produce a terminal report that includes:
+    ///
+    ///   • Overview totals and streak information
+    ///   • GitHub-style commit heatmap for the last 52 weeks
+    ///   • Lines-added / lines-removed sparkline (current branch)
+    ///   • Top commands by frequency
+    ///   • Conventional-commit type distribution
+    ///   • Repository activity ranking
+    ///   • Activity-by-hour chart
+    Stats(StatsArgs),
+
     /// Developer / debugging utilities
     #[command(subcommand)]
     Developer(DeveloperCommands),
@@ -501,6 +516,25 @@ pub struct ConfigArgs {
 
     /// Get a config value
     pub key: Option<String>,
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+
+/// Arguments for the `g stats` command.
+#[derive(Args)]
+#[command(after_help = "Examples:\n\
+                  \n\
+                  \x20 g stats                    full report, last 365 days\n\
+                  \x20 g stats --days 90           last 90 days\n\
+                  \x20 g stats --no-git            skip sections that require git\n")]
+pub struct StatsArgs {
+    /// Number of days to look back for time-based stats
+    #[arg(long, default_value = "365", value_name = "DAYS")]
+    pub days: u32,
+
+    /// Skip sections that require a git repository (heatmap, lines chart)
+    #[arg(long)]
+    pub no_git: bool,
 }
 
 // ─── Developer ───────────────────────────────────────────────────────────────

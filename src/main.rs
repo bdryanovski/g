@@ -326,6 +326,9 @@ fn run() -> Result<()> {
             }
             Commands::Show(args) => commands::git::enhanced_show(&args.args)?,
 
+            // ─── Stats ────────────────────────────────────────────────────────────
+            Commands::Stats(args) => commands::stats::stats(&conn, &args)?,
+
             // ─── Config ───────────────────────────────────────────────────────────
             Commands::Config(args) => handle_config(args)?,
 
@@ -404,6 +407,7 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "add",
         "compare",
         "log",
+        "stats",
         "status",
         "diff",
         "branch",
@@ -660,6 +664,7 @@ fn command_names(cmd: &Commands) -> (&'static str, Option<&'static str>) {
         Commands::Diff(_) => ("diff", None),
         Commands::Branch(_) => ("branch", None),
         Commands::Show(_) => ("show", None),
+        Commands::Stats(_) => ("stats", None),
         Commands::Config(_) => ("config", None),
         Commands::Developer(sub) => {
             let sub_name = match sub {
