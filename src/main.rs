@@ -405,6 +405,7 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "stack",
         "commit",
         "add",
+        "stage",
         "compare",
         "log",
         "stats",
@@ -414,6 +415,7 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "show",
         "config",
         "developer",
+        "completions",
     ];
 
     match first_non_global_token(raw_args) {
@@ -577,6 +579,7 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
             "max_subject",
             ui::paint_text(&cfg.commit.max_subject_length.to_string()),
         ),
+        ("sign_off", ui::paint_text(&cfg.commit.sign_off.to_string())),
         ("gpg_sign", ui::paint_text(&cfg.commit.gpg_sign.to_string())),
         ("emoji", ui::paint_text(&cfg.commit.emoji.to_string())),
         ("types", ui::muted(&cfg.commit.types.join(", "))),

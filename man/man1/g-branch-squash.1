@@ -1,0 +1,19 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-branch-squash 1  "g-branch-squash " 
+.SH NAME
+g\-branch\-squash \- Collapse all commits on the current branch into one (from merge\-base with base)
+.SH SYNOPSIS
+\fBg\-branch\-squash\fR [\fB\-m\fR|\fB\-\-message\fR] [\fB\-b\fR|\fB\-\-base\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Collapse all commits on the current branch into one (from merge\-base with base)
+.SH OPTIONS
+.TP
+\fB\-m\fR, \fB\-\-message\fR \fI<MESSAGE>\fR
+Commit message (default: oldest subject in the squashed range)
+.TP
+\fB\-b\fR, \fB\-\-base\fR \fI<BASE>\fR
+Ref to merge against when finding the fork point (`git merge\-base HEAD <base>`)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

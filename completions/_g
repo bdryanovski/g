@@ -1,0 +1,1784 @@
+#compdef g
+
+autoload -U is-at-least
+
+_g() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_g_commands" \
+"*::: :->g" \
+&& ret=0
+    case $state in
+    (g)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-command-$line[1]:"
+        case $line[1] in
+            (workspace)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_g__workspace_commands" \
+"*::: :->workspace" \
+&& ret=0
+
+    case $state in
+    (workspace)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-workspace-command-$line[1]:"
+        case $line[1] in
+            (init)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(create)
+_arguments "${_arguments_options[@]}" : \
+'-b+[Branch to check out (defaults to creating a new branch with the workspace name)]:BRANCH:_default' \
+'--branch=[Branch to check out (defaults to creating a new branch with the workspace name)]:BRANCH:_default' \
+'-d+[Description of this workspace]:DESCRIPTION:_default' \
+'--description=[Description of this workspace]:DESCRIPTION:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--copy[Show an interactive picker to copy untracked/gitignored files into the new workspace]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Name for the new workspace:_default' \
+'::start_point -- Starting commit or tag when creating a new branch (e.g. `abc1234`):_default' \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::name -- Workspace name (fuzzy matched). Omit to open an interactive picker:_default' \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--force[Force removal even if the worktree is dirty]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Workspace name:_default' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(rename)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':old -- Current name:_default' \
+':new -- New name:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__workspace__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-workspace-help-command-$line[1]:"
+        case $line[1] in
+            (init)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(create)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(rename)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(stack)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_g__stack_commands" \
+"*::: :->stack" \
+&& ret=0
+
+    case $state in
+    (stack)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-stack-command-$line[1]:"
+        case $line[1] in
+            (new)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Name for this stack:_default' \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':branch -- Branch name to create:_default' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(view)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(details)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Stack name to switch to:_default' \
+&& ret=0
+;;
+(absorb)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(squash)
+_arguments "${_arguments_options[@]}" : \
+'-m+[Commit message for the squashed commit (default\: oldest commit subject in the range)]:MESSAGE:_default' \
+'--message=[Commit message for the squashed commit (default\: oldest commit subject in the range)]:MESSAGE:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--no-interactive[Abort if any conflict is found instead of pausing]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(fold)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--keep[Keep the current branch name as the combined branch (remove the parent ref from the stack)]' \
+'--no-interactive[Abort if merge/rebase hits conflicts instead of pausing for resolution]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(sync)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--no-interactive[Abort if any conflict is found instead of pausing]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(push)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--force[Force push with lease]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(pr)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--open[Open PRs in browser after creating]' \
+'--draft[Draft PRs]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':branch -- Branch name to remove from stack:_default' \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--branches[Also delete all branches in the stack]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Stack name:_default' \
+&& ret=0
+;;
+(up)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__stack__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-stack-help-command-$line[1]:"
+        case $line[1] in
+            (new)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(view)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(details)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(absorb)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(squash)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(fold)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(sync)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(push)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(pr)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(commit)
+_arguments "${_arguments_options[@]}" : \
+'-m+[Commit message subject (skips interactive mode)]:MESSAGE:_default' \
+'--message=[Commit message subject (skips interactive mode)]:MESSAGE:_default' \
+'-b+[Commit message body]:BODY:_default' \
+'--body=[Commit message body]:BODY:_default' \
+'--type=[Commit type (feat, fix, docs, etc.) — skips prompt]:TYPE:_default' \
+'--scope=[Commit scope — skips prompt]:SCOPE:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--no-verify[Don'\''t run pre-commit hooks]' \
+'-a[Stage all changes before committing]' \
+'--all[Stage all changes before committing]' \
+'--amend[Amend the last commit]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::args -- Extra arguments forwarded to git:_default' \
+&& ret=0
+;;
+(stage)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(compare)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--stat[Only show file-level stat, not full diff]' \
+'--diff[Show full diff]' \
+'--commits[Show only commits]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::base -- Base branch (defaults to main/master):_default' \
+'::head -- Head branch (defaults to current):_default' \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::args -- Extra arguments forwarded to git:_default' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::args -- Extra arguments forwarded to git:_default' \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::args -- Extra arguments forwarded to git:_default' \
+&& ret=0
+;;
+(branch)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::rest -- When no `squash` subcommand\: forwarded to enhanced list or `git branch`:_default' \
+":: :_g__branch_commands" \
+"*::: :->branch" \
+&& ret=0
+
+    case $state in
+    (branch)
+        words=($line[2] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-branch-command-$line[2]:"
+        case $line[2] in
+            (squash)
+_arguments "${_arguments_options[@]}" : \
+'-m+[Commit message (default\: oldest subject in the squashed range)]:MESSAGE:_default' \
+'--message=[Commit message (default\: oldest subject in the squashed range)]:MESSAGE:_default' \
+'-b+[Ref to merge against when finding the fork point (\`git merge-base HEAD <base>\`)]:BASE:_default' \
+'--base=[Ref to merge against when finding the fork point (\`git merge-base HEAD <base>\`)]:BASE:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__branch__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-branch-help-command-$line[1]:"
+        case $line[1] in
+            (squash)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::args -- Extra arguments forwarded to git:_default' \
+&& ret=0
+;;
+(config)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--edit[Open config file in \$EDITOR]' \
+'--path[Print the path to the config file]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::key -- Get a config value:_default' \
+&& ret=0
+;;
+(stats)
+_arguments "${_arguments_options[@]}" : \
+'--days=[Number of days to look back for time-based stats]:DAYS:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--no-git[Skip sections that require a git repository (heatmap, lines chart)]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(developer)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_g__developer_commands" \
+"*::: :->developer" \
+&& ret=0
+
+    case $state in
+    (developer)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-developer-command-$line[1]:"
+        case $line[1] in
+            (db)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--path[Print the database path and exit (don'\''t open the shell)]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(repos)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__developer__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-developer-help-command-$line[1]:"
+        case $line[1] in
+            (db)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(repos)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':shell -- Shell to generate completions for:(bash elvish fish powershell zsh)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-command-$line[1]:"
+        case $line[1] in
+            (workspace)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__help__workspace_commands" \
+"*::: :->workspace" \
+&& ret=0
+
+    case $state in
+    (workspace)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-workspace-command-$line[1]:"
+        case $line[1] in
+            (init)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(create)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(rename)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(stack)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__help__stack_commands" \
+"*::: :->stack" \
+&& ret=0
+
+    case $state in
+    (stack)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-stack-command-$line[1]:"
+        case $line[1] in
+            (new)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(view)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(details)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(absorb)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(squash)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(fold)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(sync)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(push)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(pr)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(commit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(stage)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(compare)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(branch)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__help__branch_commands" \
+"*::: :->branch" \
+&& ret=0
+
+    case $state in
+    (branch)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-branch-command-$line[1]:"
+        case $line[1] in
+            (squash)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(config)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(stats)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(developer)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__help__developer_commands" \
+"*::: :->developer" \
+&& ret=0
+
+    case $state in
+    (developer)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-developer-command-$line[1]:"
+        case $line[1] in
+            (db)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(repos)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_g_commands] )) ||
+_g_commands() {
+    local commands; commands=(
+'workspace:Manage worktree-based workspaces (parallel branch checkouts)' \
+'stack:Manage stacked pull requests' \
+'commit:Interactive guided commit with message templates' \
+'add:Stage files interactively, or forward arguments to \`git add\`' \
+'stage:Interactive file-tree picker for staging and unstaging' \
+'compare:Compare two branches visually' \
+'log:Enhanced git log with beautiful formatting' \
+'status:Enhanced git status with icons and colors' \
+'diff:Enhanced git diff using your configured diff tool' \
+'branch:Enhanced branch listing, \`git branch\` passthrough, or \`branch squash\`' \
+'show:Enhanced git show' \
+'config:Open interactive config editor' \
+'stats:Display a rich usage-statistics report' \
+'developer:Developer / debugging utilities' \
+'completions:Print a shell completion script and exit' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g commands' commands "$@"
+}
+(( $+functions[_g__add_commands] )) ||
+_g__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'g add commands' commands "$@"
+}
+(( $+functions[_g__branch_commands] )) ||
+_g__branch_commands() {
+    local commands; commands=(
+'squash:Collapse all commits on the current branch into one (from merge-base with base)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g branch commands' commands "$@"
+}
+(( $+functions[_g__branch__help_commands] )) ||
+_g__branch__help_commands() {
+    local commands; commands=(
+'squash:Collapse all commits on the current branch into one (from merge-base with base)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g branch help commands' commands "$@"
+}
+(( $+functions[_g__branch__help__help_commands] )) ||
+_g__branch__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g branch help help commands' commands "$@"
+}
+(( $+functions[_g__branch__help__squash_commands] )) ||
+_g__branch__help__squash_commands() {
+    local commands; commands=()
+    _describe -t commands 'g branch help squash commands' commands "$@"
+}
+(( $+functions[_g__branch__squash_commands] )) ||
+_g__branch__squash_commands() {
+    local commands; commands=()
+    _describe -t commands 'g branch squash commands' commands "$@"
+}
+(( $+functions[_g__commit_commands] )) ||
+_g__commit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g commit commands' commands "$@"
+}
+(( $+functions[_g__compare_commands] )) ||
+_g__compare_commands() {
+    local commands; commands=()
+    _describe -t commands 'g compare commands' commands "$@"
+}
+(( $+functions[_g__completions_commands] )) ||
+_g__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'g completions commands' commands "$@"
+}
+(( $+functions[_g__config_commands] )) ||
+_g__config_commands() {
+    local commands; commands=()
+    _describe -t commands 'g config commands' commands "$@"
+}
+(( $+functions[_g__developer_commands] )) ||
+_g__developer_commands() {
+    local commands; commands=(
+'db:Open an interactive SQLite shell connected to the internal g.db database' \
+'repos:List all repositories tracked in the internal database' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g developer commands' commands "$@"
+}
+(( $+functions[_g__developer__db_commands] )) ||
+_g__developer__db_commands() {
+    local commands; commands=()
+    _describe -t commands 'g developer db commands' commands "$@"
+}
+(( $+functions[_g__developer__help_commands] )) ||
+_g__developer__help_commands() {
+    local commands; commands=(
+'db:Open an interactive SQLite shell connected to the internal g.db database' \
+'repos:List all repositories tracked in the internal database' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g developer help commands' commands "$@"
+}
+(( $+functions[_g__developer__help__db_commands] )) ||
+_g__developer__help__db_commands() {
+    local commands; commands=()
+    _describe -t commands 'g developer help db commands' commands "$@"
+}
+(( $+functions[_g__developer__help__help_commands] )) ||
+_g__developer__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g developer help help commands' commands "$@"
+}
+(( $+functions[_g__developer__help__repos_commands] )) ||
+_g__developer__help__repos_commands() {
+    local commands; commands=()
+    _describe -t commands 'g developer help repos commands' commands "$@"
+}
+(( $+functions[_g__developer__repos_commands] )) ||
+_g__developer__repos_commands() {
+    local commands; commands=()
+    _describe -t commands 'g developer repos commands' commands "$@"
+}
+(( $+functions[_g__diff_commands] )) ||
+_g__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'g diff commands' commands "$@"
+}
+(( $+functions[_g__help_commands] )) ||
+_g__help_commands() {
+    local commands; commands=(
+'workspace:Manage worktree-based workspaces (parallel branch checkouts)' \
+'stack:Manage stacked pull requests' \
+'commit:Interactive guided commit with message templates' \
+'add:Stage files interactively, or forward arguments to \`git add\`' \
+'stage:Interactive file-tree picker for staging and unstaging' \
+'compare:Compare two branches visually' \
+'log:Enhanced git log with beautiful formatting' \
+'status:Enhanced git status with icons and colors' \
+'diff:Enhanced git diff using your configured diff tool' \
+'branch:Enhanced branch listing, \`git branch\` passthrough, or \`branch squash\`' \
+'show:Enhanced git show' \
+'config:Open interactive config editor' \
+'stats:Display a rich usage-statistics report' \
+'developer:Developer / debugging utilities' \
+'completions:Print a shell completion script and exit' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g help commands' commands "$@"
+}
+(( $+functions[_g__help__add_commands] )) ||
+_g__help__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help add commands' commands "$@"
+}
+(( $+functions[_g__help__branch_commands] )) ||
+_g__help__branch_commands() {
+    local commands; commands=(
+'squash:Collapse all commits on the current branch into one (from merge-base with base)' \
+    )
+    _describe -t commands 'g help branch commands' commands "$@"
+}
+(( $+functions[_g__help__branch__squash_commands] )) ||
+_g__help__branch__squash_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help branch squash commands' commands "$@"
+}
+(( $+functions[_g__help__commit_commands] )) ||
+_g__help__commit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help commit commands' commands "$@"
+}
+(( $+functions[_g__help__compare_commands] )) ||
+_g__help__compare_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help compare commands' commands "$@"
+}
+(( $+functions[_g__help__completions_commands] )) ||
+_g__help__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help completions commands' commands "$@"
+}
+(( $+functions[_g__help__config_commands] )) ||
+_g__help__config_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help config commands' commands "$@"
+}
+(( $+functions[_g__help__developer_commands] )) ||
+_g__help__developer_commands() {
+    local commands; commands=(
+'db:Open an interactive SQLite shell connected to the internal g.db database' \
+'repos:List all repositories tracked in the internal database' \
+    )
+    _describe -t commands 'g help developer commands' commands "$@"
+}
+(( $+functions[_g__help__developer__db_commands] )) ||
+_g__help__developer__db_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help developer db commands' commands "$@"
+}
+(( $+functions[_g__help__developer__repos_commands] )) ||
+_g__help__developer__repos_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help developer repos commands' commands "$@"
+}
+(( $+functions[_g__help__diff_commands] )) ||
+_g__help__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help diff commands' commands "$@"
+}
+(( $+functions[_g__help__help_commands] )) ||
+_g__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help help commands' commands "$@"
+}
+(( $+functions[_g__help__log_commands] )) ||
+_g__help__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help log commands' commands "$@"
+}
+(( $+functions[_g__help__show_commands] )) ||
+_g__help__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help show commands' commands "$@"
+}
+(( $+functions[_g__help__stack_commands] )) ||
+_g__help__stack_commands() {
+    local commands; commands=(
+'new:Initialize a new stack starting from the current branch' \
+'add:Create a new branch on top of the current stack' \
+'list:List all stacks' \
+'view:Show the current stack as a tree' \
+'details:Show the current stack with commits for each branch' \
+'switch:Switch to a different stack (checks out its top branch)' \
+'absorb:Merge the current branch into the one below it in the stack' \
+'squash:Squash the current branch to one commit on top of its base, then rebase branches above' \
+'fold:Merge the current branch into its parent (preserving history), drop the extra ref, restack above' \
+'sync:Sync all stack branches (rebase each on the one below)' \
+'push:Push all branches in the current stack' \
+'pr:Create or update GitHub PRs for all branches in the stack' \
+'remove:Remove a branch from the stack (doesn'\''t delete the branch)' \
+'delete:Delete a stack (and optionally its branches)' \
+'up:Move a stack up or down in the stack list (affects display order and PR ordering)' \
+'down:' \
+    )
+    _describe -t commands 'g help stack commands' commands "$@"
+}
+(( $+functions[_g__help__stack__absorb_commands] )) ||
+_g__help__stack__absorb_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack absorb commands' commands "$@"
+}
+(( $+functions[_g__help__stack__add_commands] )) ||
+_g__help__stack__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack add commands' commands "$@"
+}
+(( $+functions[_g__help__stack__delete_commands] )) ||
+_g__help__stack__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack delete commands' commands "$@"
+}
+(( $+functions[_g__help__stack__details_commands] )) ||
+_g__help__stack__details_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack details commands' commands "$@"
+}
+(( $+functions[_g__help__stack__down_commands] )) ||
+_g__help__stack__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack down commands' commands "$@"
+}
+(( $+functions[_g__help__stack__fold_commands] )) ||
+_g__help__stack__fold_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack fold commands' commands "$@"
+}
+(( $+functions[_g__help__stack__list_commands] )) ||
+_g__help__stack__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack list commands' commands "$@"
+}
+(( $+functions[_g__help__stack__new_commands] )) ||
+_g__help__stack__new_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack new commands' commands "$@"
+}
+(( $+functions[_g__help__stack__pr_commands] )) ||
+_g__help__stack__pr_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack pr commands' commands "$@"
+}
+(( $+functions[_g__help__stack__push_commands] )) ||
+_g__help__stack__push_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack push commands' commands "$@"
+}
+(( $+functions[_g__help__stack__remove_commands] )) ||
+_g__help__stack__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack remove commands' commands "$@"
+}
+(( $+functions[_g__help__stack__squash_commands] )) ||
+_g__help__stack__squash_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack squash commands' commands "$@"
+}
+(( $+functions[_g__help__stack__switch_commands] )) ||
+_g__help__stack__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack switch commands' commands "$@"
+}
+(( $+functions[_g__help__stack__sync_commands] )) ||
+_g__help__stack__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack sync commands' commands "$@"
+}
+(( $+functions[_g__help__stack__up_commands] )) ||
+_g__help__stack__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack up commands' commands "$@"
+}
+(( $+functions[_g__help__stack__view_commands] )) ||
+_g__help__stack__view_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stack view commands' commands "$@"
+}
+(( $+functions[_g__help__stage_commands] )) ||
+_g__help__stage_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stage commands' commands "$@"
+}
+(( $+functions[_g__help__stats_commands] )) ||
+_g__help__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help stats commands' commands "$@"
+}
+(( $+functions[_g__help__status_commands] )) ||
+_g__help__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help status commands' commands "$@"
+}
+(( $+functions[_g__help__workspace_commands] )) ||
+_g__help__workspace_commands() {
+    local commands; commands=(
+'init:Reorganise an existing repo into a container/worktree layout' \
+'list:List all workspaces (git worktrees)' \
+'create:Create a new workspace as a sibling worktree directory' \
+'switch:Open a subshell in a workspace directory' \
+'delete:Remove a workspace (git worktree remove)' \
+'status:Show current workspace info' \
+'rename:Rename a workspace (move directory and repair worktree)' \
+    )
+    _describe -t commands 'g help workspace commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__create_commands] )) ||
+_g__help__workspace__create_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace create commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__delete_commands] )) ||
+_g__help__workspace__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace delete commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__init_commands] )) ||
+_g__help__workspace__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace init commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__list_commands] )) ||
+_g__help__workspace__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace list commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__rename_commands] )) ||
+_g__help__workspace__rename_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace rename commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__status_commands] )) ||
+_g__help__workspace__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace status commands' commands "$@"
+}
+(( $+functions[_g__help__workspace__switch_commands] )) ||
+_g__help__workspace__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workspace switch commands' commands "$@"
+}
+(( $+functions[_g__log_commands] )) ||
+_g__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'g log commands' commands "$@"
+}
+(( $+functions[_g__show_commands] )) ||
+_g__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'g show commands' commands "$@"
+}
+(( $+functions[_g__stack_commands] )) ||
+_g__stack_commands() {
+    local commands; commands=(
+'new:Initialize a new stack starting from the current branch' \
+'add:Create a new branch on top of the current stack' \
+'list:List all stacks' \
+'view:Show the current stack as a tree' \
+'details:Show the current stack with commits for each branch' \
+'switch:Switch to a different stack (checks out its top branch)' \
+'absorb:Merge the current branch into the one below it in the stack' \
+'squash:Squash the current branch to one commit on top of its base, then rebase branches above' \
+'fold:Merge the current branch into its parent (preserving history), drop the extra ref, restack above' \
+'sync:Sync all stack branches (rebase each on the one below)' \
+'push:Push all branches in the current stack' \
+'pr:Create or update GitHub PRs for all branches in the stack' \
+'remove:Remove a branch from the stack (doesn'\''t delete the branch)' \
+'delete:Delete a stack (and optionally its branches)' \
+'up:Move a stack up or down in the stack list (affects display order and PR ordering)' \
+'down:' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g stack commands' commands "$@"
+}
+(( $+functions[_g__stack__absorb_commands] )) ||
+_g__stack__absorb_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack absorb commands' commands "$@"
+}
+(( $+functions[_g__stack__add_commands] )) ||
+_g__stack__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack add commands' commands "$@"
+}
+(( $+functions[_g__stack__delete_commands] )) ||
+_g__stack__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack delete commands' commands "$@"
+}
+(( $+functions[_g__stack__details_commands] )) ||
+_g__stack__details_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack details commands' commands "$@"
+}
+(( $+functions[_g__stack__down_commands] )) ||
+_g__stack__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack down commands' commands "$@"
+}
+(( $+functions[_g__stack__fold_commands] )) ||
+_g__stack__fold_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack fold commands' commands "$@"
+}
+(( $+functions[_g__stack__help_commands] )) ||
+_g__stack__help_commands() {
+    local commands; commands=(
+'new:Initialize a new stack starting from the current branch' \
+'add:Create a new branch on top of the current stack' \
+'list:List all stacks' \
+'view:Show the current stack as a tree' \
+'details:Show the current stack with commits for each branch' \
+'switch:Switch to a different stack (checks out its top branch)' \
+'absorb:Merge the current branch into the one below it in the stack' \
+'squash:Squash the current branch to one commit on top of its base, then rebase branches above' \
+'fold:Merge the current branch into its parent (preserving history), drop the extra ref, restack above' \
+'sync:Sync all stack branches (rebase each on the one below)' \
+'push:Push all branches in the current stack' \
+'pr:Create or update GitHub PRs for all branches in the stack' \
+'remove:Remove a branch from the stack (doesn'\''t delete the branch)' \
+'delete:Delete a stack (and optionally its branches)' \
+'up:Move a stack up or down in the stack list (affects display order and PR ordering)' \
+'down:' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g stack help commands' commands "$@"
+}
+(( $+functions[_g__stack__help__absorb_commands] )) ||
+_g__stack__help__absorb_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help absorb commands' commands "$@"
+}
+(( $+functions[_g__stack__help__add_commands] )) ||
+_g__stack__help__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help add commands' commands "$@"
+}
+(( $+functions[_g__stack__help__delete_commands] )) ||
+_g__stack__help__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help delete commands' commands "$@"
+}
+(( $+functions[_g__stack__help__details_commands] )) ||
+_g__stack__help__details_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help details commands' commands "$@"
+}
+(( $+functions[_g__stack__help__down_commands] )) ||
+_g__stack__help__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help down commands' commands "$@"
+}
+(( $+functions[_g__stack__help__fold_commands] )) ||
+_g__stack__help__fold_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help fold commands' commands "$@"
+}
+(( $+functions[_g__stack__help__help_commands] )) ||
+_g__stack__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help help commands' commands "$@"
+}
+(( $+functions[_g__stack__help__list_commands] )) ||
+_g__stack__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help list commands' commands "$@"
+}
+(( $+functions[_g__stack__help__new_commands] )) ||
+_g__stack__help__new_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help new commands' commands "$@"
+}
+(( $+functions[_g__stack__help__pr_commands] )) ||
+_g__stack__help__pr_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help pr commands' commands "$@"
+}
+(( $+functions[_g__stack__help__push_commands] )) ||
+_g__stack__help__push_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help push commands' commands "$@"
+}
+(( $+functions[_g__stack__help__remove_commands] )) ||
+_g__stack__help__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help remove commands' commands "$@"
+}
+(( $+functions[_g__stack__help__squash_commands] )) ||
+_g__stack__help__squash_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help squash commands' commands "$@"
+}
+(( $+functions[_g__stack__help__switch_commands] )) ||
+_g__stack__help__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help switch commands' commands "$@"
+}
+(( $+functions[_g__stack__help__sync_commands] )) ||
+_g__stack__help__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help sync commands' commands "$@"
+}
+(( $+functions[_g__stack__help__up_commands] )) ||
+_g__stack__help__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help up commands' commands "$@"
+}
+(( $+functions[_g__stack__help__view_commands] )) ||
+_g__stack__help__view_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack help view commands' commands "$@"
+}
+(( $+functions[_g__stack__list_commands] )) ||
+_g__stack__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack list commands' commands "$@"
+}
+(( $+functions[_g__stack__new_commands] )) ||
+_g__stack__new_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack new commands' commands "$@"
+}
+(( $+functions[_g__stack__pr_commands] )) ||
+_g__stack__pr_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack pr commands' commands "$@"
+}
+(( $+functions[_g__stack__push_commands] )) ||
+_g__stack__push_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack push commands' commands "$@"
+}
+(( $+functions[_g__stack__remove_commands] )) ||
+_g__stack__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack remove commands' commands "$@"
+}
+(( $+functions[_g__stack__squash_commands] )) ||
+_g__stack__squash_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack squash commands' commands "$@"
+}
+(( $+functions[_g__stack__switch_commands] )) ||
+_g__stack__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack switch commands' commands "$@"
+}
+(( $+functions[_g__stack__sync_commands] )) ||
+_g__stack__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack sync commands' commands "$@"
+}
+(( $+functions[_g__stack__up_commands] )) ||
+_g__stack__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack up commands' commands "$@"
+}
+(( $+functions[_g__stack__view_commands] )) ||
+_g__stack__view_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stack view commands' commands "$@"
+}
+(( $+functions[_g__stage_commands] )) ||
+_g__stage_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stage commands' commands "$@"
+}
+(( $+functions[_g__stats_commands] )) ||
+_g__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'g stats commands' commands "$@"
+}
+(( $+functions[_g__status_commands] )) ||
+_g__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g status commands' commands "$@"
+}
+(( $+functions[_g__workspace_commands] )) ||
+_g__workspace_commands() {
+    local commands; commands=(
+'init:Reorganise an existing repo into a container/worktree layout' \
+'list:List all workspaces (git worktrees)' \
+'create:Create a new workspace as a sibling worktree directory' \
+'switch:Open a subshell in a workspace directory' \
+'delete:Remove a workspace (git worktree remove)' \
+'status:Show current workspace info' \
+'rename:Rename a workspace (move directory and repair worktree)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g workspace commands' commands "$@"
+}
+(( $+functions[_g__workspace__create_commands] )) ||
+_g__workspace__create_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace create commands' commands "$@"
+}
+(( $+functions[_g__workspace__delete_commands] )) ||
+_g__workspace__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace delete commands' commands "$@"
+}
+(( $+functions[_g__workspace__help_commands] )) ||
+_g__workspace__help_commands() {
+    local commands; commands=(
+'init:Reorganise an existing repo into a container/worktree layout' \
+'list:List all workspaces (git worktrees)' \
+'create:Create a new workspace as a sibling worktree directory' \
+'switch:Open a subshell in a workspace directory' \
+'delete:Remove a workspace (git worktree remove)' \
+'status:Show current workspace info' \
+'rename:Rename a workspace (move directory and repair worktree)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g workspace help commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__create_commands] )) ||
+_g__workspace__help__create_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help create commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__delete_commands] )) ||
+_g__workspace__help__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help delete commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__help_commands] )) ||
+_g__workspace__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help help commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__init_commands] )) ||
+_g__workspace__help__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help init commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__list_commands] )) ||
+_g__workspace__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help list commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__rename_commands] )) ||
+_g__workspace__help__rename_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help rename commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__status_commands] )) ||
+_g__workspace__help__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help status commands' commands "$@"
+}
+(( $+functions[_g__workspace__help__switch_commands] )) ||
+_g__workspace__help__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace help switch commands' commands "$@"
+}
+(( $+functions[_g__workspace__init_commands] )) ||
+_g__workspace__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace init commands' commands "$@"
+}
+(( $+functions[_g__workspace__list_commands] )) ||
+_g__workspace__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace list commands' commands "$@"
+}
+(( $+functions[_g__workspace__rename_commands] )) ||
+_g__workspace__rename_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace rename commands' commands "$@"
+}
+(( $+functions[_g__workspace__status_commands] )) ||
+_g__workspace__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace status commands' commands "$@"
+}
+(( $+functions[_g__workspace__switch_commands] )) ||
+_g__workspace__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workspace switch commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_g" ]; then
+    _g "$@"
+else
+    compdef _g g
+fi

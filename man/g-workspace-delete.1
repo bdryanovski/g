@@ -1,0 +1,19 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workspace-delete 1  "g-workspace-delete " 
+.SH NAME
+g\-workspace\-delete \- Remove a workspace (git worktree remove)
+.SH SYNOPSIS
+\fBg\-workspace\-delete\fR [\fB\-\-force\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINAME\fR> 
+.SH DESCRIPTION
+Remove a workspace (git worktree remove)
+.SH OPTIONS
+.TP
+\fB\-\-force\fR
+Force removal even if the worktree is dirty
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fINAME\fR>
+Workspace name

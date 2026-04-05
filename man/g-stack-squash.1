@@ -1,0 +1,19 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-stack-squash 1  "g-stack-squash " 
+.SH NAME
+g\-stack\-squash \- Squash the current branch to one commit on top of its base, then rebase branches above
+.SH SYNOPSIS
+\fBg\-stack\-squash\fR [\fB\-m\fR|\fB\-\-message\fR] [\fB\-\-no\-interactive\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Squash the current branch to one commit on top of its base, then rebase branches above
+.SH OPTIONS
+.TP
+\fB\-m\fR, \fB\-\-message\fR \fI<MESSAGE>\fR
+Commit message for the squashed commit (default: oldest commit subject in the range)
+.TP
+\fB\-\-no\-interactive\fR
+Abort if any conflict is found instead of pausing
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

@@ -1,0 +1,28 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workspace-create 1  "g-workspace-create " 
+.SH NAME
+g\-workspace\-create \- Create a new workspace as a sibling worktree directory
+.SH SYNOPSIS
+\fBg\-workspace\-create\fR [\fB\-b\fR|\fB\-\-branch\fR] [\fB\-d\fR|\fB\-\-description\fR] [\fB\-\-copy\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINAME\fR> [\fISTART_POINT\fR] 
+.SH DESCRIPTION
+Create a new workspace as a sibling worktree directory
+.SH OPTIONS
+.TP
+\fB\-b\fR, \fB\-\-branch\fR \fI<BRANCH>\fR
+Branch to check out (defaults to creating a new branch with the workspace name)
+.TP
+\fB\-d\fR, \fB\-\-description\fR \fI<DESCRIPTION>\fR
+Description of this workspace
+.TP
+\fB\-\-copy\fR
+Show an interactive picker to copy untracked/gitignored files into the new workspace
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fINAME\fR>
+Name for the new workspace
+.TP
+[\fISTART_POINT\fR]
+Starting commit or tag when creating a new branch (e.g. `abc1234`)

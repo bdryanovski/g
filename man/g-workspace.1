@@ -1,0 +1,49 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workspace 1  "g-workspace " 
+.SH NAME
+g\-workspace \- Manage worktree\-based workspaces (parallel branch checkouts)
+.SH SYNOPSIS
+\fBg\-workspace\fR [\fB\-h\fR|\fB\-\-help\fR] <\fIsubcommands\fR>
+.SH DESCRIPTION
+Manage worktree\-based workspaces (parallel branch checkouts)
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+g\-workspace\-init(1)
+Reorganise an existing repo into a container/worktree layout
+.TP
+g\-workspace\-list(1)
+List all workspaces (git worktrees)
+.TP
+g\-workspace\-create(1)
+Create a new workspace as a sibling worktree directory
+.TP
+g\-workspace\-switch(1)
+Open a subshell in a workspace directory
+.TP
+g\-workspace\-delete(1)
+Remove a workspace (git worktree remove)
+.TP
+g\-workspace\-status(1)
+Show current workspace info
+.TP
+g\-workspace\-rename(1)
+Rename a workspace (move directory and repair worktree)
+.TP
+g\-workspace\-help(1)
+Print this message or the help of the given subcommand(s)
+.SH EXTRA
+Examples:
+
+  g workspace list                        list all workspaces
+  g workspace create feature              create workspace on a new branch
+  g workspace create \-b existing feature  use an existing branch
+  g workspace switch                      fuzzy\-pick a workspace
+  g workspace switch api                  switch to a named workspace
+  g workspace status                      show current workspace info
+  g workspace rename old new              rename a workspace
+  g workspace delete api                  remove a workspace

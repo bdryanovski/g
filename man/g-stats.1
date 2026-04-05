@@ -1,0 +1,29 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-stats 1  "g-stats " 
+.SH NAME
+g\-stats \- Display a rich usage\-statistics report
+.SH SYNOPSIS
+\fBg\-stats\fR [\fB\-\-days\fR] [\fB\-\-no\-git\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Display a rich usage\-statistics report
+.PP
+Aggregates data from the internal SQLite database (command runs, commits recorded via `g commit`) and the current repository\*(Aqs git history to produce a terminal report that includes:
+.PP
+• Overview totals and streak information • GitHub\-style commit heatmap for the last 52 weeks • Lines\-added / lines\-removed sparkline (current branch) • Top commands by frequency • Conventional\-commit type distribution • Repository activity ranking • Activity\-by\-hour chart
+.SH OPTIONS
+.TP
+\fB\-\-days\fR \fI<DAYS>\fR [default: 365]
+Number of days to look back for time\-based stats
+.TP
+\fB\-\-no\-git\fR
+Skip sections that require a git repository (heatmap, lines chart)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SH EXTRA
+Examples:
+
+  g stats                    full report, last 365 days
+  g stats \-\-days 90           last 90 days
+  g stats \-\-no\-git            skip sections that require git

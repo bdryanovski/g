@@ -391,6 +391,15 @@ fn parse_deletions(line: &str) -> Option<u64> {
 
 fn section_command_frequency(conn: &Connection) -> Result<()> {
     let items = db::top_commands(conn, 12)?;
+
+    // "git" is recorded for every passthrough command, so it trivially
+    // dominates the chart while providing no meaningful insight — the whole
+    // tool is built on top of git.  Drop it before rendering.
+    let items: Vec<(String, i64)> = items
+        .into_iter()
+        .filter(|(name, _)| name != "git")
+        .collect();
+
     if items.is_empty() {
         return Ok(());
     }

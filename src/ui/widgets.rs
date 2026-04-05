@@ -48,7 +48,7 @@ pub fn print_fieldset(title: &str) {
     // ratatui Style uses ratatui Color directly (not ct_color which is crossterm)
     let rule_style = Style::default().fg(t.palette.divider);
     let title_style = Style::default()
-        .fg(t.palette.muted)
+        .fg(t.palette.accent)
         .add_modifier(ratatui::style::Modifier::BOLD);
 
     // ratatui-cheese Fieldset::title takes &str; styling comes from FieldsetStyles.

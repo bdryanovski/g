@@ -1,0 +1,15 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workspace-init 1  "g-workspace-init " 
+.SH NAME
+g\-workspace\-init \- Reorganise an existing repo into a container/worktree layout
+.SH SYNOPSIS
+\fBg\-workspace\-init\fR [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Reorganise an existing repo into a container/worktree layout
+.PP
+Moves the repo root into a new sub\-directory named after the default branch (e.g. `main`), then recreates the original path as a container directory.  After `init`, new workspaces created with `g workspace create` are placed inside the container.
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

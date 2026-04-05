@@ -1,0 +1,28 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-compare 1  "g-compare " 
+.SH NAME
+g\-compare \- Compare two branches visually
+.SH SYNOPSIS
+\fBg\-compare\fR [\fB\-\-stat\fR] [\fB\-\-diff\fR] [\fB\-\-commits\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIBASE\fR] [\fIHEAD\fR] 
+.SH DESCRIPTION
+Compare two branches visually
+.SH OPTIONS
+.TP
+\fB\-\-stat\fR
+Only show file\-level stat, not full diff
+.TP
+\fB\-\-diff\fR
+Show full diff
+.TP
+\fB\-\-commits\fR
+Show only commits
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+[\fIBASE\fR]
+Base branch (defaults to main/master)
+.TP
+[\fIHEAD\fR]
+Head branch (defaults to current)

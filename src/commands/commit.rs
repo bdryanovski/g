@@ -109,8 +109,13 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
     if args.amend {
         git_args.push("--amend");
     }
+    // Append "Signed-off-by: Name <email>" trailer — set via [commit] sign_off = true.
+    if cfg.commit.sign_off {
+        git_args.push("--signoff");
+    }
+    // GPG-sign the commit object — set via [commit] gpg_sign = true.
     if cfg.commit.gpg_sign {
-        git_args.push("-S");
+        git_args.push("--gpg-sign");
     }
 
     ui::print_blank();
@@ -235,8 +240,11 @@ fn commit_dry_run(args: &CommitArgs, cfg: &config::Config) -> Result<()> {
     if args.amend {
         git_args.push("--amend");
     }
+    if cfg.commit.sign_off {
+        git_args.push("--signoff");
+    }
     if cfg.commit.gpg_sign {
-        git_args.push("-S");
+        git_args.push("--gpg-sign");
     }
 
     let explanation = if args.amend {

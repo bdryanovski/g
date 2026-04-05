@@ -51,6 +51,17 @@ ureq = { version = "2", features = ["json"] }
 # Embedded database
 rusqlite = { version = "0.31", features = ["bundled"] }
 
+[build-dependencies]
+# Same clap + clap_complete as the main binary so build.rs can include
+# src/cli.rs and call Cli::command() to generate derived artifacts.
+clap          = { version = "4", features = ["derive", "color", "wrap_help"] }
+clap_complete = "4"
+# Man-page generator: converts a Clap Command into ROFF .1 pages.
+clap_mangen   = "0.2"
+# Markdown generator: converts a Clap Command into a full reference page
+# that is written into docs/src/content/docs/cli-reference.md for the Astro site.
+clap-markdown  = "0.1"
+
 [profile.release]
 opt-level = 3
 # "fat" LTO merges all crate codegen units into a single module so the

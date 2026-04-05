@@ -1,0 +1,16 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-stack-sync 1  "g-stack-sync " 
+.SH NAME
+g\-stack\-sync \- Sync all stack branches (rebase each on the one below)
+.SH SYNOPSIS
+\fBg\-stack\-sync\fR [\fB\-\-no\-interactive\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Sync all stack branches (rebase each on the one below)
+.SH OPTIONS
+.TP
+\fB\-\-no\-interactive\fR
+Abort if any conflict is found instead of pausing
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

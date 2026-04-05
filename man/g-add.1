@@ -1,0 +1,18 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-add 1  "g-add " 
+.SH NAME
+g\-add \- Stage files interactively, or forward arguments to `git add`
+.SH SYNOPSIS
+\fBg\-add\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIARGS\fR] 
+.SH DESCRIPTION
+Stage files interactively, or forward arguments to `git add`
+.PP
+With no arguments an interactive multi\-select picker is shown so you can choose exactly which files to stage using ↑↓ / j k and Space. Any flags or paths you supply are forwarded to `git add` unchanged.
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+[\fIARGS\fR]
+Extra arguments forwarded to git

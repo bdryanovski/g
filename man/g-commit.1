@@ -1,0 +1,34 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-commit 1  "g-commit " 
+.SH NAME
+g\-commit \- Interactive guided commit with message templates
+.SH SYNOPSIS
+\fBg\-commit\fR [\fB\-m\fR|\fB\-\-message\fR] [\fB\-b\fR|\fB\-\-body\fR] [\fB\-\-type\fR] [\fB\-\-scope\fR] [\fB\-\-no\-verify\fR] [\fB\-a\fR|\fB\-\-all\fR] [\fB\-\-amend\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Interactive guided commit with message templates
+.SH OPTIONS
+.TP
+\fB\-m\fR, \fB\-\-message\fR \fI<MESSAGE>\fR
+Commit message subject (skips interactive mode)
+.TP
+\fB\-b\fR, \fB\-\-body\fR \fI<BODY>\fR
+Commit message body
+.TP
+\fB\-\-type\fR \fI<TYPE>\fR
+Commit type (feat, fix, docs, etc.) — skips prompt
+.TP
+\fB\-\-scope\fR \fI<SCOPE>\fR
+Commit scope — skips prompt
+.TP
+\fB\-\-no\-verify\fR
+Don\*(Aqt run pre\-commit hooks
+.TP
+\fB\-a\fR, \fB\-\-all\fR
+Stage all changes before committing
+.TP
+\fB\-\-amend\fR
+Amend the last commit
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

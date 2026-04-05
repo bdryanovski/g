@@ -1,0 +1,80 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-stack 1  "g-stack " 
+.SH NAME
+g\-stack \- Manage stacked pull requests
+.SH SYNOPSIS
+\fBg\-stack\fR [\fB\-h\fR|\fB\-\-help\fR] <\fIsubcommands\fR>
+.SH DESCRIPTION
+Manage stacked pull requests
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+g\-stack\-new(1)
+Initialize a new stack starting from the current branch
+.TP
+g\-stack\-add(1)
+Create a new branch on top of the current stack
+.TP
+g\-stack\-list(1)
+List all stacks
+.TP
+g\-stack\-view(1)
+Show the current stack as a tree
+.TP
+g\-stack\-details(1)
+Show the current stack with commits for each branch
+.TP
+g\-stack\-switch(1)
+Switch to a different stack (checks out its top branch)
+.TP
+g\-stack\-absorb(1)
+Merge the current branch into the one below it in the stack
+.TP
+g\-stack\-squash(1)
+Squash the current branch to one commit on top of its base, then rebase branches above
+.TP
+g\-stack\-fold(1)
+Merge the current branch into its parent (preserving history), drop the extra ref, restack above
+.TP
+g\-stack\-sync(1)
+Sync all stack branches (rebase each on the one below)
+.TP
+g\-stack\-push(1)
+Push all branches in the current stack
+.TP
+g\-stack\-pr(1)
+Create or update GitHub PRs for all branches in the stack
+.TP
+g\-stack\-remove(1)
+Remove a branch from the stack (doesn\*(Aqt delete the branch)
+.TP
+g\-stack\-delete(1)
+Delete a stack (and optionally its branches)
+.TP
+g\-stack\-up(1)
+Move a stack up or down in the stack list (affects display order and PR ordering)
+.TP
+g\-stack\-down(1)
+.TP
+g\-stack\-help(1)
+Print this message or the help of the given subcommand(s)
+.SH EXTRA
+Workflow overview:
+
+  1. g stack new my\-feature    create a stack from current branch
+  2. g stack add next\-step      add a dependent branch on top
+  3. (work, commit on each branch)
+  4. g stack sync               rebase all branches in order
+  5. g stack push               push all branches
+  6. g stack pr                 open GitHub PRs for every branch
+
+Other useful commands:
+
+  g stack view                  show the stack as a tree
+  g stack details               show per\-branch commit lists
+  g stack squash                squash current branch to one commit
+  g stack fold                  merge current branch into its parent

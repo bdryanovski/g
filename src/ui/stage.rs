@@ -26,7 +26,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{List, ListItem, Paragraph, Widget};
+use ratatui::widgets::{List, ListItem, ListState, Paragraph, Widget};
 use ratatui_cheese::fieldset::{Fieldset, FieldsetFill, FieldsetStyles};
 use ratatui_cheese::help::{Binding, Help, HelpStyles};
 
@@ -437,12 +437,18 @@ fn draw_tree(f: &mut ratatui::Frame, nodes: &[FlatNode], cursor: usize) {
     f.render_widget(Paragraph::new(legend), chunks[1]);
 
     // File tree list.
+    //
+    // Rendered as a StatefulWidget with a ListState so ratatui automatically
+    // scrolls the viewport to keep the cursor row visible.  The visual cursor
+    // indicator (`>` + colour) is still drawn inside each ListItem by
+    // `build_list_item`; the ListState only controls the scroll offset.
     let list_items: Vec<ListItem<'static>> = nodes
         .iter()
         .enumerate()
         .map(|(i, node)| build_list_item(node, i == cursor, t))
         .collect();
-    f.render_widget(List::new(list_items), chunks[3]);
+    let mut list_state = ListState::default().with_selected(Some(cursor));
+    f.render_stateful_widget(List::new(list_items), chunks[3], &mut list_state);
 
     // Help bar.
     render_help(

@@ -1,0 +1,100 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g 1  "g 0.1.0" 
+.SH NAME
+g \- Enhanced Git with stacked PRs, workspaces, and beautiful output
+.SH SYNOPSIS
+\fBg\fR [\fB\-C \fR] [\fB\-c \fR] [\fB\-\-dry\-run\fR] [\fB\-\-no\-interactive\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] <\fIsubcommands\fR>
+.SH DESCRIPTION
+An enhanced Git CLI that layers powerful workflows on top of git.
+.PP
+All standard git commands are forwarded transparently — just swap
+\*(Aqgit\*(Aq for this tool and everything continues to work as expected.
+.PP
+Enhanced commands add colour, icons, and smarter output.  New
+commands add stacked\-PR workflows, parallel worktree workspaces,
+and an interactive conventional\-commit builder.
+.SH OPTIONS
+.TP
+\fB\-C\fR \fI<PATH>\fR
+Run as if git was started in <path>
+.TP
+\fB\-c\fR \fI<KEY=VAL>\fR
+Override a configuration value (key=value)
+.TP
+\fB\-\-dry\-run\fR
+Preview what commands would run without making any changes
+.TP
+\fB\-\-no\-interactive\fR
+Disable all interactive TUI prompts; use defaults or require \-\-flag values. Useful for scripting and CI environments
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.SH SUBCOMMANDS
+.TP
+g\-workspace(1)
+Manage worktree\-based workspaces (parallel branch checkouts)
+.TP
+g\-stack(1)
+Manage stacked pull requests
+.TP
+g\-commit(1)
+Interactive guided commit with message templates
+.TP
+g\-add(1)
+Stage files interactively, or forward arguments to `git add`
+.TP
+g\-stage(1)
+Interactive file\-tree picker for staging and unstaging
+.TP
+g\-compare(1)
+Compare two branches visually
+.TP
+g\-log(1)
+Enhanced git log with beautiful formatting
+.TP
+g\-status(1)
+Enhanced git status with icons and colors
+.TP
+g\-diff(1)
+Enhanced git diff using your configured diff tool
+.TP
+g\-branch(1)
+Enhanced branch listing, `git branch` passthrough, or `branch squash`
+.TP
+g\-show(1)
+Enhanced git show
+.TP
+g\-config(1)
+Open interactive config editor
+.TP
+g\-stats(1)
+Display a rich usage\-statistics report
+.TP
+g\-developer(1)
+Developer / debugging utilities
+.TP
+g\-completions(1)
+Print a shell completion script and exit
+.TP
+g\-help(1)
+Print this message or the help of the given subcommand(s)
+.SH EXTRA
+Examples:
+
+  g log                       enhanced git log with graph
+  g status                    enhanced status with icons
+  g add                       interactive file picker to stage
+  g commit                    interactive conventional commit
+  g diff                      enhanced diff
+  g branch                    list branches with ahead/behind
+  g compare main              compare current branch to main
+  g stack new my\-feature      start a stacked PR workflow
+  g workspace create api      create a parallel workspace
+
+Pass \-\-help to any subcommand for detailed usage and examples.
+.SH VERSION
+v0.1.0

@@ -5,6 +5,9 @@ on:
     branches: ["main"]
     paths:
       - "docs/**"
+      - "src/cli.rs"       # CLI changes regenerate docs/src/content/docs/cli-reference.md
+      - "Cargo.toml"
+      - "build.rs"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -24,6 +27,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ── Rust build ──────────────────────────────────────────────────────────
+      # Running `cargo build` executes build.rs which regenerates:
+      #   • docs/src/content/docs/cli-reference.md  (Astro CLI reference page)
+      #   • man/*.1                                  (man pages)
+      #   • completions/*                            (shell completions)
+      # The Astro build below then picks up the freshly written cli-reference.md.
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Generate docs artifacts (man pages, completions, CLI reference)
+        run: cargo build
+
+      # ── Astro build ─────────────────────────────────────────────────────────
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

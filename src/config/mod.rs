@@ -153,7 +153,13 @@ pub struct CommitConfig {
     pub template: Option<String>,
     /// Maximum subject-line length before a warning is shown (default: 72).
     pub max_subject_length: usize,
-    /// Sign commits with GPG (`-S` flag to `git commit`).
+    /// Append a `Signed-off-by: Name <email>` trailer to every commit message
+    /// (`-s` / `--signoff` flag to `git commit`).  The name and email are read
+    /// from your git `user.name` / `user.email` config.
+    #[serde(default)]
+    pub sign_off: bool,
+    /// Sign commits with GPG (`-S` / `--gpg-sign` flag to `git commit`).
+    /// Requires a GPG key configured in git (`user.signingKey`).
     pub gpg_sign: bool,
     /// Show emoji next to commit type names in the interactive picker.
     pub emoji: bool,
@@ -179,6 +185,7 @@ impl Default for CommitConfig {
             require_body: false,
             template: None,
             max_subject_length: 72,
+            sign_off: false,
             gpg_sign: false,
             emoji: false,
         }
@@ -474,7 +481,10 @@ types = [
 require_scope = false   # Require a scope in commit messages
 require_body = false    # Require a body in commit messages
 max_subject_length = 72 # Maximum subject line length
-gpg_sign = false        # Sign commits with GPG
+# Append "Signed-off-by: Name <email>" to every commit (-s / --signoff)
+sign_off = false
+# Sign commits with a GPG key (-S / --gpg-sign); requires user.signingKey in git config
+gpg_sign = false
 
 # Custom commit template (optional)
 # template = """

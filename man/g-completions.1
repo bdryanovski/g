@@ -1,0 +1,36 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-completions 1  "g-completions " 
+.SH NAME
+g\-completions \- Print a shell completion script and exit
+.SH SYNOPSIS
+\fBg\-completions\fR [\fB\-h\fR|\fB\-\-help\fR] <\fISHELL\fR> 
+.SH DESCRIPTION
+Print a shell completion script and exit
+.PP
+Pipe the output to the right location for your shell:
+.PP
+Bash:  g completions bash  >> ~/.bash_completion Zsh:   g completions zsh   >  ~/.zsh/completions/_g Fish:  g completions fish  >  ~/.config/fish/completions/g.fish
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fISHELL\fR>
+Shell to generate completions for
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+bash
+.IP \(bu 2
+elvish
+.IP \(bu 2
+fish
+.IP \(bu 2
+powershell
+.IP \(bu 2
+zsh
+.RE

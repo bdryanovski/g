@@ -1,0 +1,18 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-developer-db 1  "g-developer-db " 
+.SH NAME
+g\-developer\-db \- Open an interactive SQLite shell connected to the internal g.db database
+.SH SYNOPSIS
+\fBg\-developer\-db\fR [\fB\-\-path\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Open an interactive SQLite shell connected to the internal g.db database
+.PP
+Launches `sqlite3` with the path to `~/.config/g/g.db` so you can run arbitrary SQL queries for debugging.  Pass `\-\-path` to print the database path without opening a shell.
+.SH OPTIONS
+.TP
+\fB\-\-path\fR
+Print the database path and exit (don\*(Aqt open the shell)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

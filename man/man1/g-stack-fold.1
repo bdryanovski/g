@@ -1,0 +1,19 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-stack-fold 1  "g-stack-fold " 
+.SH NAME
+g\-stack\-fold \- Merge the current branch into its parent (preserving history), drop the extra ref, restack above
+.SH SYNOPSIS
+\fBg\-stack\-fold\fR [\fB\-\-keep\fR] [\fB\-\-no\-interactive\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Merge the current branch into its parent (preserving history), drop the extra ref, restack above
+.SH OPTIONS
+.TP
+\fB\-\-keep\fR
+Keep the current branch name as the combined branch (remove the parent ref from the stack)
+.TP
+\fB\-\-no\-interactive\fR
+Abort if merge/rebase hits conflicts instead of pausing for resolution
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
