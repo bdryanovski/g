@@ -19,7 +19,7 @@ use std::io::IsTerminal;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui_cheese::paginator::{Paginator, PaginatorMode, PaginatorState, PaginatorStyles};
 
-use super::render::is_no_interactive;
+use super::render::{is_inline_prompts, is_no_interactive};
 
 /// Return `true` when interactive TUI prompts are allowed.
 ///
@@ -225,6 +225,9 @@ fn render_list(
 /// Returns `None` when the user presses `q` or `Esc` to cancel.
 /// Falls back to `None` immediately if stdin is not a TTY or `--no-interactive`.
 pub fn select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
+    if is_inline_prompts() {
+        return super::inline::inline_select(prompt, options);
+    }
     let n = options.len();
     if n == 0 || !is_interactive() {
         return None;
@@ -305,6 +308,9 @@ pub fn select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
 /// Returns an empty `Vec` when the user cancels (`Esc` / `q`).
 /// Falls back to an empty `Vec` if stdin is not a TTY or `--no-interactive`.
 pub fn multi_select(prompt: &str, options: &[SelectOption]) -> Vec<usize> {
+    if is_inline_prompts() {
+        return super::inline::inline_multi_select(prompt, options, &[]);
+    }
     let n = options.len();
     if n == 0 || !is_interactive() {
         return vec![];
@@ -409,6 +415,9 @@ pub fn input_validated<F>(prompt: &str, default: Option<&str>, validate: F) -> O
 where
     F: Fn(&str) -> Result<(), String>,
 {
+    if is_inline_prompts() {
+        return super::inline::inline_input_validated(prompt, default, validate);
+    }
     if !is_interactive() {
         return default.map(str::to_owned);
     }
@@ -521,6 +530,9 @@ where
 ///
 /// If stdin is not a TTY, returns `default` immediately.
 pub fn confirm(prompt: &str, default: bool) -> bool {
+    if is_inline_prompts() {
+        return super::inline::inline_confirm(prompt, default);
+    }
     if !is_interactive() {
         return default;
     }
@@ -607,6 +619,9 @@ pub fn confirm(prompt: &str, default: bool) -> bool {
 /// matching.  Returns `None` on cancel.
 /// Falls back to `None` if stdin is not a TTY.
 pub fn fuzzy_select(prompt: &str, options: &[&str]) -> Option<usize> {
+    if is_inline_prompts() {
+        return super::inline::inline_fuzzy_select(prompt, options);
+    }
     if options.is_empty() || !is_interactive() {
         return None;
     }

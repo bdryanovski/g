@@ -38,6 +38,27 @@ pub fn is_no_interactive() -> bool {
     NO_INTERACTIVE.load(Ordering::Relaxed)
 }
 
+/// When `true`, interactive prompts render inline (no alternate screen) instead
+/// of switching to the full-screen ratatui TUI.
+///
+/// Set at startup from `[ui] prompt_mode = "inline"` in config, or at the
+/// command level when `[ui] commit_mode = "inline"`.  Once set it is never
+/// cleared within a single invocation.
+static INLINE_PROMPTS: AtomicBool = AtomicBool::new(false);
+
+/// Switch all interactive prompts to inline (non-fullscreen) mode.
+///
+/// Called at startup by `main::run` when `prompt_mode = "inline"` is
+/// configured, or by individual commands that explicitly opt in to inline mode.
+pub fn set_inline_prompts() {
+    INLINE_PROMPTS.store(true, Ordering::Relaxed);
+}
+
+/// Return `true` when inline prompt mode is active.
+pub fn is_inline_prompts() -> bool {
+    INLINE_PROMPTS.load(Ordering::Relaxed)
+}
+
 use crossterm::style::{
     Attribute, Color as CtColor, ResetColor, SetAttribute, SetForegroundColor, Stylize,
 };

@@ -9,7 +9,7 @@ use anyhow::{bail, Context, Result};
 use crate::commands::git::{self as gitcmd, git_output};
 use crate::config;
 use crate::ui;
-use crate::ui::stage::{run as run_tui, StageEntry};
+use crate::ui::stage::{run as run_tui, run_inline, StageEntry};
 
 /// Entry point for `g stage`.
 ///
@@ -88,8 +88,13 @@ pub fn stage() -> Result<()> {
         return Ok(());
     }
 
-    // ── Launch TUI ────────────────────────────────────────────────────────────
-    let Some(result) = run_tui(entries, cfg.stage.confirm_revert) else {
+    // ── Launch picker (inline or full-screen based on prompt_mode) ───────────
+    let picker = if ui::is_inline_prompts() {
+        run_inline(entries, cfg.stage.confirm_revert)
+    } else {
+        run_tui(entries, cfg.stage.confirm_revert)
+    };
+    let Some(result) = picker else {
         ui::print_blank();
         ui::print_info("Cancelled — no changes made.");
         ui::print_blank();

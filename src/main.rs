@@ -146,10 +146,14 @@ fn run() -> Result<()> {
 
     // Initialise the UI theme from config.  Must happen before any output.
     // Falls back to Theme::default_dark() if config cannot be loaded.
-    let theme_mode = config::load()
-        .map(|c| c.ui.theme.clone())
-        .unwrap_or_else(|_| "dark".to_string());
-    ui::theme::init(ui::theme::Theme::from_config(&theme_mode));
+    let cfg_for_ui = config::load().unwrap_or_default();
+    ui::theme::init(ui::theme::Theme::from_config(&cfg_for_ui.ui.theme));
+
+    // Activate inline prompt mode when configured.  The flag is checked by
+    // every ui::select / ui::input / ui::confirm call and by g stage / g add.
+    if cfg_for_ui.ui.prompt_mode == "inline" {
+        ui::set_inline_prompts();
+    }
 
     // Open (or create) the SQLite database.  This also runs any pending
     // migrations and performs the one-time TOML import if needed.

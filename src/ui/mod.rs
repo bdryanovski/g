@@ -9,7 +9,8 @@
 //!   render.rs     ← ct_color, paint_*, Spinner, ProgressBar, terminal_width
 //!   print.rs      ← Mode 1: print_info, print_success, semantic styling helpers
 //!   widgets.rs    ← Mode 2: Fieldset, Table, CommitEntry, git color helpers
-//!   interactive.rs← Mode 3: full-screen TUI (Phase 3 — planned, not yet built)
+//!   interactive.rs← Mode 3: full-screen ratatui TUI (alternate screen)
+//!   inline.rs     ← Mode 4: inline prompts (no alternate screen, stays in scrollback)
 //! ```
 //!
 //! Command files import only `crate::ui` and call `ui::print_info(…)` etc.
@@ -27,6 +28,7 @@
 pub mod stage;
 pub mod theme;
 
+mod inline;
 mod interactive;
 mod print;
 mod render;
@@ -42,9 +44,9 @@ mod widgets;
 // the dead-code lint for those here rather than scattering allow-attributes.
 #[allow(unused_imports)]
 pub use render::{
-    is_no_interactive, paint, paint_bold, paint_bold_underline, paint_dim, paint_underline,
-    progress_bar, set_no_interactive, spinner, spinner_error, spinner_success, terminal_width,
-    ProgressBar, Spinner, INDENT,
+    is_inline_prompts, is_no_interactive, paint, paint_bold, paint_bold_underline, paint_dim,
+    paint_underline, progress_bar, set_inline_prompts, set_no_interactive, spinner, spinner_error,
+    spinner_success, terminal_width, ProgressBar, Spinner, INDENT,
 };
 
 #[allow(unused_imports)]
@@ -67,4 +69,10 @@ pub use widgets::{
 #[allow(unused_imports)]
 pub use interactive::{
     confirm, fuzzy_select, input, input_validated, multi_select, select, SelectOption,
+};
+
+#[allow(unused_imports)]
+pub use inline::{
+    inline_confirm, inline_fuzzy_select, inline_input, inline_input_validated, inline_multi_select,
+    inline_select,
 };

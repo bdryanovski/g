@@ -1,4 +1,11 @@
-//! Full-screen interactive staging TUI — `g stage`.
+//! Interactive staging picker — `g stage`.
+//!
+//! Two modes share the same [`StageEntry`] / [`StageResult`] types:
+//!
+//! - [`run`] — full-screen ratatui TUI (default, alternate screen).
+//! - [`run_inline`] — inline checkbox list (used when `prompt_mode = "inline"`).
+//!   Delegates to [`super::inline::inline_multi_select`] so the file list
+//!   renders into normal scrollback without taking over the screen.
 //!
 //! Presents every changed file (staged, unstaged, untracked) as a directory
 //! tree with checkboxes.  Checking an item means "stage this"; unchecking
@@ -756,4 +763,76 @@ fn render_help(f: &mut ratatui::Frame, items: &[(&str, &str)], area: Rect) {
         .styles(styles)
         .bindings(bindings)
         .render(area, f.buffer_mut());
+}
+
+// ─── Inline stage (non-fullscreen) ───────────────────────────────────────────
+
+/// Run the staging picker in inline mode (no alternate screen).
+///
+/// Builds an [`super::interactive::SelectOption`] list from `entries`, marks
+/// currently-staged files as pre-selected, and delegates to
+/// [`super::inline::inline_multi_select`].  The user toggles files with
+/// `Space`, navigates with `j`/`k`, and confirms with `Enter`.
+///
+/// Returns `None` on cancel (same contract as [`run`]).
+pub fn run_inline(entries: Vec<StageEntry>, _confirm_revert: bool) -> Option<StageResult> {
+    use super::inline::inline_multi_select;
+    use super::interactive::SelectOption;
+
+    if entries.is_empty() {
+        return None;
+    }
+
+    // Build display options — one per file, pre-check currently staged ones.
+    let pre_selected: Vec<bool> = entries.iter().map(|e| e.is_staged).collect();
+    let options: Vec<SelectOption> = entries
+        .iter()
+        .map(|e| {
+            // Status badge: use the dominant column for the label.
+            let status = if e.is_untracked {
+                "?".to_string()
+            } else if e.x != " " && e.x != "?" {
+                e.x.clone() // staged change visible in index
+            } else {
+                e.y.clone() // working-tree change
+            };
+
+            let desc = match status.as_str() {
+                "M" => "modified",
+                "A" => "added",
+                "D" => "deleted",
+                "R" => "renamed",
+                "C" => "copied",
+                "?" => "untracked",
+                "U" => "conflict",
+                _ => "",
+            };
+
+            SelectOption::with_description(format!("{}  {}", status, e.path), desc)
+        })
+        .collect();
+
+    let selected_indices = inline_multi_select("Stage Files", &options, &pre_selected);
+
+    // Build a boolean mask of what the user wants staged.
+    let want_staged: Vec<bool> = (0..entries.len())
+        .map(|i| selected_indices.contains(&i))
+        .collect();
+
+    let mut to_stage = Vec::new();
+    let mut to_unstage = Vec::new();
+
+    for (entry, &want) in entries.iter().zip(want_staged.iter()) {
+        if want && !entry.is_staged {
+            to_stage.push(entry.path.clone());
+        } else if !want && entry.is_staged {
+            to_unstage.push(entry.path.clone());
+        }
+    }
+
+    Some(StageResult {
+        to_stage,
+        to_unstage,
+        to_revert: vec![], // revert is not surfaced in the inline picker
+    })
 }

@@ -108,17 +108,31 @@ pub struct UiConfig {
     pub log_limit: usize,
     /// Show the ASCII branch graph in `g log` output.
     pub show_graph: bool,
-    /// Commit builder mode.  Currently both values use the full-screen ratatui
-    /// TUI; the distinction is reserved for a future "inline" streaming mode.
+    /// Prompt rendering mode for the commit builder only.
+    /// Superseded by [`prompt_mode`] when that is set.
     /// Accepted values: `"interactive"` (default) | `"inline"`.
     #[serde(default = "default_commit_mode")]
     pub commit_mode: String,
+    /// Global prompt rendering mode — controls **all** interactive prompts
+    /// (`g commit`, `g stage`, `g add`, `g workspace switch`, etc.).
+    ///
+    /// - `"interactive"` (default) — full-screen ratatui TUI, alternate screen.
+    /// - `"inline"` — prompts render into the normal terminal scroll buffer;
+    ///   no alternate screen is entered.  All output stays in history.
+    ///
+    /// When set to `"inline"` this also implies `commit_mode = "inline"`.
+    #[serde(default = "default_prompt_mode")]
+    pub prompt_mode: String,
     /// Color theme: `"dark"` (default) or `"light"`.
     #[serde(default = "default_theme")]
     pub theme: String,
 }
 
 fn default_commit_mode() -> String {
+    "interactive".to_string()
+}
+
+fn default_prompt_mode() -> String {
     "interactive".to_string()
 }
 
@@ -134,7 +148,8 @@ impl Default for UiConfig {
             date_format: "relative".into(),
             log_limit: 30,
             show_graph: true,
-            commit_mode: default_commit_mode(), // "interactive"
+            commit_mode: default_commit_mode(),
+            prompt_mode: default_prompt_mode(),
             theme: default_theme(),
         }
     }
@@ -453,7 +468,10 @@ icons = true                # Unicode icons and box-drawing characters
 date_format = "relative"    # "relative" | "short" | "iso" | "rfc"
 log_limit = 30              # Default number of commits in log
 show_graph = true           # Show branch graph in log
-commit_mode = "interactive"  # "interactive" | "inline" (both use full-screen TUI)
+commit_mode = "interactive"  # "interactive" | "inline" — controls g commit builder only
+# prompt_mode controls ALL interactive prompts (g commit, g stage, g add, g workspace switch, …)
+# "interactive" = full-screen TUI (default) | "inline" = stays in terminal scrollback
+prompt_mode = "interactive"
 theme = "dark"              # "dark" | "light"
 
 # ─── Stage ────────────────────────────────────────────────────────────────────

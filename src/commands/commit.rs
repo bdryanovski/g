@@ -80,10 +80,23 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
                     crate::bin_name()
                 );
             }
-            // "interactive" = full-screen ratatui TUI (default)
-            // "inline"      = same ratatui TUI but via sequential full-screen
-            //                 steps (same UX, different config label for future use)
-            build_commit_message_interactive(args, &cfg)?
+            // Route to the appropriate interactive builder.
+            //
+            // "interactive" (default) — full-screen ratatui TUI, alternate screen.
+            // "inline" / prompt_mode  — sequential prompts that stay in scrollback.
+            //
+            // When commit_mode = "inline" the global INLINE_PROMPTS flag is set
+            // so that every ui::select / ui::input / ui::confirm call within
+            // the builder (including select_commit_type) dispatches to the
+            // non-fullscreen inline variants automatically.
+            if cfg.ui.commit_mode == "inline" {
+                ui::set_inline_prompts();
+            }
+            if ui::is_inline_prompts() {
+                build_commit_message_inline(args, &cfg)?
+            } else {
+                build_commit_message_interactive(args, &cfg)?
+            }
         }
     };
 
@@ -309,6 +322,60 @@ fn colorize_stat_line(line: &str) -> String {
     }
 }
 
+/// Show the commit-type picker and return the chosen type string.
+///
+/// Appends an **Other…** option at the end of the configured type list so the
+/// user can enter any arbitrary type without editing `config.toml`.  When
+/// "Other…" is chosen, a follow-up text prompt is shown.
+///
+/// Uses `ui::select` and `ui::input`, which both respect the global
+/// `INLINE_PROMPTS` flag — so this function works identically in both the
+/// full-screen and inline commit builders.
+///
+/// # Errors
+///
+/// Returns `Err` when the user cancels.
+fn select_commit_type(args: &CommitArgs, cfg: &config::Config) -> Result<String> {
+    if let Some(t) = &args.r#type {
+        return Ok(t.clone());
+    }
+
+    // Build the option list from config types + a trailing "other" entry.
+    let mut options: Vec<ui::SelectOption> = cfg
+        .commit
+        .types
+        .iter()
+        .map(|t| {
+            let (_, description) = type_label_parts(t);
+            if description.is_empty() {
+                ui::SelectOption::new(t.clone())
+            } else {
+                ui::SelectOption::with_description(t.clone(), description)
+            }
+        })
+        .collect();
+    options.push(ui::SelectOption::with_description(
+        "other".to_string(),
+        "Custom type — enter manually",
+    ));
+
+    let idx = ui::select("Commit Builder — Type", &options)
+        .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
+
+    // Last item = "other" → prompt for a free-form type.
+    if idx == options.len() - 1 {
+        let custom = ui::input("Commit Builder — Custom type", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
+        let custom = custom.trim().to_string();
+        if custom.is_empty() {
+            anyhow::bail!("Commit cancelled — custom type cannot be empty.");
+        }
+        Ok(custom)
+    } else {
+        Ok(cfg.commit.types[idx].clone())
+    }
+}
+
 /// Build a Conventional Commit message using the full-screen ratatui TUI.
 ///
 /// Used when `[ui] commit_mode = "interactive"` (default).  Each step opens
@@ -318,28 +385,8 @@ fn colorize_stat_line(line: &str) -> String {
 ///
 /// Returns `Err` if the user cancels at any step.
 fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> Result<String> {
-    // Step 1: Type selection.
-    let commit_type = if let Some(t) = &args.r#type {
-        t.clone()
-    } else {
-        let options: Vec<ui::SelectOption> = cfg
-            .commit
-            .types
-            .iter()
-            .map(|t| {
-                let (_, description) = type_label_parts(t);
-                if description.is_empty() {
-                    ui::SelectOption::new(t.clone())
-                } else {
-                    ui::SelectOption::with_description(t.clone(), description)
-                }
-            })
-            .collect();
-
-        let idx = ui::select("Commit Builder — Type", &options)
-            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
-        cfg.commit.types[idx].clone()
-    };
+    // Step 1: Type selection (shared helper handles "Other…" too).
+    let commit_type = select_commit_type(args, cfg)?;
 
     // Step 2: Scope.
     let scope = if let Some(s) = &args.scope {
@@ -424,6 +471,114 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
     ui::print_blank();
 
     if !ui::confirm("Commit with this message?", true) {
+        bail!("Commit cancelled.");
+    }
+
+    Ok(message)
+}
+
+/// Build a Conventional Commit message using inline (non-fullscreen) prompts.
+///
+/// Used when `[ui] commit_mode = "inline"`.  Each step prints its prompt and
+/// the user's answer into the normal terminal scroll buffer — the commit
+/// history is visible after the command completes and no alternate screen is
+/// entered or restored.
+///
+/// The steps mirror [`build_commit_message_interactive`] exactly; only the
+/// prompt mechanism changes.
+///
+/// # Errors
+///
+/// Returns `Err` if the user cancels at any step.
+fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyhow::Result<String> {
+    ui::print_blank();
+    ui::print_fieldset("Commit Builder");
+
+    // ── Step 1: Type (shared helper handles "Other…") ────────────────────────
+    let commit_type = select_commit_type(args, cfg)?;
+
+    // ── Step 2: Scope ─────────────────────────────────────────────────────────
+    let scope = if let Some(s) = &args.scope {
+        if s.is_empty() {
+            None
+        } else {
+            Some(s.clone())
+        }
+    } else {
+        let prompt = if cfg.commit.require_scope {
+            "Commit Builder — Scope (required)"
+        } else {
+            "Commit Builder — Scope (optional, Enter to skip)"
+        };
+        let s = ui::input(prompt, None).ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    };
+
+    // ── Step 3: Subject ───────────────────────────────────────────────────────
+    let max_len = cfg.commit.max_subject_length;
+    let subject = ui::input_validated("Commit Builder — Subject", None, move |val| {
+        if val.trim().is_empty() {
+            Err("Subject cannot be empty".to_string())
+        } else if val.len() > max_len {
+            Err(format!("Subject is too long ({}/{})", val.len(), max_len))
+        } else {
+            Ok(())
+        }
+    })
+    .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
+
+    let first_line = match &scope {
+        Some(sc) => format!("{}({}): {}", commit_type, sc, subject.trim()),
+        None => format!("{}: {}", commit_type, subject.trim()),
+    };
+
+    // ── Step 4: Body ──────────────────────────────────────────────────────────
+    let body = if cfg.commit.require_body {
+        ui::input("Commit Builder — Body (explain WHY, not WHAT)", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
+    } else if ui::confirm("Commit Builder — Add a body?", false) {
+        ui::input("Commit Builder — Body", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
+    } else {
+        String::new()
+    };
+
+    // ── Step 5: Footer ────────────────────────────────────────────────────────
+    let footer = if ui::confirm(
+        "Commit Builder — Add footer? (BREAKING CHANGE, closes #N…)",
+        false,
+    ) {
+        ui::input("Commit Builder — Footer", None)
+            .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
+    } else {
+        String::new()
+    };
+
+    // ── Assemble message ──────────────────────────────────────────────────────
+    let mut message = first_line.clone();
+    if !body.is_empty() {
+        message.push_str("\n\n");
+        message.push_str(&body);
+    }
+    if !footer.is_empty() {
+        message.push_str("\n\n");
+        message.push_str(&footer);
+    }
+
+    // ── Preview + confirmation ────────────────────────────────────────────────
+    ui::print_blank();
+    ui::print_fieldset("Commit Builder — Preview");
+    ui::print_blank();
+    for line in message.lines() {
+        ui::print_indented(&ui::paint_text(line));
+    }
+    ui::print_blank();
+
+    if !ui::confirm("Commit Builder — Commit with this message?", true) {
         bail!("Commit cancelled.");
     }
 
