@@ -359,12 +359,12 @@ fn select_commit_type(args: &CommitArgs, cfg: &config::Config) -> Result<String>
         "Custom type — enter manually",
     ));
 
-    let idx = ui::select("Commit Builder — Type", &options)
+    let idx = ui::select("Type", &options)
         .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
 
     // Last item = "other" → prompt for a free-form type.
     if idx == options.len() - 1 {
-        let custom = ui::input("Commit Builder — Custom type", None)
+        let custom = ui::input("Custom type", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
         let custom = custom.trim().to_string();
         if custom.is_empty() {
@@ -397,9 +397,9 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
         }
     } else {
         let prompt = if cfg.commit.require_scope {
-            "Commit Builder — Scope (required)"
+            "Scope (required)"
         } else {
-            "Commit Builder — Scope (optional, Enter to skip)"
+            "Scope (optional, Enter to skip)"
         };
         let s = ui::input(prompt, None).ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
         if s.is_empty() {
@@ -411,7 +411,7 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
 
     // Step 3: Subject.
     let max_len = cfg.commit.max_subject_length;
-    let subject = ui::input_validated("Commit Builder — Subject", None, move |val| {
+    let subject = ui::input_validated("Subject", None, move |val| {
         if val.trim().is_empty() {
             Err("Subject cannot be empty".to_string())
         } else if val.len() > max_len {
@@ -430,10 +430,10 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
 
     // Step 4: Body.
     let body = if cfg.commit.require_body {
-        ui::input("Commit Builder — Body (explain WHY, not WHAT)", None)
+        ui::input("Body (explain WHY, not WHAT)", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
-    } else if ui::confirm("Commit Builder — Add a body?", false) {
-        ui::input("Commit Builder — Body", None)
+    } else if ui::confirm("Add a body?", false) {
+        ui::input("Body", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
         String::new()
@@ -441,10 +441,10 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
 
     // Step 5: Footer.
     let footer = if ui::confirm(
-        "Commit Builder — Add footer? (BREAKING CHANGE, closes #N…)",
+        "Add footer? (BREAKING CHANGE, closes #N…)",
         false,
     ) {
-        ui::input("Commit Builder — Footer", None)
+        ui::input("Footer", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
         String::new()
@@ -463,7 +463,7 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
 
     // Final preview + confirmation.
     ui::print_blank();
-    ui::print_fieldset("Commit Builder — Preview");
+    ui::print_fieldset("Preview");
     ui::print_blank();
     for line in message.lines() {
         ui::print_indented(&ui::paint_text(line));
@@ -492,7 +492,6 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
 /// Returns `Err` if the user cancels at any step.
 fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyhow::Result<String> {
     ui::print_blank();
-    ui::print_fieldset("Commit Builder");
 
     // ── Step 1: Type (shared helper handles "Other…") ────────────────────────
     let commit_type = select_commit_type(args, cfg)?;
@@ -506,9 +505,9 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
         }
     } else {
         let prompt = if cfg.commit.require_scope {
-            "Commit Builder — Scope (required)"
+            "Scope (required)"
         } else {
-            "Commit Builder — Scope (optional, Enter to skip)"
+            "Scope (optional, Enter to skip)"
         };
         let s = ui::input(prompt, None).ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?;
         if s.is_empty() {
@@ -520,7 +519,7 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
 
     // ── Step 3: Subject ───────────────────────────────────────────────────────
     let max_len = cfg.commit.max_subject_length;
-    let subject = ui::input_validated("Commit Builder — Subject", None, move |val| {
+    let subject = ui::input_validated("Subject", None, move |val| {
         if val.trim().is_empty() {
             Err("Subject cannot be empty".to_string())
         } else if val.len() > max_len {
@@ -538,10 +537,10 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
 
     // ── Step 4: Body ──────────────────────────────────────────────────────────
     let body = if cfg.commit.require_body {
-        ui::input("Commit Builder — Body (explain WHY, not WHAT)", None)
+        ui::input("Body (explain WHY, not WHAT)", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
-    } else if ui::confirm("Commit Builder — Add a body?", false) {
-        ui::input("Commit Builder — Body", None)
+    } else if ui::confirm("Add a body?", false) {
+        ui::input("Body", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
         String::new()
@@ -549,10 +548,10 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
 
     // ── Step 5: Footer ────────────────────────────────────────────────────────
     let footer = if ui::confirm(
-        "Commit Builder — Add footer? (BREAKING CHANGE, closes #N…)",
+        "Add footer? (BREAKING CHANGE, closes #N…)",
         false,
     ) {
-        ui::input("Commit Builder — Footer", None)
+        ui::input("Footer", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
         String::new()
@@ -571,14 +570,14 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
 
     // ── Preview + confirmation ────────────────────────────────────────────────
     ui::print_blank();
-    ui::print_fieldset("Commit Builder — Preview");
+    ui::print_fieldset("Preview");
     ui::print_blank();
     for line in message.lines() {
         ui::print_indented(&ui::paint_text(line));
     }
     ui::print_blank();
 
-    if !ui::confirm("Commit Builder — Commit with this message?", true) {
+    if !ui::confirm("Commit with this message?", true) {
         bail!("Commit cancelled.");
     }
 
