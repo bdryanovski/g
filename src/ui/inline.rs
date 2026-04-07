@@ -363,20 +363,83 @@ where
 
         terminal::enable_raw_mode().ok();
         let mut chars: Vec<char> = Vec::new();
+        let mut cursor: usize = 0;
 
         let line_result: Option<String> = loop {
             match event::read() {
                 Ok(Event::Key(k)) if k.kind == KeyEventKind::Press => match k.code {
                     KeyCode::Char(c) => {
-                        chars.push(c);
-                        print!("{c}");
+                        chars.insert(cursor, c);
+                        cursor += 1;
+                        // Print the new char plus any tail that got shifted right,
+                        // then move the terminal cursor back to the logical position.
+                        let tail: String = chars[cursor..].iter().collect();
+                        print!("{c}{tail}");
+                        if !tail.is_empty() {
+                            let _ = execute!(io::stdout(), cursor::MoveLeft(tail.len() as u16));
+                        }
                         io::stdout().flush().ok();
                     }
                     KeyCode::Backspace => {
-                        if !chars.is_empty() {
-                            chars.pop();
-                            // BS + space (erase) + BS (reposition)
-                            print!("\x08 \x08");
+                        if cursor > 0 {
+                            cursor -= 1;
+                            chars.remove(cursor);
+                            // Move terminal cursor left, reprint shifted tail,
+                            // clear the leftover character at the end, then
+                            // reposition the terminal cursor.
+                            let tail: String = chars[cursor..].iter().collect();
+                            let _ = execute!(io::stdout(), cursor::MoveLeft(1));
+                            print!("{tail}");
+                            let _ =
+                                execute!(io::stdout(), terminal::Clear(ClearType::UntilNewLine));
+                            if !tail.is_empty() {
+                                let _ = execute!(io::stdout(), cursor::MoveLeft(tail.len() as u16));
+                            }
+                            io::stdout().flush().ok();
+                        }
+                    }
+                    KeyCode::Delete => {
+                        if cursor < chars.len() {
+                            chars.remove(cursor);
+                            // Reprint the shifted tail from the current cursor
+                            // position, clear the leftover char at the end, then
+                            // reposition.
+                            let tail: String = chars[cursor..].iter().collect();
+                            print!("{tail}");
+                            let _ =
+                                execute!(io::stdout(), terminal::Clear(ClearType::UntilNewLine));
+                            if !tail.is_empty() {
+                                let _ = execute!(io::stdout(), cursor::MoveLeft(tail.len() as u16));
+                            }
+                            io::stdout().flush().ok();
+                        }
+                    }
+                    KeyCode::Left => {
+                        if cursor > 0 {
+                            cursor -= 1;
+                            let _ = execute!(io::stdout(), cursor::MoveLeft(1));
+                            io::stdout().flush().ok();
+                        }
+                    }
+                    KeyCode::Right => {
+                        if cursor < chars.len() {
+                            cursor += 1;
+                            let _ = execute!(io::stdout(), cursor::MoveRight(1));
+                            io::stdout().flush().ok();
+                        }
+                    }
+                    KeyCode::Home => {
+                        if cursor > 0 {
+                            let _ = execute!(io::stdout(), cursor::MoveLeft(cursor as u16));
+                            cursor = 0;
+                            io::stdout().flush().ok();
+                        }
+                    }
+                    KeyCode::End => {
+                        if cursor < chars.len() {
+                            let forward = chars.len() - cursor;
+                            let _ = execute!(io::stdout(), cursor::MoveRight(forward as u16));
+                            cursor = chars.len();
                             io::stdout().flush().ok();
                         }
                     }
