@@ -672,10 +672,16 @@ pub fn interactive_add() -> Result<()> {
         return Ok(());
     }
 
+    // Resolve the repository root so all paths are consistently repo-root-
+    // relative.  `git status --porcelain` always emits repo-root-relative
+    // paths, but `git add` / `git restore` interpret paths relative to CWD.
+    // Using `-C <root>` ensures the two agree.
+    let root = repo_root()?;
+
     // Fetch raw porcelain output without trimming (the leading space on the first
     // line carries the index status and must be preserved).
     let raw_out = Command::new(git_exe())
-        .args(["status", "--porcelain"])
+        .args(["-C", &root, "status", "--porcelain"])
         .output()
         .context("Failed to run `git status --porcelain`")?;
 
@@ -759,7 +765,7 @@ pub fn interactive_add() -> Result<()> {
                 if count == 1 { "" } else { "s" }
             ));
 
-            let mut git_args = vec!["restore", "--staged", "--"];
+            let mut git_args = vec!["-C", &root, "restore", "--staged", "--"];
             git_args.extend(paths.iter().copied());
 
             match git_output(&git_args) {
@@ -809,7 +815,7 @@ pub fn interactive_add() -> Result<()> {
                 if count == 1 { "" } else { "s" }
             ));
 
-            let mut git_args = vec!["add", "--"];
+            let mut git_args = vec!["-C", &root, "add", "--"];
             git_args.extend(paths.iter().copied());
 
             match git_output(&git_args) {

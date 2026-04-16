@@ -37,6 +37,62 @@ struct WorktreeInfo {
     bare: bool,
 }
 
+/// The result of resolving a workspace identifier.  The identifier may match a
+/// DB row (by name or branch) or only a live git worktree (by branch).
+enum ResolvedWorkspace<'a> {
+    /// Matched a row in the `workspaces` table.
+    DbRow(&'a WorkspaceRow),
+    /// No DB row, but a live git worktree matched by branch name.
+    GitOnly { path: PathBuf, branch: String },
+}
+
+/// Try to find a workspace by `query` (name first, then branch) in the DB
+/// rows.  If nothing matches, fall back to the live git worktree list.
+///
+/// The `name` lookup also supports case-insensitive substring matching (same
+/// as the existing `switch` behaviour).
+fn resolve_workspace<'a>(
+    workspaces: &'a [WorkspaceRow],
+    query: &str,
+) -> Result<ResolvedWorkspace<'a>> {
+    // 1. Exact name match.
+    if let Some(ws) = workspaces.iter().find(|w| w.name == query) {
+        return Ok(ResolvedWorkspace::DbRow(ws));
+    }
+
+    // 2. Exact branch match.
+    if let Some(ws) = workspaces.iter().find(|w| w.branch == query) {
+        return Ok(ResolvedWorkspace::DbRow(ws));
+    }
+
+    // 3. Case-insensitive substring on name (keeps existing switch behavior).
+    let lower = query.to_lowercase();
+    if let Some(ws) = workspaces
+        .iter()
+        .find(|w| w.name.to_lowercase().contains(&lower))
+    {
+        return Ok(ResolvedWorkspace::DbRow(ws));
+    }
+
+    // 4. Fall back to live git worktrees — match by branch.
+    let worktrees = list_worktrees()?;
+    if let Some(wt) = worktrees
+        .iter()
+        .find(|wt| wt.branch.as_deref() == Some(query))
+    {
+        return Ok(ResolvedWorkspace::GitOnly {
+            path: wt.path.clone(),
+            branch: query.to_string(),
+        });
+    }
+
+    bail!(
+        "Workspace '{}' not found. Run `{} workspace list` to see all workspaces.",
+        query,
+        crate::bin_name()
+    );
+}
+
 // ─── Internal: repo resolution ────────────────────────────────────────────────
 
 /// Resolve the SQLite `repo_id` for the current working directory.
@@ -958,23 +1014,38 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
     let worktrees = list_worktrees()?;
     let cwd = std::env::current_dir()?;
 
-    let workspace: &WorkspaceRow = match name {
-        Some(n) => workspaces
-            .iter()
-            .find(|w| w.name == n || w.name.to_lowercase().contains(&n.to_lowercase()))
-            .with_context(|| {
-                format!(
-                    "Workspace '{}' not found. Run `{} workspace list` to see all workspaces.",
-                    n,
-                    crate::bin_name()
-                )
-            })?,
+    // Resolve target — either a DB row or a git-only worktree.
+    let resolved: ResolvedWorkspace<'_> = match name {
+        Some(n) => resolve_workspace(&workspaces, n)?,
 
         None => {
-            let candidates: Vec<&WorkspaceRow> = worktrees
+            // Build a candidate list from *all* live worktrees, not just those
+            // with DB records.
+            struct PickerEntry {
+                display_name: String,
+                branch: String,
+                path: PathBuf,
+            }
+
+            let candidates: Vec<PickerEntry> = worktrees
                 .iter()
                 .filter(|wt| !wt.bare)
-                .filter_map(|wt| workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path))
+                .map(|wt| {
+                    let meta = workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
+                    let branch = wt.branch.as_deref().unwrap_or("(detached)").to_string();
+                    match meta {
+                        Some(ws) => PickerEntry {
+                            display_name: ws.name.clone(),
+                            branch: ws.branch.clone(),
+                            path: wt.path.clone(),
+                        },
+                        None => PickerEntry {
+                            display_name: branch.clone(),
+                            branch,
+                            path: wt.path.clone(),
+                        },
+                    }
+                })
                 .collect();
 
             if candidates.is_empty() {
@@ -986,17 +1057,17 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
                 return Ok(());
             }
 
-            let name_width = candidates.iter().map(|ws| ws.name.len()).max().unwrap_or(0);
-            let branch_width = candidates
+            let name_width = candidates
                 .iter()
-                .map(|ws| ws.branch.len())
+                .map(|c| c.display_name.len())
                 .max()
                 .unwrap_or(0);
+            let branch_width = candidates.iter().map(|c| c.branch.len()).max().unwrap_or(0);
 
             let items: Vec<String> = candidates
                 .iter()
-                .map(|ws| {
-                    let marker = if cwd.starts_with(Path::new(&ws.path)) {
+                .map(|c| {
+                    let marker = if cwd.starts_with(&c.path) {
                         "\u{25c9}"
                     } else {
                         "\u{25ef}"
@@ -1004,9 +1075,9 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
                     format!(
                         "{} {:<name_w$}  {:<branch_w$}  {}",
                         marker,
-                        ws.name,
-                        ws.branch,
-                        ws.path,
+                        c.display_name,
+                        c.branch,
+                        c.path.display(),
                         name_w = name_width,
                         branch_w = branch_width,
                     )
@@ -1023,12 +1094,45 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
                     ui::print_blank();
                     return Ok(());
                 }
-                Some(idx) => candidates[idx],
+                Some(idx) => {
+                    let picked = &candidates[idx];
+                    // Try to return the DB row if available, otherwise GitOnly.
+                    if let Some(ws) = workspaces
+                        .iter()
+                        .find(|ws| Path::new(&ws.path) == picked.path)
+                    {
+                        ResolvedWorkspace::DbRow(ws)
+                    } else {
+                        ResolvedWorkspace::GitOnly {
+                            path: picked.path.clone(),
+                            branch: picked.branch.clone(),
+                        }
+                    }
+                }
             }
         }
     };
 
-    let wt_path = Path::new(&workspace.path);
+    // Extract path and display info from the resolved workspace.
+    let (wt_path, display_name, branch, ws_id, repo_id, description) = match &resolved {
+        ResolvedWorkspace::DbRow(ws) => (
+            PathBuf::from(&ws.path),
+            ws.name.clone(),
+            ws.branch.clone(),
+            Some(ws.id),
+            Some(ws.repo_id),
+            ws.description.clone(),
+        ),
+        ResolvedWorkspace::GitOnly { path, branch } => (
+            path.clone(),
+            branch.clone(),
+            branch.clone(),
+            None,
+            None,
+            None,
+        ),
+    };
+
     if !wt_path.exists() {
         bail!(
             "Workspace directory '{}' no longer exists. It may have been removed outside {}.\n\
@@ -1036,21 +1140,23 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
             wt_path.display(),
             crate::bin_name(),
             crate::bin_name(),
-            workspace.name
+            display_name
         );
     }
 
-    stats::record_workspace_event(conn, Some(workspace.id), Some(workspace.repo_id), "switch").ok();
+    stats::record_workspace_event(conn, ws_id, repo_id, "switch").ok();
 
     ui::print_blank();
     ui::print_info(&format!(
         "Opening shell in workspace {} \u{2192} {}",
-        ui::success_bold(&workspace.name),
-        ui::link_primary_bold(&workspace.path)
+        ui::success_bold(&display_name),
+        ui::link_primary_bold(&wt_path.to_string_lossy())
     ));
-    let mut pairs: Vec<(&str, String)> = vec![("branch", ui::success_bold(&workspace.branch))];
-    if let Some(desc) = &workspace.description {
-        pairs.insert(0, ("desc", ui::paint_text(desc)));
+    let mut pairs: Vec<(&str, String)> = vec![("branch", ui::success_bold(&branch))];
+    if let Some(desc) = &description {
+        if !desc.is_empty() {
+            pairs.insert(0, ("desc", ui::paint_text(desc)));
+        }
     }
     pairs.push(("hint", ui::muted("Ctrl+D or `exit` to return")));
     ui::print_key_value_pairs(&pairs);
@@ -1059,7 +1165,7 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
 
     let status = Command::new(&shell)
-        .current_dir(wt_path)
+        .current_dir(&wt_path)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -1092,13 +1198,28 @@ pub fn switch(conn: &Connection, name: Option<&str>) -> Result<()> {
 pub fn delete(conn: &Connection, name: &str, force: bool) -> Result<()> {
     let (_, workspaces) = load_repo_workspaces(conn)?;
 
+    // Resolve the workspace: first by name, then by branch name.
     let ws = workspaces
         .iter()
         .find(|w| w.name == name)
-        .with_context(|| format!("Workspace '{}' not found.", name))?;
+        .or_else(|| workspaces.iter().find(|w| w.branch == name));
 
-    let ws_id = ws.id;
-    let wt_path = ws.path.clone();
+    // If no DB record exists, check whether git still tracks a worktree with
+    // a matching branch name (e.g. the DB row was removed but the worktree
+    // was never pruned, causing `list` to show it as `(main)`).
+    let (ws_id_opt, wt_path) = match ws {
+        Some(ws) => (Some(ws.id), ws.path.clone()),
+        None => {
+            let worktrees = list_worktrees()?;
+            let wt = worktrees
+                .iter()
+                .find(|wt| wt.branch.as_deref() == Some(name));
+            match wt {
+                Some(wt) => (None, wt.path.to_string_lossy().to_string()),
+                None => bail!("Workspace '{}' not found.", name),
+            }
+        }
+    };
 
     let mut args = vec!["worktree", "remove"];
     if force {
@@ -1127,8 +1248,18 @@ pub fn delete(conn: &Connection, name: &str, force: bool) -> Result<()> {
                 );
             }
             if !Path::new(&wt_path).exists() {
+                // Directory is already gone — clean up git metadata and
+                // continue so the DB record (if any) is also removed.
                 ui::print_warning("Worktree directory already removed; cleaning up metadata.");
                 gitcmd::git_output(&["worktree", "prune"]).ok();
+            } else if msg.to_lowercase().contains("permission denied")
+                || msg.contains("EPERM")
+                || msg.contains("EACCES")
+            {
+                bail!(
+                    "Cannot remove worktree at '{}': permission denied.\nCheck directory ownership and permissions.",
+                    wt_path
+                );
             } else {
                 return Err(e).context("Failed to remove worktree");
             }
@@ -1136,16 +1267,20 @@ pub fn delete(conn: &Connection, name: &str, force: bool) -> Result<()> {
     }
 
     if !gitcmd::is_dry_run() {
-        stats::record_workspace_event(conn, Some(ws_id), None, "delete").ok();
-        ws_store::delete(conn, ws_id)?;
+        if let Some(ws_id) = ws_id_opt {
+            stats::record_workspace_event(conn, Some(ws_id), None, "delete").ok();
+            ws_store::delete(conn, ws_id)?;
+        }
         ui::print_blank();
         ui::print_success(&format!("Deleted workspace '{}'", ui::danger(name)));
         ui::print_blank();
     } else {
-        gitcmd::dry_run_action(
-            "Remove workspace metadata",
-            &format!("Delete workspace '{}' entry from g.db", name),
-        );
+        if ws_id_opt.is_some() {
+            gitcmd::dry_run_action(
+                "Remove workspace metadata",
+                &format!("Delete workspace '{}' entry from g.db", name),
+            );
+        }
     }
 
     Ok(())
@@ -1251,6 +1386,7 @@ pub fn rename(conn: &Connection, old: &str, new: &str) -> Result<()> {
     let ws = workspaces
         .iter()
         .find(|w| w.name == old)
+        .or_else(|| workspaces.iter().find(|w| w.branch == old))
         .with_context(|| format!("Workspace '{}' not found.", old))?;
 
     let ws_id = ws.id;

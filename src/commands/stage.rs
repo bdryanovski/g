@@ -22,12 +22,19 @@ pub fn stage() -> Result<()> {
 
     let cfg = config::load().unwrap_or_default();
 
+    // Resolve the repository root so all paths are consistently repo-root-
+    // relative.  `git status --porcelain` always emits repo-root-relative
+    // paths, but `git add` / `git restore` interpret paths relative to CWD.
+    // Using `-C <root>` ensures the two agree regardless of where the user
+    // invoked the command.
+    let root = gitcmd::repo_root()?;
+
     // ── Parse git status ─────────────────────────────────────────────────────
     //
     // Do NOT use git_output_lossy — it trims the whole output, stripping the
     // leading space from the first line's index-status column.
     let raw_out = std::process::Command::new(gitcmd::git_exe())
-        .args(["status", "--porcelain"])
+        .args(["-C", &root, "status", "--porcelain"])
         .output()
         .context("Failed to run `git status --porcelain`")?;
 
@@ -109,7 +116,12 @@ pub fn stage() -> Result<()> {
             count,
             if count == 1 { "" } else { "s" }
         ));
-        let mut args = vec!["restore".to_string(), "--".to_string()];
+        let mut args = vec![
+            "-C".to_string(),
+            root.clone(),
+            "restore".to_string(),
+            "--".to_string(),
+        ];
         args.extend(result.to_revert.iter().cloned());
         match git_output(&args.iter().map(|s| s.as_str()).collect::<Vec<_>>()) {
             Ok(_) => ui::spinner_success(
@@ -133,6 +145,8 @@ pub fn stage() -> Result<()> {
             if count == 1 { "" } else { "s" }
         ));
         let mut args = vec![
+            "-C".to_string(),
+            root.clone(),
             "restore".to_string(),
             "--staged".to_string(),
             "--".to_string(),
@@ -159,7 +173,12 @@ pub fn stage() -> Result<()> {
             count,
             if count == 1 { "" } else { "s" }
         ));
-        let mut args = vec!["add".to_string(), "--".to_string()];
+        let mut args = vec![
+            "-C".to_string(),
+            root.clone(),
+            "add".to_string(),
+            "--".to_string(),
+        ];
         args.extend(result.to_stage.iter().cloned());
         match git_output(&args.iter().map(|s| s.as_str()).collect::<Vec<_>>()) {
             Ok(_) => {
