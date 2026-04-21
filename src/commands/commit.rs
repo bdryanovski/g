@@ -432,7 +432,7 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
     let body = if cfg.commit.require_body {
         ui::input("Body (explain WHY, not WHAT)", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
-    } else if ui::confirm("Add a body?", false) {
+    } else if cfg.commit.prompt_body && ui::confirm("Add a body?", false) {
         ui::input("Body", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
@@ -440,10 +440,9 @@ fn build_commit_message_interactive(args: &CommitArgs, cfg: &config::Config) -> 
     };
 
     // Step 5: Footer.
-    let footer = if ui::confirm(
-        "Add footer? (BREAKING CHANGE, closes #N…)",
-        false,
-    ) {
+    let footer = if cfg.commit.prompt_footer
+        && ui::confirm("Add footer? (BREAKING CHANGE, closes #N…)", false)
+    {
         ui::input("Footer", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
@@ -539,7 +538,7 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
     let body = if cfg.commit.require_body {
         ui::input("Body (explain WHY, not WHAT)", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
-    } else if ui::confirm("Add a body?", false) {
+    } else if cfg.commit.prompt_body && ui::confirm("Add a body?", false) {
         ui::input("Body", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {
@@ -547,10 +546,9 @@ fn build_commit_message_inline(args: &CommitArgs, cfg: &config::Config) -> anyho
     };
 
     // ── Step 5: Footer ────────────────────────────────────────────────────────
-    let footer = if ui::confirm(
-        "Add footer? (BREAKING CHANGE, closes #N…)",
-        false,
-    ) {
+    let footer = if cfg.commit.prompt_footer
+        && ui::confirm("Add footer? (BREAKING CHANGE, closes #N…)", false)
+    {
         ui::input("Footer", None)
             .ok_or_else(|| anyhow::anyhow!("Commit cancelled."))?
     } else {

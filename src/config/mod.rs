@@ -164,6 +164,14 @@ pub struct CommitConfig {
     pub require_scope: bool,
     /// When `true`, the body prompt is mandatory.
     pub require_body: bool,
+    /// When `true`, prompt the user to add a body during interactive commit.
+    /// When `false`, the body prompt is skipped entirely (unless `require_body` is true).
+    #[serde(default)]
+    pub prompt_body: bool,
+    /// When `true`, prompt the user to add a footer during interactive commit.
+    /// When `false`, the footer prompt is skipped entirely.
+    #[serde(default)]
+    pub prompt_footer: bool,
     /// Optional custom commit-message template.
     pub template: Option<String>,
     /// Maximum subject-line length before a warning is shown (default: 72).
@@ -198,6 +206,8 @@ impl Default for CommitConfig {
             ],
             require_scope: false,
             require_body: false,
+            prompt_body: false,
+            prompt_footer: false,
             template: None,
             max_subject_length: 72,
             sign_off: false,
@@ -498,6 +508,8 @@ types = [
 ]
 require_scope = false   # Require a scope in commit messages
 require_body = false    # Require a body in commit messages
+prompt_body = false     # Prompt to add a body (skipped when false)
+prompt_footer = false   # Prompt to add a footer (skipped when false)
 max_subject_length = 72 # Maximum subject line length
 # Append "Signed-off-by: Name <email>" to every commit (-s / --signoff)
 sign_off = false
