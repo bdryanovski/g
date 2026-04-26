@@ -157,6 +157,7 @@ impl Default for UiConfig {
 
 /// Settings for the interactive `g commit` flow.
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(default)]
 pub struct CommitConfig {
     /// Conventional Commit types shown in the interactive type picker.
     pub types: Vec<String>,
