@@ -9,9 +9,30 @@
 //!   render.rs     ← ct_color, paint_*, Spinner, ProgressBar, terminal_width
 //!   print.rs      ← Mode 1: print_info, print_success, semantic styling helpers
 //!   widgets.rs    ← Mode 2: Fieldset, Table, CommitEntry, git color helpers
-//!   interactive.rs← Mode 3: full-screen ratatui TUI (alternate screen)
-//!   inline.rs     ← Mode 4: inline prompts (no alternate screen, stays in scrollback)
+//!   interactive/  ← Mode 3: full-screen ratatui TUI kit (alternate screen)
+//!     mod.rs        · the prompts: select, multi_select, input, confirm, fuzzy
+//!     runtime.rs    · reusable enter/draw/key/restore event loop + TTY guards
+//!     layout.rs     · shared vertical zone splits
+//!     widgets.rs    · themed header, help, list, input line, paginator, scroll_list
+//!   inline/       ← Mode 4: inline prompt kit (stays in scrollback)
+//!     mod.rs        · the inline_* prompts
+//!     runtime.rs    · raw-mode key loop + static header + TTY guard
+//!     widgets.rs    · option/checkbox rows + in-place redraw
 //! ```
+//!
+//! ## Building a new screen
+//!
+//! A full-screen prompt is just *state + a draw call + a key match*:
+//!
+//! ```ignore
+//! interactive::runtime::run(
+//!     0usize,                                   // state
+//!     |f, &cursor| widgets::scroll_list(/* … */),   // draw each frame
+//!     |cursor, key| match key { /* … */ Flow::Done(result) },
+//! )
+//! ```
+//!
+//! An inline prompt prints its header + body, then hands keys to `run_raw`.
 //!
 //! Command files import only `crate::ui` and call `ui::print_info(…)` etc.
 //! They never reference the sub-modules directly, so the split is an
