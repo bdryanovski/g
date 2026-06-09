@@ -1,0 +1,29 @@
+# g — built-in theme: dark
+# Default ANSI palette tuned for dark terminals.
+# Edit any value and run `g status` to see it live.
+# Colors accept: ANSI names | #RRGGBB / #RGB hex | 0-255 (256-color index).
+name = "dark"
+
+# Borders and spacing are part of the theme — edit them here.
+border_style = "sharp"   # sharp | rounded | heavy | double | ascii
+density      = "normal"  # normal | compact | relaxed
+
+[palette]
+primary  = "cyan"      # info icon, spinner, active branch
+success  = "green"     # checkmarks, added lines, current branch
+warning  = "yellow"    # warnings, commit hashes, staged changes
+danger   = "red"       # errors, deleted lines, remote refs
+muted    = "darkgray"  # dates, dividers, graph lines, dim text
+text     = "white"     # general body text
+accent   = "magenta"   # section titles, tags, special refs
+divider  = "darkgray"  # slash fill in section headers
+
+# Conventional-commit prefix colors
+cc_feat     = "green"
+cc_fix      = "red"
+cc_docs     = "blue"
+cc_refactor = "magenta"
+cc_perf     = "yellow"
+cc_test     = "cyan"
+cc_chore    = "darkgray"
+cc_revert   = "red"

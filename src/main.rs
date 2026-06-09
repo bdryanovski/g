@@ -42,6 +42,7 @@ mod storage;
 mod ui;
 
 use std::error::Error;
+use std::io::IsTerminal;
 use std::iter;
 use std::sync::OnceLock;
 
@@ -147,7 +148,19 @@ fn run() -> Result<()> {
     // Initialise the UI theme from config.  Must happen before any output.
     // Falls back to Theme::default_dark() if config cannot be loaded.
     let cfg_for_ui = config::load().unwrap_or_default();
-    ui::theme::init(ui::theme::Theme::from_config(&cfg_for_ui.ui.theme));
+    let mut active_theme = ui::theme::Theme::from_config(
+        &cfg_for_ui.ui.theme,
+        cfg_for_ui.ui.border_style.as_deref(),
+        cfg_for_ui.ui.density.as_deref(),
+    );
+    // When `icons = false`, or the resolved theme ended up with the ASCII border
+    // style, fall back to the plain-ASCII icon set so nothing relies on Unicode.
+    if !cfg_for_ui.ui.icons
+        || active_theme.borders.style == ui::theme::BorderStyle::Ascii
+    {
+        active_theme.icons = ui::theme::Icons::ascii();
+    }
+    ui::theme::init(active_theme);
 
     // Activate inline prompt mode when configured.  The flag is checked by
     // every ui::select / ui::input / ui::confirm call and by g stage / g add.
@@ -503,6 +516,10 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
         return Ok(());
     }
 
+    if args.themes {
+        return handle_themes();
+    }
+
     if let Some(key) = &args.key {
         let cfg = config::load()?;
         // Serialize the whole config to TOML and filter lines that match the key.
@@ -617,6 +634,125 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
 
     ui::print_blank();
     ui::print_tip(&format!("{} config --edit  to open in $EDITOR", bin_name()));
+    Ok(())
+}
+
+/// A theme available for selection: its name and whether it is a shipped
+/// built-in (vs. a user-authored file under `~/.config/g/themes`).
+struct ThemeChoice {
+    name: String,
+    builtin: bool,
+}
+
+/// Gather every selectable theme: the shipped built-ins first (in their
+/// canonical order), then any custom `*.toml` files in the user themes
+/// directory that do not shadow a built-in, sorted alphabetically.
+fn gather_themes() -> Vec<ThemeChoice> {
+    let builtins = ui::theme::builtin_names();
+    let mut out: Vec<ThemeChoice> = builtins
+        .iter()
+        .map(|n| ThemeChoice {
+            name: (*n).to_string(),
+            builtin: true,
+        })
+        .collect();
+
+    if let Some(dir) = ui::theme::themes_dir() {
+        let mut customs: Vec<String> = std::fs::read_dir(&dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|e| {
+                let p = e.path();
+                if p.extension().and_then(|x| x.to_str()) == Some("toml") {
+                    p.file_stem().and_then(|s| s.to_str()).map(String::from)
+                } else {
+                    None
+                }
+            })
+            .filter(|n| !builtins.contains(&n.as_str()))
+            .collect();
+        customs.sort();
+        out.extend(customs.into_iter().map(|name| ThemeChoice {
+            name,
+            builtin: false,
+        }));
+    }
+    out
+}
+
+/// Handle `g config --themes`.
+///
+/// In an interactive terminal this presents a picker of every recognised theme;
+/// choosing one persists it to `[ui] theme` (preserving config comments) so the
+/// choice is remembered.  In non-interactive contexts (piped output or
+/// `--no-interactive`) it falls back to printing the list.
+fn handle_themes() -> Result<()> {
+    let cfg = config::load().unwrap_or_default();
+    let themes = gather_themes();
+    if themes.is_empty() {
+        ui::print_warning("No themes found.");
+        return Ok(());
+    }
+
+    let interactive = !ui::is_no_interactive() && std::io::stdin().is_terminal();
+
+    if interactive {
+        // Start the cursor on the currently-active theme.
+        let current_idx = themes.iter().position(|t| t.name == cfg.ui.theme);
+        let options: Vec<ui::SelectOption> = themes
+            .iter()
+            .map(|t| {
+                let mut desc = if t.builtin { "built-in" } else { "custom" }.to_string();
+                if t.name == cfg.ui.theme {
+                    desc.push_str(" · current");
+                }
+                ui::SelectOption::with_description(&t.name, desc)
+            })
+            .collect();
+
+        let prompt = match current_idx {
+            Some(_) => format!("Select a theme (current: {})", cfg.ui.theme),
+            None => "Select a theme".to_string(),
+        };
+
+        if let Some(idx) = ui::select(&prompt, &options) {
+            let chosen = &themes[idx].name;
+            if *chosen == cfg.ui.theme {
+                ui::print_blank();
+                ui::print_info(&format!("Theme unchanged ({chosen})."));
+            } else {
+                config::set_theme(chosen)?;
+                ui::print_blank();
+                ui::print_success(&format!("Theme set to '{chosen}'."));
+            }
+            ui::print_blank();
+            ui::print_tip("the new theme applies to your next command");
+            return Ok(());
+        }
+        // Cancelled (Esc/q) — leave config untouched and say nothing noisy.
+        return Ok(());
+    }
+
+    // Non-interactive: print the list with the active theme marked.
+    ui::print_blank();
+    ui::print_fieldset("Themes");
+    ui::print_blank();
+    for t in &themes {
+        let marker = if t.name == cfg.ui.theme { ">" } else { " " };
+        let kind = if t.builtin { "built-in" } else { "custom" };
+        ui::print_line(&format!(
+            "  {} {}  {}",
+            ui::primary_bold(marker),
+            t.name,
+            ui::muted(&format!("({kind})"))
+        ));
+    }
+    ui::print_blank();
+    ui::print_tip(&format!(
+        "{} config --themes  in a terminal to pick interactively",
+        bin_name()
+    ));
     Ok(())
 }
 

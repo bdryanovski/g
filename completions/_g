@@ -699,6 +699,7 @@ _arguments "${_arguments_options[@]}" : \
 '*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
 '--edit[Open config file in \$EDITOR]' \
 '--path[Print the path to the config file]' \
+'--themes[List available themes (built-in + custom) and exit]' \
 '--dry-run[Preview what commands would run without making any changes]' \
 '--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
 '-h[Print help]' \

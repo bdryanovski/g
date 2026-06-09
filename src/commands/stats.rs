@@ -26,7 +26,7 @@ use crate::cli::StatsArgs;
 use crate::commands::git as git_cmd;
 use crate::storage::{repos, stats as db};
 use crate::ui;
-use crate::ui::{terminal_width, INDENT};
+use crate::ui::{indent, terminal_width};
 
 // ─── Sparkline character set ──────────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ fn section_heatmap() {
     let start = raw_start - Duration::days(offset);
 
     // Clamp the number of weeks to what the terminal can fit.
-    // Layout: INDENT (2) + "Mo " (3) + num_weeks * 2 chars.
+    // Layout: indent() (2) + "Mo " (3) + num_weeks * 2 chars.
     let max_weeks = ((terminal_width().saturating_sub(5)) / 2).min(52).max(8);
     let num_weeks = max_weeks;
 
@@ -193,7 +193,7 @@ fn section_heatmap() {
         }
     }
     let header_str: String = header_chars.iter().collect();
-    println!("{}{}", INDENT, ui::muted(&header_str));
+    println!("{}{}", indent(), ui::muted(&header_str));
 
     // ── Day rows ──────────────────────────────────────────────────────────────
 
@@ -201,7 +201,7 @@ fn section_heatmap() {
 
     for dow in 0..7usize {
         let label = day_labels[dow];
-        let mut row = format!("{}{} ", INDENT, ui::muted(label));
+        let mut row = format!("{}{} ", indent(), ui::muted(label));
 
         for w in 0..num_weeks {
             let date = start + Duration::days((w * 7 + dow) as i64);
@@ -221,7 +221,7 @@ fn section_heatmap() {
     ui::print_blank();
     println!(
         "{}{}  {}  {}  {}  {}  {}  {}  {}  {}",
-        INDENT,
+        indent(),
         ui::muted("Legend:"),
         heatmap_cell(0).trim_end(),
         ui::muted("0"),
@@ -327,7 +327,7 @@ fn section_lines_chart() {
 
     println!(
         "{}{}  {}   peak {}  total {}",
-        INDENT,
+        indent(),
         ui::success_bold("+ Added  "),
         format!("\x1b[32m{added_spark}\x1b[0m"),
         ui::success(&fmt_n(max_added as i64)),
@@ -335,7 +335,7 @@ fn section_lines_chart() {
     );
     println!(
         "{}{}  {}   peak {}  total {}",
-        INDENT,
+        indent(),
         ui::danger("- Removed"),
         format!("\x1b[31m{removed_spark}\x1b[0m"),
         ui::danger(&fmt_n(max_removed as i64)),
@@ -343,7 +343,7 @@ fn section_lines_chart() {
     );
     println!(
         "{}{}",
-        INDENT,
+        indent(),
         ui::muted("  oldest ◄──────────────────────────────────────────────── newest"),
     );
 
@@ -464,7 +464,7 @@ fn render_commit_type_chart(items: &[(String, i64)], bar_width: usize) {
         let label_pad = " ".repeat(max_label - console::measure_text_width(label));
         println!(
             "{}{}{}  {}{}  {}",
-            INDENT,
+            indent(),
             ui::paint_text(label),
             label_pad,
             filled_str,
@@ -531,7 +531,7 @@ fn section_active_hours(conn: &Connection) -> Result<()> {
     let hour_labels: Vec<String> = (0..24).map(|h| format!("{:02}", h)).collect();
 
     // Top axis
-    print!("{}", INDENT);
+    print!("{}", indent());
     for h in 0..24 {
         let count = by_hour[h];
         let height = ((count as f64 / max_count as f64) * BAR_HEIGHT as f64).round() as usize;
@@ -548,7 +548,7 @@ fn section_active_hours(conn: &Connection) -> Result<()> {
     println!();
 
     for row in (0..BAR_HEIGHT).rev() {
-        print!("{}", INDENT);
+        print!("{}", indent());
         for h in 0..24 {
             let count = by_hour[h];
             let height = ((count as f64 / max_count as f64) * BAR_HEIGHT as f64).round() as usize;
@@ -567,7 +567,7 @@ fn section_active_hours(conn: &Connection) -> Result<()> {
     }
 
     // Hour labels
-    print!("{}", INDENT);
+    print!("{}", indent());
     for label in &hour_labels {
         print!(" {}", ui::muted(label));
     }
@@ -620,7 +620,7 @@ fn render_bar_chart(items: &[(String, i64)], bar_width: usize) {
         let label_pad = " ".repeat(max_label - console::measure_text_width(label));
         println!(
             "{}{}{}  {}  {}",
-            INDENT,
+            indent(),
             ui::paint_text(label),
             label_pad,
             bar,
@@ -719,7 +719,7 @@ fn search_commits_cmd(conn: &Connection, query: &str) -> Result<()> {
 
         println!(
             "{}{}  {}  {}  {}",
-            INDENT,
+            indent(),
             ui::warning_bold(short_hash),
             ui::muted(date),
             ui::muted(author),
@@ -727,7 +727,7 @@ fn search_commits_cmd(conn: &Connection, query: &str) -> Result<()> {
         );
         println!(
             "{}{}{}",
-            INDENT,
+            indent(),
             "  ",
             ui::color_subject(&result.subject),
         );
@@ -746,7 +746,7 @@ fn search_commits_cmd(conn: &Connection, query: &str) -> Result<()> {
                 } else {
                     preview
                 };
-                println!("{}{}{}", INDENT, "  ", ui::muted(&truncated));
+                println!("{}{}{}", indent(), "  ", ui::muted(&truncated));
             }
         }
         println!();
@@ -790,7 +790,7 @@ fn show_duplicates_cmd(conn: &Connection) -> Result<()> {
 
         println!(
             "{}{}  {}  {}",
-            INDENT,
+            indent(),
             ui::danger_bold(&format!("{:>3}x", count)),
             bar,
             ui::paint_text(&truncated_subject),
@@ -875,7 +875,7 @@ fn section_commit_length_trends(conn: &Connection) -> Result<()> {
 
         println!(
             "{}{}  {}{}  {} chars ({} commits)",
-            INDENT,
+            indent(),
             ui::muted(&trend.month),
             bar_color,
             ui::muted(&"░".repeat(30 - bar_len)),
@@ -922,7 +922,7 @@ fn section_duplicate_commits(conn: &Connection) -> Result<()> {
         };
         println!(
             "{}{}  {}",
-            INDENT,
+            indent(),
             ui::danger_bold(&format!("{:>3}x", count)),
             ui::paint_text(&truncated),
         );

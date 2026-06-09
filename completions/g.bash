@@ -613,7 +613,7 @@ _g() {
             return 0
             ;;
         g__subcmd__config)
-            opts="-C -c -h -V --edit --path --dry-run --no-interactive --help --version [KEY]"
+            opts="-C -c -h -V --edit --path --themes --dry-run --no-interactive --help --version [KEY]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

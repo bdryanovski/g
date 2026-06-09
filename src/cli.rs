@@ -514,6 +514,10 @@ pub struct ConfigArgs {
     #[arg(long)]
     pub path: bool,
 
+    /// List available themes (built-in + custom) and exit
+    #[arg(long)]
+    pub themes: bool,
+
     /// Get a config value
     pub key: Option<String>,
 }

@@ -126,6 +126,17 @@ pub struct UiConfig {
     /// Color theme: `"dark"` (default) or `"light"`.
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// Optional **override** of the border / box-drawing style. When unset
+    /// (the default), the active theme decides — each theme file carries its
+    /// own `border_style`. Set this to force one style regardless of theme:
+    /// `"sharp"` | `"rounded"` | `"heavy"` | `"double"` | `"ascii"`.
+    #[serde(default)]
+    pub border_style: Option<String>,
+    /// Optional **override** of layout density. When unset (the default), the
+    /// active theme decides via its own `density`. Set to force one regardless
+    /// of theme: `"normal"` | `"compact"` | `"relaxed"`.
+    #[serde(default)]
+    pub density: Option<String>,
 }
 
 fn default_commit_mode() -> String {
@@ -151,6 +162,8 @@ impl Default for UiConfig {
             commit_mode: default_commit_mode(),
             prompt_mode: default_prompt_mode(),
             theme: default_theme(),
+            border_style: None,
+            density: None,
         }
     }
 }
@@ -409,6 +422,12 @@ pub fn ensure_config() -> Result<()> {
         crate::ui::print_info(&format!("Created default config at {}", path.display()));
     }
 
+    // Write editable copies of the built-in themes into ~/.config/g/themes so
+    // users can tweak them without recompiling.  Existing files are preserved.
+    if let Err(e) = crate::ui::theme::materialize_builtin_themes() {
+        crate::ui::print_warning(&format!("Could not write built-in themes: {e}"));
+    }
+
     Ok(())
 }
 
@@ -451,6 +470,106 @@ pub fn save(config: &Config) -> Result<()> {
     Ok(())
 }
 
+/// Persist a new active theme name (`[ui] theme = "<name>"`).
+///
+/// This performs a *surgical* edit of the existing `config.toml` so the file's
+/// comments and formatting are preserved: it rewrites only the `theme = …` line
+/// (keeping its indentation and any trailing comment).  If the key is not found
+/// — or no config file exists yet — it falls back to a structured load/save.
+///
+/// # Errors
+///
+/// Returns an error if the config path cannot be determined or the file cannot
+/// be read or written.
+pub fn set_theme(theme: &str) -> Result<()> {
+    let path = config_path()?;
+    if path.exists() {
+        let raw = fs::read_to_string(&path)
+            .with_context(|| format!("Failed to read config: {}", path.display()))?;
+        if let Some(out) = replace_theme_line(&raw, theme) {
+            fs::write(&path, out)
+                .with_context(|| format!("Failed to write config: {}", path.display()))?;
+            return Ok(());
+        }
+    }
+
+    // Fallback: structured load/save (loses comments, but always correct).
+    let mut cfg = load()?;
+    cfg.ui.theme = theme.to_string();
+    save(&cfg)
+}
+
+/// Rewrite the first `theme = …` line in `raw` to use `theme`, preserving
+/// indentation and any trailing inline comment.  Returns `None` when no such
+/// line exists (the caller then falls back to a structured save).
+fn replace_theme_line(raw: &str, theme: &str) -> Option<String> {
+    let mut replaced = false;
+    let lines: Vec<String> = raw
+        .lines()
+        .map(|line| {
+            let trimmed = line.trim_start();
+            let is_theme_key = trimmed
+                .strip_prefix("theme")
+                .map(|r| r.trim_start().starts_with('='))
+                .unwrap_or(false);
+            if !replaced && is_theme_key {
+                replaced = true;
+                let indent = &line[..line.len() - trimmed.len()];
+                let comment = line
+                    .find('#')
+                    .map(|i| format!("  {}", &line[i..]))
+                    .unwrap_or_default();
+                format!("{indent}theme = \"{theme}\"{comment}")
+            } else {
+                line.to_string()
+            }
+        })
+        .collect();
+
+    if !replaced {
+        return None;
+    }
+    let mut out = lines.join("\n");
+    if raw.ends_with('\n') {
+        out.push('\n');
+    }
+    Some(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::replace_theme_line;
+
+    #[test]
+    fn preserves_trailing_comment_and_indent() {
+        let raw = "[ui]\ntheme = \"dark\"   # \"dark\" | \"light\"\ncolors = true\n";
+        let out = replace_theme_line(raw, "nord").unwrap();
+        assert!(out.contains("theme = \"nord\"  # \"dark\" | \"light\""));
+        assert!(out.contains("colors = true"));
+        assert!(out.ends_with('\n'));
+    }
+
+    #[test]
+    fn replaces_only_first_theme_line() {
+        let raw = "theme = \"dark\"\ntheme = \"light\"\n";
+        let out = replace_theme_line(raw, "nord").unwrap();
+        assert_eq!(out, "theme = \"nord\"\ntheme = \"light\"\n");
+    }
+
+    #[test]
+    fn returns_none_without_theme_key() {
+        assert!(replace_theme_line("colors = true\n", "nord").is_none());
+    }
+
+    #[test]
+    fn ignores_unrelated_keys_with_theme_prefix() {
+        // A key like `theme_extra` must not be mistaken for `theme`.
+        let raw = "theme_extra = \"x\"\ntheme = \"dark\"\n";
+        let out = replace_theme_line(raw, "nord").unwrap();
+        assert_eq!(out, "theme_extra = \"x\"\ntheme = \"nord\"\n");
+    }
+}
+
 // ─── Default config template ─────────────────────────────────────────────────
 
 /// Returns the default `config.toml` content written on first run.
@@ -483,7 +602,13 @@ commit_mode = "interactive"  # "interactive" | "inline" — controls g commit bu
 # prompt_mode controls ALL interactive prompts (g commit, g stage, g add, g workspace switch, …)
 # "interactive" = full-screen TUI (default) | "inline" = stays in terminal scrollback
 prompt_mode = "interactive"
-theme = "dark"              # "dark" | "light"
+# Built-in: dark | light | dracula | nord | gruvbox | solarized-dark | monochrome
+# Or a custom theme: a name under ~/.config/g/themes/<name>.toml, or a path to a .toml file
+theme = "dark"
+# Borders and spacing are defined by the theme itself (see ~/.config/g/themes/).
+# Uncomment to OVERRIDE the theme for every theme you switch to:
+# border_style = "sharp"   # "sharp" | "rounded" | "heavy" | "double" | "ascii"
+# density = "normal"       # "normal" | "compact" | "relaxed"
 
 # ─── Stage ────────────────────────────────────────────────────────────────────
 [stage]

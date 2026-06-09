@@ -37,7 +37,7 @@ use ratatui::widgets::{List, ListItem, ListState, Paragraph, Widget};
 use ratatui_cheese::fieldset::{Fieldset, FieldsetFill, FieldsetStyles};
 use ratatui_cheese::help::{Binding, Help, HelpStyles};
 
-use super::render::INDENT;
+use super::render::indent;
 use super::theme;
 
 // ─── Public data types ────────────────────────────────────────────────────────
@@ -420,7 +420,7 @@ fn draw_tree(f: &mut ratatui::Frame, nodes: &[FlatNode], cursor: usize) {
         .count();
 
     let legend = Line::from(vec![
-        Span::raw(INDENT),
+        Span::raw(indent()),
         Span::styled(
             format!("{}/{} selected", checked, total),
             Style::default().fg(t.palette.muted),
@@ -562,14 +562,14 @@ fn build_list_item(node: &FlatNode, is_cursor: bool, t: &super::theme::Theme) ->
     };
 
     // ── Tree indent (2 spaces per depth) ─────────────────────────────────────
-    let indent = "  ".repeat(node.depth);
+    let tree_indent = "  ".repeat(node.depth);
     let dir_suffix = if node.is_dir { "/" } else { "" };
 
     // ── Assemble spans ────────────────────────────────────────────────────────
     //
-    // [OUTER_INDENT][X][Y][space][cursor][space][checkbox][space][indent][name]
+    // [OUTER_indent][X][Y][space][cursor][space][checkbox][space][tree_indent][name]
     Line::from(vec![
-        Span::styled(INDENT, Style::default()),
+        Span::styled(indent(), Style::default()),
         Span::styled(x_text, x_style), // index status (green / muted)
         Span::styled(y_text, y_style), // working-tree status (yellow / muted)
         Span::raw("  "),
@@ -577,7 +577,7 @@ fn build_list_item(node: &FlatNode, is_cursor: bool, t: &super::theme::Theme) ->
         Span::raw(" "),
         Span::styled(checkbox, checkbox_style), // [✓] / [-] / [ ]
         Span::raw(" "),
-        Span::raw(indent), // depth indent (2 spaces × depth)
+        Span::raw(tree_indent), // depth indent (2 spaces × depth)
         Span::styled(
             format!("{}{}", node.display_name, dir_suffix),
             name_style, // color = status color
@@ -650,7 +650,7 @@ fn draw_revert_confirm(f: &mut ratatui::Frame, path: &str, confirm_yes: bool) {
     // Warning text.
     f.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::raw(INDENT),
+            Span::raw(indent()),
             Span::styled(
                 "This will discard all local changes and cannot be undone.",
                 Style::default().fg(t.palette.warning),
@@ -660,7 +660,7 @@ fn draw_revert_confirm(f: &mut ratatui::Frame, path: &str, confirm_yes: bool) {
     );
     f.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::raw(INDENT),
+            Span::raw(indent()),
             Span::styled(
                 format!("File: {}", path),
                 Style::default()
@@ -687,7 +687,7 @@ fn draw_revert_confirm(f: &mut ratatui::Frame, path: &str, confirm_yes: bool) {
         Style::default().fg(t.palette.muted)
     };
     let buttons = Line::from(vec![
-        Span::raw(INDENT),
+        Span::raw(indent()),
         Span::raw("  "),
         Span::styled("  Yes, revert  ", yes_style),
         Span::raw("   "),

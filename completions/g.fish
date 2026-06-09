@@ -336,6 +336,7 @@ complete -c g -n "__fish_g_using_subcommand config" -s C -d 'Run as if git was s
 complete -c g -n "__fish_g_using_subcommand config" -s c -d 'Override a configuration value (key=value)' -r
 complete -c g -n "__fish_g_using_subcommand config" -l edit -d 'Open config file in $EDITOR'
 complete -c g -n "__fish_g_using_subcommand config" -l path -d 'Print the path to the config file'
+complete -c g -n "__fish_g_using_subcommand config" -l themes -d 'List available themes (built-in + custom) and exit'
 complete -c g -n "__fish_g_using_subcommand config" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand config" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand config" -s h -l help -d 'Print help'

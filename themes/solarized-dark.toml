@@ -1,0 +1,25 @@
+# g — built-in theme: solarized-dark
+# Ethan Schoonover's low-contrast classic.
+name = "solarized-dark"
+
+border_style = "sharp"
+density      = "normal"
+
+[palette]
+primary  = "#2aa198"
+success  = "#859900"
+warning  = "#b58900"
+danger   = "#dc322f"
+muted    = "#586e75"
+text     = "#839496"
+accent   = "#6c71c4"
+divider  = "#586e75"
+
+cc_feat     = "#859900"
+cc_fix      = "#dc322f"
+cc_docs     = "#268bd2"
+cc_refactor = "#6c71c4"
+cc_perf     = "#cb4b16"
+cc_test     = "#2aa198"
+cc_chore    = "#586e75"
+cc_revert   = "#dc322f"

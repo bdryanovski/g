@@ -20,7 +20,7 @@ use ratatui::style::Style;
 use ratatui::widgets::Widget;
 use ratatui_cheese::fieldset::{Fieldset, FieldsetFill, FieldsetStyles};
 
-use super::render::{paint, paint_bold, paint_dim, print_buffer_row, terminal_width, INDENT};
+use super::render::{indent, paint, paint_bold, paint_dim, print_buffer_row, terminal_width};
 use super::theme;
 
 // ─── Fieldset (slash divider) ─────────────────────────────────────────────────
@@ -36,7 +36,7 @@ use super::theme;
 /// ```
 pub fn print_fieldset(title: &str) {
     let t = theme::current();
-    let width = terminal_width().saturating_sub(INDENT.len()) as u16;
+    let width = terminal_width().saturating_sub(indent().len()) as u16;
     let area = Rect {
         x: 0,
         y: 0,
@@ -65,7 +65,7 @@ pub fn print_fieldset(title: &str) {
         })
         .render(area, &mut buffer);
 
-    print!("{}", INDENT);
+    print!("{}", indent());
     print_buffer_row(&buffer, 0);
 }
 
@@ -340,6 +340,9 @@ impl Table {
     /// Print the table to stdout: headers, a `─` divider, then each row.
     pub fn print(&self) {
         use super::print::{muted, text_bold};
+        let t = theme::current();
+        let gap = t.spacing.col_gap;
+        let hline = t.borders.horizontal;
         let pad_cell = |cell: &str, col: usize| -> String {
             let vis = console::measure_text_width(cell);
             let target = self.col_widths.get(col).copied().unwrap_or(0);
@@ -352,14 +355,14 @@ impl Table {
             .enumerate()
             .map(|(i, h)| pad_cell(&text_bold(h), i))
             .collect();
-        println!("{}{}", INDENT, header_cells.join("  "));
+        println!("{}{}", indent(), header_cells.join(gap));
 
         let divider: Vec<String> = self
             .col_widths
             .iter()
-            .map(|w| muted(&"─".repeat(*w)))
+            .map(|w| muted(&hline.to_string().repeat(*w)))
             .collect();
-        println!("{}{}", INDENT, divider.join("  "));
+        println!("{}{}", indent(), divider.join(gap));
 
         for row in &self.rows {
             let cells: Vec<String> = row
@@ -367,7 +370,7 @@ impl Table {
                 .enumerate()
                 .map(|(i, cell)| pad_cell(cell, i))
                 .collect();
-            println!("{}{}", INDENT, cells.join("  "));
+            println!("{}{}", indent(), cells.join(gap));
         }
     }
 }
@@ -383,20 +386,25 @@ pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<Stri
     use super::print::{link_muted, primary_bold, text_bold};
     println!(
         "\n{}  {} {}",
-        INDENT,
+        indent(),
         text_bold("Stack:"),
         primary_bold(stack_name)
     );
     println!();
+    let t = theme::current();
+    let b = &t.borders;
+    let dash = b.horizontal;
     let last = branches.len().saturating_sub(1);
     for (i, (branch, is_current, pr_url)) in branches.iter().enumerate() {
-        let connector = if i == last { "└" } else { "├" };
-        let pipe = if i == last { " " } else { "│" };
+        let connector = if i == last { b.tree_last } else { b.tee_left };
+        let pipe = if i == last { ' ' } else { b.vertical };
 
         print!(
-            "{}{}── {} {}",
-            INDENT,
-            paint(connector, theme::current().palette.muted),
+            "{}{}{}{} {} {}",
+            indent(),
+            paint(&connector.to_string(), t.palette.muted),
+            paint(&dash.to_string(), t.palette.muted),
+            paint(&dash.to_string(), t.palette.muted),
             branch_marker(*is_current),
             branch_name_colored(branch, *is_current)
         );
@@ -407,9 +415,9 @@ pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<Stri
         if i < last {
             println!(
                 "{}{}   {}",
-                INDENT,
-                paint(pipe, theme::current().palette.muted),
-                paint("│", theme::current().palette.muted)
+                indent(),
+                paint(&pipe.to_string(), t.palette.muted),
+                paint(&b.vertical.to_string(), t.palette.muted)
             );
         }
     }

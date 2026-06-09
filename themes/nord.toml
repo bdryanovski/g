@@ -1,0 +1,25 @@
+# g — built-in theme: nord
+# Cool, muted arctic palette.
+name = "nord"
+
+border_style = "rounded"
+density      = "relaxed"  # roomy spacing for a calm, airy feel
+
+[palette]
+primary  = "#88c0d0"
+success  = "#a3be8c"
+warning  = "#ebcb8b"
+danger   = "#bf616a"
+muted    = "#4c566a"
+text     = "#d8dee9"
+accent   = "#b48ead"
+divider  = "#4c566a"
+
+cc_feat     = "#a3be8c"
+cc_fix      = "#bf616a"
+cc_docs     = "#81a1c1"
+cc_refactor = "#b48ead"
+cc_perf     = "#d08770"
+cc_test     = "#88c0d0"
+cc_chore    = "#4c566a"
+cc_revert   = "#bf616a"

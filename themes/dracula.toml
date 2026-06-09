@@ -1,0 +1,25 @@
+# g — built-in theme: dracula
+# Vivid colors on a dark background.
+name = "dracula"
+
+border_style = "rounded"  # soft rounded corners suit the vivid palette
+density      = "normal"
+
+[palette]
+primary  = "#8be9fd"
+success  = "#50fa7b"
+warning  = "#f1fa8c"
+danger   = "#ff5555"
+muted    = "#6272a4"
+text     = "#f8f8f2"
+accent   = "#bd93f9"
+divider  = "#6272a4"
+
+cc_feat     = "#50fa7b"
+cc_fix      = "#ff5555"
+cc_docs     = "#8be9fd"
+cc_refactor = "#bd93f9"
+cc_perf     = "#ffb86c"
+cc_test     = "#8be9fd"
+cc_chore    = "#6272a4"
+cc_revert   = "#ff5555"

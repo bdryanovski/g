@@ -1,0 +1,25 @@
+# g — built-in theme: gruvbox (dark)
+# Warm retro palette.
+name = "gruvbox"
+
+border_style = "heavy"   # bold heavy lines match the chunky retro palette
+density      = "normal"
+
+[palette]
+primary  = "#8ec07c"
+success  = "#b8bb26"
+warning  = "#fabd2f"
+danger   = "#fb4934"
+muted    = "#928374"
+text     = "#ebdbb2"
+accent   = "#d3869b"
+divider  = "#928374"
+
+cc_feat     = "#b8bb26"
+cc_fix      = "#fb4934"
+cc_docs     = "#83a598"
+cc_refactor = "#d3869b"
+cc_perf     = "#fe8019"
+cc_test     = "#8ec07c"
+cc_chore    = "#928374"
+cc_revert   = "#fb4934"

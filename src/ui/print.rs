@@ -17,7 +17,9 @@
 //! for any output that doesn't fit a named helper — they ensure all output
 //! still routes through this module rather than scattered raw `println!` calls.
 
-use super::render::{paint, paint_bold, paint_bold_underline, paint_dim, paint_underline, INDENT};
+use super::render::{
+    indent, paint, paint_bold, paint_bold_underline, paint_dim, paint_spec, paint_underline,
+};
 use super::theme;
 
 // ─── Generic output primitives ───────────────────────────────────────────────
@@ -38,7 +40,7 @@ pub fn print_line(content: &str) {
 /// `println!("  {}", ...)` calls in command files through the ui module.
 #[allow(dead_code)]
 pub fn print_indented(content: &str) {
-    println!("{}{}", INDENT, content);
+    println!("{}{}", indent(), content);
 }
 
 // ─── Semantic styling helpers ─────────────────────────────────────────────────
@@ -141,7 +143,7 @@ pub fn print_info(msg: &str) {
     let t = theme::current();
     println!(
         "{} {} {}",
-        INDENT,
+        indent(),
         paint(t.icons.info, t.palette.primary),
         msg
     );
@@ -152,7 +154,7 @@ pub fn print_success(msg: &str) {
     let t = theme::current();
     println!(
         "{} {} {}",
-        INDENT,
+        indent(),
         paint_bold(t.icons.success, t.palette.success),
         msg
     );
@@ -163,7 +165,7 @@ pub fn print_warning(msg: &str) {
     let t = theme::current();
     eprintln!(
         "{} {} {}",
-        INDENT,
+        indent(),
         paint_bold(t.icons.warning, t.palette.warning),
         msg
     );
@@ -174,7 +176,7 @@ pub fn print_error(msg: &str) {
     let t = theme::current();
     eprintln!(
         "{} {} {}",
-        INDENT,
+        indent(),
         paint_bold(t.icons.error, t.palette.danger),
         msg
     );
@@ -182,7 +184,7 @@ pub fn print_error(msg: &str) {
 
 /// Print a dim tip hint: `  tip:  <msg>` to stdout.
 pub fn print_tip(msg: &str) {
-    println!("{} {}  {}", INDENT, muted_bold("tip:"), muted(msg));
+    println!("{} {}  {}", indent(), muted_bold("tip:"), muted(msg));
 }
 
 /// Print a blank line to stdout.
@@ -194,16 +196,17 @@ pub fn print_blank() {
 #[allow(dead_code)]
 pub fn print_rule() {
     let width = super::render::terminal_width()
-        .saturating_sub(INDENT.len())
+        .saturating_sub(indent().len())
         .max(10);
-    println!("{}{}", INDENT, muted(&"─".repeat(width)));
+    let rule = theme::current().borders.horizontal;
+    println!("{}{}", indent(), paint_spec(&rule.to_string().repeat(width), theme::current().styles.rule));
 }
 
 /// Print a numbered step: `  [n/total]  <msg>`.
 pub fn print_step(step: usize, total: usize, msg: &str) {
     println!(
         "{}{} {}",
-        INDENT,
+        indent(),
         muted_bold(&format!("[{}/{}]", step, total)),
         msg
     );
@@ -224,17 +227,18 @@ pub fn print_section(title: &str, count: Option<usize>) {
     if let Some(n) = count {
         println!(
             "{} {} {}",
-            INDENT,
+            indent(),
             text_bold(title),
             muted(&format!("({})", n))
         );
     } else {
-        println!("{} {}", INDENT, text_bold(title));
+        println!("{} {}", indent(), text_bold(title));
     }
     let width = super::render::terminal_width()
-        .saturating_sub(INDENT.len() + 1)
+        .saturating_sub(indent().len() + 1)
         .max(10);
-    println!("{} {}", INDENT, muted(&"─".repeat(width)));
+    let rule = theme::current().borders.horizontal;
+    println!("{} {}", indent(), paint_spec(&rule.to_string().repeat(width), theme::current().styles.rule));
 }
 
 /// Print aligned key-value pairs, with keys in muted color.
@@ -246,7 +250,7 @@ pub fn print_key_value_pairs(pairs: &[(&str, String)]) {
         let padding = " ".repeat(max_key - key.len());
         println!(
             "{}{}{} {}  {}",
-            INDENT,
+            indent(),
             muted(key),
             padding,
             muted(" "),
@@ -260,7 +264,7 @@ pub fn print_stack_banner(verb: &str, stack_name: &str) {
     println!();
     println!(
         "{}  {} {}",
-        INDENT,
+        indent(),
         text_bold(verb),
         primary_bold(stack_name)
     );

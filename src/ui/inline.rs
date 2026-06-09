@@ -27,7 +27,7 @@ use crossterm::{execute, queue};
 
 use super::interactive::SelectOption;
 use super::print::{muted, paint_text, primary, success, warning};
-use super::render::{is_no_interactive, INDENT};
+use super::render::{indent, is_no_interactive};
 use super::widgets::print_fieldset;
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
@@ -60,13 +60,13 @@ fn print_option_row(
     let line = match &opt.description {
         Some(desc) if !desc.is_empty() => format!(
             "{}{}  {}{}  {}\r\n",
-            INDENT,
+            indent(),
             cursor_ch,
             label_style,
             pad,
             muted(desc),
         ),
-        _ => format!("{}{}  {}\r\n", INDENT, cursor_ch, label_style),
+        _ => format!("{}{}  {}\r\n", indent(), cursor_ch, label_style),
     };
 
     let _ = write!(stdout, "{line}");
@@ -117,7 +117,7 @@ pub fn inline_select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
     println!();
     println!(
         "{}{}",
-        INDENT,
+        indent(),
         muted("j/k ↑↓  move   Enter  select   q  cancel"),
     );
     println!();
@@ -200,7 +200,7 @@ pub fn inline_multi_select(
     println!();
     println!(
         "{}{}",
-        INDENT,
+        indent(),
         muted("j/k ↑↓  move   Space  toggle   a  all   n  none   Enter  confirm   q  cancel"),
     );
     println!();
@@ -293,12 +293,12 @@ fn print_multi_row(
     let line = if desc.is_empty() {
         format!(
             "{}{}  {}  {}{}\r\n",
-            INDENT, cursor_ch, checkbox, label_style, pad,
+            indent(), cursor_ch, checkbox, label_style, pad,
         )
     } else {
         format!(
             "{}{}  {}  {}{}  {}\r\n",
-            INDENT,
+            indent(),
             cursor_ch,
             checkbox,
             label_style,
@@ -353,7 +353,7 @@ where
 
     loop {
         // Print the prompt, optionally showing the default in brackets.
-        print!("{}{}  {}  ", INDENT, primary("›"), paint_text(prompt));
+        print!("{}{}  {}  ", indent(), primary("›"), paint_text(prompt));
         if let Some(d) = default {
             if !d.is_empty() {
                 print!("{} ", muted(&format!("[{d}]")));
@@ -471,7 +471,7 @@ where
             None => return None,
             Some(s) => match validate(&s) {
                 Ok(()) => return Some(s),
-                Err(msg) => println!("{}{}  {}", INDENT, warning("✗"), muted(&msg)),
+                Err(msg) => println!("{}{}  {}", indent(), warning("✗"), muted(&msg)),
             },
         }
     }
@@ -502,7 +502,7 @@ pub fn inline_confirm(prompt: &str, default: bool) -> bool {
 
     print!(
         "{}{}  {}  {}{}{}  ",
-        INDENT,
+        indent(),
         primary("›"),
         paint_text(prompt),
         muted("["),

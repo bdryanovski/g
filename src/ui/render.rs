@@ -71,7 +71,13 @@ use super::theme;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /// Standard left-margin applied to every output line.
-pub const INDENT: &str = "  ";
+///
+/// Driven by the active theme's spacing (its `density`), so a theme can widen
+/// or tighten the global indentation without any code changes.
+#[inline]
+pub fn indent() -> &'static str {
+    theme::current().spacing.indent
+}
 
 // ─── Color conversion ─────────────────────────────────────────────────────────
 
@@ -135,6 +141,26 @@ pub fn paint_underline(text: &str, color: Color) -> String {
 #[inline]
 pub fn paint_bold_underline(text: &str, color: Color) -> String {
     text.with(ct_color(color)).bold().underlined().to_string()
+}
+
+/// Render `text` using a reusable [`StyleSpec`] from the theme.
+///
+/// This is the building block for *component* rendering: a call site asks the
+/// theme for a named style (`styles.section_title`) and paints with it, so the
+/// color + modifiers travel together and can be re-skinned in one place.
+#[inline]
+pub fn paint_spec(text: &str, spec: theme::StyleSpec) -> String {
+    let mut styled = text.with(ct_color(spec.color));
+    if spec.bold {
+        styled = styled.bold();
+    }
+    if spec.dim {
+        styled = styled.attribute(Attribute::Dim);
+    }
+    if spec.underline {
+        styled = styled.underlined();
+    }
+    styled.to_string()
 }
 
 // ─── Terminal geometry ────────────────────────────────────────────────────────
@@ -208,7 +234,7 @@ impl Spinner {
         self.stop_thread();
         let t = theme::current();
         let icon = paint_bold(t.icons.success, t.palette.success);
-        eprintln!("{} {} {}", INDENT, icon, msg);
+        eprintln!("{} {} {}", indent(), icon, msg);
     }
 
     /// Stop the spinner and print a `✗` error line to stderr.
@@ -216,7 +242,7 @@ impl Spinner {
         self.stop_thread();
         let t = theme::current();
         let icon = paint_bold(t.icons.error, t.palette.danger);
-        eprintln!("{} {} {}", INDENT, icon, msg);
+        eprintln!("{} {} {}", indent(), icon, msg);
     }
 
     /// Stop the spinner and clear its line silently.
@@ -285,7 +311,7 @@ pub fn spinner(msg: &str) -> Spinner {
                     .unwrap_or_else(|| "⠋".to_string());
 
                 let msg = message.lock().map(|m| m.clone()).unwrap_or_default();
-                eprint!("\r{} {} {}", INDENT, sym, msg);
+                eprint!("\r{} {} {}", indent(), sym, msg);
                 io::stderr().flush().ok();
 
                 std::thread::sleep(Duration::from_millis(80));
@@ -417,7 +443,7 @@ pub fn progress_bar(total: u64, msg: &str) -> ProgressBar {
                 );
                 eprint!(
                     "\r{} {} [{}] {}/{}  {}",
-                    INDENT,
+                    indent(),
                     sym,
                     bar,
                     cur,

@@ -1,0 +1,25 @@
+# g — built-in theme: monochrome
+# Grayscale only — minimal / e-ink-style terminals.
+name = "monochrome"
+
+border_style = "ascii"    # plain ASCII lines (also forces ASCII icons)
+density      = "compact"  # minimal spacing for dense, no-frills output
+
+[palette]
+primary  = "white"
+success  = "white"
+warning  = "gray"
+danger   = "white"
+muted    = "darkgray"
+text     = "white"
+accent   = "gray"
+divider  = "darkgray"
+
+cc_feat     = "white"
+cc_fix      = "gray"
+cc_docs     = "gray"
+cc_refactor = "gray"
+cc_perf     = "gray"
+cc_test     = "white"
+cc_chore    = "darkgray"
+cc_revert   = "gray"

@@ -542,6 +542,7 @@ set edit:completion:arg-completer[g] = {|@words|
             cand -c 'Override a configuration value (key=value)'
             cand --edit 'Open config file in $EDITOR'
             cand --path 'Print the path to the config file'
+            cand --themes 'List available themes (built-in + custom) and exit'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help'

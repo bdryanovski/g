@@ -1,0 +1,25 @@
+# g — built-in theme: light
+# Darker colors for light terminal backgrounds.
+name = "light"
+
+border_style = "sharp"   # sharp | rounded | heavy | double | ascii
+density      = "normal"  # normal | compact | relaxed
+
+[palette]
+primary  = "blue"      # visible blue on white
+success  = "green"
+warning  = "yellow"
+danger   = "red"
+muted    = "darkgray"
+text     = "black"     # black text on white
+accent   = "magenta"
+divider  = "darkgray"
+
+cc_feat     = "green"
+cc_fix      = "red"
+cc_docs     = "blue"
+cc_refactor = "magenta"
+cc_perf     = "yellow"
+cc_test     = "cyan"
+cc_chore    = "darkgray"
+cc_revert   = "red"

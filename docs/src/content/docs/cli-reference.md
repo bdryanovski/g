@@ -597,6 +597,7 @@ Open interactive config editor
 
 * `--edit` — Open config file in $EDITOR
 * `--path` — Print the path to the config file
+* `--themes` — List available themes (built-in + custom) and exit
 
 
 
