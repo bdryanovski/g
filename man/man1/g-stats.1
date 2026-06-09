@@ -4,7 +4,7 @@
 .SH NAME
 g\-stats \- Display a rich usage\-statistics report
 .SH SYNOPSIS
-\fBg\-stats\fR [\fB\-\-days\fR] [\fB\-\-no\-git\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+\fBg\-stats\fR [\fB\-\-days\fR] [\fB\-\-no\-git\fR] [\fB\-\-import\fR] [\fB\-\-import\-limit\fR] [\fB\-\-search\fR] [\fB\-\-duplicates\fR] [\fB\-\-message\-stats\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
 Display a rich usage\-statistics report
 .PP
@@ -19,6 +19,21 @@ Number of days to look back for time\-based stats
 \fB\-\-no\-git\fR
 Skip sections that require a git repository (heatmap, lines chart)
 .TP
+\fB\-\-import\fR
+Import git commit history into the statistics database
+.TP
+\fB\-\-import\-limit\fR \fI<N>\fR
+Maximum number of commits to import (default: all)
+.TP
+\fB\-\-search\fR \fI<QUERY>\fR
+Search commit messages using fuzzy matching
+.TP
+\fB\-\-duplicates\fR
+Show duplicate commit messages
+.TP
+\fB\-\-message\-stats\fR
+Show commit message length statistics and trends
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SH EXTRA
@@ -27,3 +42,6 @@ Examples:
   g stats                    full report, last 365 days
   g stats \-\-days 90           last 90 days
   g stats \-\-no\-git            skip sections that require git
+  g stats \-\-import            import git history for commit analysis
+  g stats \-\-search "fix bug"  fuzzy search commit messages
+  g stats \-\-duplicates        show duplicate commit messages

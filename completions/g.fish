@@ -341,9 +341,14 @@ complete -c g -n "__fish_g_using_subcommand config" -l no-interactive -d 'Disabl
 complete -c g -n "__fish_g_using_subcommand config" -s h -l help -d 'Print help'
 complete -c g -n "__fish_g_using_subcommand config" -s V -l version -d 'Print version'
 complete -c g -n "__fish_g_using_subcommand stats" -l days -d 'Number of days to look back for time-based stats' -r
+complete -c g -n "__fish_g_using_subcommand stats" -l import-limit -d 'Maximum number of commits to import (default: all)' -r
+complete -c g -n "__fish_g_using_subcommand stats" -l search -d 'Search commit messages using fuzzy matching' -r
 complete -c g -n "__fish_g_using_subcommand stats" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand stats" -s c -d 'Override a configuration value (key=value)' -r
 complete -c g -n "__fish_g_using_subcommand stats" -l no-git -d 'Skip sections that require a git repository (heatmap, lines chart)'
+complete -c g -n "__fish_g_using_subcommand stats" -l import -d 'Import git commit history into the statistics database'
+complete -c g -n "__fish_g_using_subcommand stats" -l duplicates -d 'Show duplicate commit messages'
+complete -c g -n "__fish_g_using_subcommand stats" -l message-stats -d 'Show commit message length statistics and trends'
 complete -c g -n "__fish_g_using_subcommand stats" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand stats" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand stats" -s h -l help -d 'Print help (see more with \'--help\')'

@@ -24,7 +24,7 @@ use rusqlite::Connection;
 
 use crate::cli::StatsArgs;
 use crate::commands::git as git_cmd;
-use crate::storage::stats as db;
+use crate::storage::{repos, stats as db};
 use crate::ui;
 use crate::ui::{terminal_width, INDENT};
 
@@ -41,6 +41,19 @@ const SPARK: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'
 ///
 /// Returns an error if the database cannot be queried.
 pub fn stats(conn: &Connection, args: &StatsArgs) -> Result<()> {
+    // Handle special modes first
+    if args.import {
+        return import_git_history_cmd(conn, args.import_limit);
+    }
+
+    if let Some(ref query) = args.search {
+        return search_commits_cmd(conn, query);
+    }
+
+    if args.duplicates {
+        return show_duplicates_cmd(conn);
+    }
+
     ui::print_blank();
 
     section_overview(conn)?;
@@ -54,6 +67,14 @@ pub fn stats(conn: &Connection, args: &StatsArgs) -> Result<()> {
     section_commit_types(conn)?;
     section_repo_activity(conn)?;
     section_active_hours(conn)?;
+
+    // New commit message statistics
+    if args.message_stats {
+        section_commit_length_stats(conn)?;
+        section_commit_length_trends(conn)?;
+        section_top_authors(conn)?;
+        section_duplicate_commits(conn)?;
+    }
 
     ui::print_blank();
     Ok(())
@@ -640,4 +661,275 @@ fn fmt_n(n: i64) -> String {
         out.push(ch);
     }
     out.chars().rev().collect()
+}
+
+// ─── Commit message statistics ────────────────────────────────────────────────
+
+/// Import git history into the database.
+fn import_git_history_cmd(conn: &Connection, limit: Option<usize>) -> Result<()> {
+    ui::print_blank();
+    ui::print_fieldset("Import Git History");
+    ui::print_blank();
+
+    let repo_root = match git_cmd::repo_root() {
+        Ok(r) => r,
+        Err(_) => {
+            ui::print_warning("Not inside a git repository.");
+            return Ok(());
+        }
+    };
+
+    let repo_id = repos::upsert(conn, &repo_root)?;
+
+    let pb = ui::spinner("Importing commits...");
+    let count = db::import_git_history(conn, repo_id, limit)?;
+
+    if count > 0 {
+        ui::spinner_success(pb, &format!("Imported {} commits", fmt_n(count as i64)));
+    } else {
+        ui::spinner_success(pb, "No new commits to import");
+    }
+
+    let total = db::total_commit_messages(conn, Some(repo_id))?;
+    ui::print_key_value_pairs(&[("Total commits in database", ui::paint_text(&fmt_n(total)))]);
+
+    ui::print_blank();
+    Ok(())
+}
+
+/// Search commits using fuzzy matching.
+fn search_commits_cmd(conn: &Connection, query: &str) -> Result<()> {
+    ui::print_blank();
+    ui::print_fieldset(&format!("Search: \"{}\"", query));
+    ui::print_blank();
+
+    let results = db::search_commits(conn, query, 25)?;
+
+    if results.is_empty() {
+        ui::print_info("No commits found matching your query.");
+        ui::print_tip("Try importing git history first with: g stats --import");
+        ui::print_blank();
+        return Ok(());
+    }
+
+    for result in &results {
+        let short_hash = &result.commit_hash[..7.min(result.commit_hash.len())];
+        let author = result.author_name.as_deref().unwrap_or("Unknown");
+        let date = &result.committed_at[..10.min(result.committed_at.len())];
+
+        println!(
+            "{}{}  {}  {}  {}",
+            INDENT,
+            ui::warning_bold(short_hash),
+            ui::muted(date),
+            ui::muted(author),
+            ui::muted(&format!("[{}]", result.repo_name)),
+        );
+        println!(
+            "{}{}{}",
+            INDENT,
+            "  ",
+            ui::color_subject(&result.subject),
+        );
+
+        if let Some(ref body) = result.body {
+            let preview: String = body
+                .lines()
+                .take(2)
+                .map(|l| l.trim())
+                .filter(|l| !l.is_empty())
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !preview.is_empty() {
+                let truncated = if preview.len() > 80 {
+                    format!("{}...", &preview[..77])
+                } else {
+                    preview
+                };
+                println!("{}{}{}", INDENT, "  ", ui::muted(&truncated));
+            }
+        }
+        println!();
+    }
+
+    ui::print_tip(&format!("Found {} matching commits", results.len()));
+    ui::print_blank();
+    Ok(())
+}
+
+/// Show duplicate commit messages.
+fn show_duplicates_cmd(conn: &Connection) -> Result<()> {
+    ui::print_blank();
+    ui::print_fieldset("Duplicate Commit Messages");
+    ui::print_blank();
+
+    let duplicates = db::find_duplicate_commits(conn, None, 20)?;
+
+    if duplicates.is_empty() {
+        ui::print_info("No duplicate commit messages found.");
+        ui::print_tip("Import git history first with: g stats --import");
+        ui::print_blank();
+        return Ok(());
+    }
+
+    let max_count = duplicates.iter().map(|(_, n)| *n).max().unwrap_or(1);
+
+    for (subject, count) in &duplicates {
+        let bar_len = ((*count as f64 / max_count as f64) * 20.0).round() as usize;
+        let bar = format!(
+            "{}{}",
+            ui::danger(&"█".repeat(bar_len)),
+            ui::muted(&"░".repeat(20 - bar_len))
+        );
+
+        let truncated_subject = if subject.len() > 50 {
+            format!("{}...", &subject[..47])
+        } else {
+            subject.clone()
+        };
+
+        println!(
+            "{}{}  {}  {}",
+            INDENT,
+            ui::danger_bold(&format!("{:>3}x", count)),
+            bar,
+            ui::paint_text(&truncated_subject),
+        );
+    }
+
+    ui::print_blank();
+    ui::print_tip("Duplicate messages may indicate copy-paste commits or repetitive work");
+    ui::print_blank();
+    Ok(())
+}
+
+/// Section: Commit message length statistics.
+fn section_commit_length_stats(conn: &Connection) -> Result<()> {
+    let stats = db::commit_length_stats(conn, None)?;
+
+    if stats.total_commits == 0 {
+        return Ok(());
+    }
+
+    ui::print_fieldset("Commit Message Statistics");
+    ui::print_blank();
+
+    let long_pct = (stats.long_subjects as f64 / stats.total_commits as f64) * 100.0;
+
+    ui::print_key_value_pairs(&[
+        (
+            "Total commits analyzed",
+            ui::paint_text(&fmt_n(stats.total_commits)),
+        ),
+        (
+            "Avg subject length",
+            ui::paint_text(&format!("{:.1} chars", stats.avg_subject_length)),
+        ),
+        (
+            "Avg body length",
+            ui::paint_text(&format!("{:.1} chars", stats.avg_body_length)),
+        ),
+        (
+            "Commits with body",
+            ui::paint_text(&format!("{:.1}%", stats.body_percentage)),
+        ),
+        (
+            "Long subjects (>72)",
+            if long_pct > 20.0 {
+                ui::danger(&format!("{} ({:.1}%)", stats.long_subjects, long_pct))
+            } else {
+                ui::success(&format!("{} ({:.1}%)", stats.long_subjects, long_pct))
+            },
+        ),
+    ]);
+
+    ui::print_blank();
+    Ok(())
+}
+
+/// Section: Commit message length trends over time.
+fn section_commit_length_trends(conn: &Connection) -> Result<()> {
+    let trends = db::commit_length_over_time(conn, None, 12)?;
+
+    if trends.is_empty() {
+        return Ok(());
+    }
+
+    ui::print_fieldset("Subject Length Over Time (12 months)");
+    ui::print_blank();
+
+    let max_len = trends
+        .iter()
+        .map(|t| t.avg_subject_length)
+        .fold(0.0_f64, f64::max);
+
+    for trend in &trends {
+        let bar_len = ((trend.avg_subject_length / max_len.max(1.0)) * 30.0).round() as usize;
+        let bar_color = if trend.avg_subject_length > 72.0 {
+            ui::danger(&"█".repeat(bar_len))
+        } else if trend.avg_subject_length > 50.0 {
+            ui::warning(&"█".repeat(bar_len))
+        } else {
+            ui::success(&"█".repeat(bar_len))
+        };
+
+        println!(
+            "{}{}  {}{}  {} chars ({} commits)",
+            INDENT,
+            ui::muted(&trend.month),
+            bar_color,
+            ui::muted(&"░".repeat(30 - bar_len)),
+            ui::paint_text(&format!("{:.0}", trend.avg_subject_length)),
+            trend.commit_count,
+        );
+    }
+
+    ui::print_blank();
+    Ok(())
+}
+
+/// Section: Top authors by commit count.
+fn section_top_authors(conn: &Connection) -> Result<()> {
+    let authors = db::top_authors(conn, None, 10)?;
+
+    if authors.is_empty() {
+        return Ok(());
+    }
+
+    ui::print_fieldset("Top Authors");
+    ui::print_blank();
+    render_bar_chart(&authors, 28);
+    ui::print_blank();
+    Ok(())
+}
+
+/// Section: Top duplicate commits (summary).
+fn section_duplicate_commits(conn: &Connection) -> Result<()> {
+    let duplicates = db::find_duplicate_commits(conn, None, 5)?;
+
+    if duplicates.is_empty() {
+        return Ok(());
+    }
+
+    ui::print_fieldset("Top Duplicate Commit Messages");
+    ui::print_blank();
+
+    for (subject, count) in &duplicates {
+        let truncated = if subject.len() > 50 {
+            format!("{}...", &subject[..47])
+        } else {
+            subject.clone()
+        };
+        println!(
+            "{}{}  {}",
+            INDENT,
+            ui::danger_bold(&format!("{:>3}x", count)),
+            ui::paint_text(&truncated),
+        );
+    }
+
+    ui::print_blank();
+    ui::print_tip("Run 'g stats --duplicates' for full list");
+    ui::print_blank();
+    Ok(())
 }

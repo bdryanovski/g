@@ -615,6 +615,9 @@ Examples:
   g stats                    full report, last 365 days
   g stats --days 90           last 90 days
   g stats --no-git            skip sections that require git
+  g stats --import            import git history for commit analysis
+  g stats --search "fix bug"  fuzzy search commit messages
+  g stats --duplicates        show duplicate commit messages
 
 
 ###### **Options:**
@@ -623,6 +626,11 @@ Examples:
 
   Default value: `365`
 * `--no-git` — Skip sections that require a git repository (heatmap, lines chart)
+* `--import` — Import git commit history into the statistics database
+* `--import-limit <N>` — Maximum number of commits to import (default: all)
+* `--search <QUERY>` — Search commit messages using fuzzy matching
+* `--duplicates` — Show duplicate commit messages
+* `--message-stats` — Show commit message length statistics and trends
 
 
 

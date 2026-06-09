@@ -551,9 +551,14 @@ set edit:completion:arg-completer[g] = {|@words|
         }
         &'g;stats'= {
             cand --days 'Number of days to look back for time-based stats'
+            cand --import-limit 'Maximum number of commits to import (default: all)'
+            cand --search 'Search commit messages using fuzzy matching'
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
             cand --no-git 'Skip sections that require a git repository (heatmap, lines chart)'
+            cand --import 'Import git commit history into the statistics database'
+            cand --duplicates 'Show duplicate commit messages'
+            cand --message-stats 'Show commit message length statistics and trends'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help (see more with ''--help'')'

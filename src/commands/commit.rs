@@ -167,6 +167,29 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
                     cfg.commit.gpg_sign,
                 )
                 .ok();
+
+                // Record full commit message for statistics and search
+                let full_hash = gitcmd::git_output_lossy(&["rev-parse", "HEAD"]);
+                let body = extract_body(&message);
+                let author_info = gitcmd::git_output_lossy(&["log", "-1", "--format=%an%x00%ae"]);
+                let (author_name, author_email) = author_info
+                    .split_once('\x00')
+                    .map(|(n, e)| (Some(n.to_string()), Some(e.to_string())))
+                    .unwrap_or((None, None));
+                let committed_at = chrono::Utc::now().to_rfc3339();
+
+                stats::record_commit_message(
+                    conn,
+                    rid,
+                    &full_hash,
+                    subject_line,
+                    body.as_deref(),
+                    author_name.as_deref(),
+                    author_email.as_deref(),
+                    &committed_at,
+                    false, // not imported
+                )
+                .ok();
             }
         }
         Err(e) => {
@@ -175,6 +198,29 @@ pub fn commit(conn: &Connection, args: &CommitArgs) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Extract the body from a commit message (everything after the first blank line).
+///
+/// Returns `None` if there is no body or if it's empty after trimming.
+fn extract_body(message: &str) -> Option<String> {
+    let lines: Vec<&str> = message.lines().collect();
+    if lines.len() < 3 {
+        return None;
+    }
+
+    // Find the first blank line (separates subject from body)
+    let body_start = lines
+        .iter()
+        .position(|line| line.trim().is_empty())
+        .map(|i| i + 1)?;
+
+    let body = lines[body_start..].join("\n").trim().to_string();
+    if body.is_empty() {
+        None
+    } else {
+        Some(body)
+    }
 }
 
 /// Parse an optional conventional commit type and scope from a subject line.

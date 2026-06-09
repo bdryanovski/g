@@ -20,7 +20,10 @@ use rusqlite::Connection;
 /// Each tuple is `(version, sql)`.  Version numbers must be contiguous and
 /// start at 1.  The SQL is applied in a single `execute_batch` call, so each
 /// file may contain multiple statements separated by semicolons.
-pub(super) const MIGRATIONS: &[(u32, &str)] = &[(1, include_str!("sql/001_initial.sql"))];
+pub(super) const MIGRATIONS: &[(u32, &str)] = &[
+    (1, include_str!("sql/001_initial.sql")),
+    (2, include_str!("sql/002_commit_messages.sql")),
+];
 
 /// Apply all pending migrations to `conn`.
 ///
@@ -104,6 +107,7 @@ mod tests {
             "commit_records",
             "workspace_events",
             "stack_events",
+            "commit_messages",
         ];
 
         for table in &expected {
