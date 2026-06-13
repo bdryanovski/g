@@ -5,9 +5,10 @@
 //! their short description — they are power-user tools, not everyday workflows.
 
 use anyhow::{bail, Context, Result};
-use rusqlite::Connection;
 use std::process::{Command, Stdio};
 
+use crate::cli::DeveloperCommands;
+use crate::commands::Ctx;
 use crate::config;
 use crate::storage::repos;
 use crate::ui;
@@ -237,7 +238,8 @@ pub fn db(path_only: bool) -> Result<()> {
 /// # Errors
 ///
 /// Returns an error if the database cannot be queried.
-pub fn repos(conn: &Connection) -> Result<()> {
+pub fn repos(ctx: &Ctx) -> Result<()> {
+    let conn = ctx.conn;
     let rows = repos::load_all(conn).context("Failed to load repos from database")?;
 
     if rows.is_empty() {
@@ -290,4 +292,14 @@ fn humanise_dt(dt: chrono::DateTime<chrono::Utc>) -> String {
         format!("{} min ago", diff.num_minutes().max(1))
     };
     ui::muted(&relative)
+}
+
+// ─── Dispatch ────────────────────────────────────────────────────────────────
+
+/// Route a parsed [`DeveloperCommands`] subcommand to its handler.
+pub fn dispatch(ctx: &Ctx, cmd: DeveloperCommands) -> Result<()> {
+    match cmd {
+        DeveloperCommands::Db { path } => db(path),
+        DeveloperCommands::Repos => repos(ctx),
+    }
 }

@@ -33,9 +33,6 @@ console = "0.15"
 # Serialization
 serde      = { version = "1", features = ["derive"] }
 toml       = "0.8"
-# Comment/format-preserving TOML editing for `g config <key> <value>` so the
-# config file stays human-friendly after programmatic edits.
-toml_edit  = "0.22"
 serde_json = "1"
 
 # Error handling
@@ -81,6 +78,12 @@ inherits = "release"
 # Keep debug symbols in benchmark builds so profilers can show function names.
 debug = true
 strip = false
+
+[dev-dependencies]
+# Temporary directories for command-layer integration tests.
+# Each test builds an isolated git repo + isolated HOME under a TempDir so
+# tests never touch the developer's real ~/.config/g.
+tempfile = "3"
 
 [profile.dev]
 opt-level = 0

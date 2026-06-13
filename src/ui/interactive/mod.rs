@@ -205,7 +205,14 @@ where
             let area = f.area();
             let z = layout::rows(
                 area,
-                [Length(1), Length(1), Length(1), Length(1), Min(0), Length(1)],
+                [
+                    Length(1),
+                    Length(1),
+                    Length(1),
+                    Length(1),
+                    Min(0),
+                    Length(1),
+                ],
             );
             widgets::header(f, prompt, z[0]);
 
@@ -371,8 +378,10 @@ pub fn fuzzy_select(prompt: &str, options: &[&str]) -> Option<usize> {
 
             let filtered = fuzzy_filter(options, &q);
             let clamped = st.cursor.min(filtered.len().saturating_sub(1));
-            let opts: Vec<SelectOption> =
-                filtered.iter().map(|(_, l)| SelectOption::new(*l)).collect();
+            let opts: Vec<SelectOption> = filtered
+                .iter()
+                .map(|(_, l)| SelectOption::new(*l))
+                .collect();
             widgets::list(f, &opts, clamped, None, z[2]);
 
             widgets::help(

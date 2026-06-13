@@ -41,7 +41,14 @@ pub fn option_row(opt: &SelectOption, is_cursor: bool, max_label: usize, stdout:
     let pad = " ".repeat(max_label.saturating_sub(opt.label.len()));
     let line = match &opt.description {
         Some(desc) if !desc.is_empty() => {
-            format!("{}{}  {}{}  {}\r\n", indent(), cursor_ch, label, pad, muted(desc))
+            format!(
+                "{}{}  {}{}  {}\r\n",
+                indent(),
+                cursor_ch,
+                label,
+                pad,
+                muted(desc)
+            )
         }
         _ => format!("{}{}  {}\r\n", indent(), cursor_ch, label),
     };
@@ -70,7 +77,14 @@ pub fn multi_row(
     let pad = " ".repeat(max_label.saturating_sub(opt.label.len()));
     let desc = opt.description.as_deref().unwrap_or("");
     let line = if desc.is_empty() {
-        format!("{}{}  {}  {}{}\r\n", indent(), cursor_ch, checkbox, label, pad)
+        format!(
+            "{}{}  {}  {}{}\r\n",
+            indent(),
+            cursor_ch,
+            checkbox,
+            label,
+            pad
+        )
     } else {
         format!(
             "{}{}  {}  {}{}  {}\r\n",

@@ -72,7 +72,11 @@ pub fn list(
         .enumerate()
         .map(|(i, opt)| {
             let is_cur = i == cursor;
-            let accent = if is_cur { t.palette.primary } else { t.palette.muted };
+            let accent = if is_cur {
+                t.palette.primary
+            } else {
+                t.palette.muted
+            };
 
             let mut spans = vec![Span::styled(
                 if is_cur { "  > " } else { "    " },
@@ -83,14 +87,20 @@ pub fn list(
                 let checked = checks.get(i).copied().unwrap_or(false);
                 spans.push(Span::styled(
                     if checked { "[✓] " } else { "[ ] " },
-                    Style::default().fg(if checked { t.palette.success } else { t.palette.muted }),
+                    Style::default().fg(if checked {
+                        t.palette.success
+                    } else {
+                        t.palette.muted
+                    }),
                 ));
             }
 
             spans.push(Span::styled(
                 &opt.label,
                 if is_cur {
-                    Style::default().fg(t.palette.primary).add_modifier(Modifier::BOLD)
+                    Style::default()
+                        .fg(t.palette.primary)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().fg(t.palette.text)
                 },
@@ -98,7 +108,10 @@ pub fn list(
 
             if let Some(desc) = &opt.description {
                 spans.push(Span::raw("  "));
-                spans.push(Span::styled(desc.as_str(), Style::default().fg(t.palette.muted)));
+                spans.push(Span::styled(
+                    desc.as_str(),
+                    Style::default().fg(t.palette.muted),
+                ));
             }
 
             ListItem::new(Line::from(spans))

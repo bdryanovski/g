@@ -20,8 +20,8 @@ use std::io::{self, Write};
 
 use crossterm::cursor;
 use crossterm::event::KeyCode;
-use crossterm::terminal::{self, ClearType};
 use crossterm::execute;
+use crossterm::terminal::{self, ClearType};
 
 use super::interactive::SelectOption;
 use super::print::{muted, paint_text, primary, success, warning};

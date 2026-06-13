@@ -22,7 +22,9 @@ pub mod stacks;
 pub mod stats;
 pub mod workspaces;
 
-mod migrations;
+// `migrations` exposes `run()` to test helpers (`commands::test_support`) so
+// they can apply the schema to in-memory test databases.  Crate-visible only.
+pub(crate) mod migrations;
 mod toml_import;
 
 // Re-export the most commonly used types so callers can write

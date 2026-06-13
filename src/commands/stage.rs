@@ -4,9 +4,10 @@
 //! the full-screen TUI from [`crate::ui::stage`], then applies the user's
 //! choices via `git add` / `git restore --staged` / `git restore`.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 
 use crate::commands::git::{self as gitcmd, git_output};
+use crate::commands::Error as CommandError;
 use crate::config;
 use crate::ui;
 use crate::ui::stage::{run as run_tui, run_inline, StageEntry};
@@ -17,7 +18,7 @@ use crate::ui::stage::{run as run_tui, run_inline, StageEntry};
 /// user's selections.
 pub fn stage() -> Result<()> {
     if !gitcmd::is_inside_git_repo() {
-        bail!("Not inside a git repository.");
+        return Err(CommandError::NotInRepo.into());
     }
 
     let cfg = config::load().unwrap_or_default();

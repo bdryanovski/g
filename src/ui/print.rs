@@ -199,7 +199,14 @@ pub fn print_rule() {
         .saturating_sub(indent().len())
         .max(10);
     let rule = theme::current().borders.horizontal;
-    println!("{}{}", indent(), paint_spec(&rule.to_string().repeat(width), theme::current().styles.rule));
+    println!(
+        "{}{}",
+        indent(),
+        paint_spec(
+            &rule.to_string().repeat(width),
+            theme::current().styles.rule
+        )
+    );
 }
 
 /// Print a numbered step: `  [n/total]  <msg>`.
@@ -238,7 +245,14 @@ pub fn print_section(title: &str, count: Option<usize>) {
         .saturating_sub(indent().len() + 1)
         .max(10);
     let rule = theme::current().borders.horizontal;
-    println!("{} {}", indent(), paint_spec(&rule.to_string().repeat(width), theme::current().styles.rule));
+    println!(
+        "{} {}",
+        indent(),
+        paint_spec(
+            &rule.to_string().repeat(width),
+            theme::current().styles.rule
+        )
+    );
 }
 
 /// Print aligned key-value pairs, with keys in muted color.

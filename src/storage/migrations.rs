@@ -34,7 +34,7 @@ pub(super) const MIGRATIONS: &[(u32, &str)] = &[
 ///
 /// Returns an error if any migration SQL fails to execute or if the migrations
 /// table cannot be created or queried.
-pub(super) fn run(conn: &Connection) -> Result<()> {
+pub(crate) fn run(conn: &Connection) -> Result<()> {
     // Bootstrap the migrations table on a fresh database.
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS schema_migrations (

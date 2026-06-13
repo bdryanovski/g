@@ -536,6 +536,38 @@ fn replace_theme_line(raw: &str, theme: &str) -> Option<String> {
     Some(out)
 }
 
+// ─── Default config template ─────────────────────────────────────────────────
+
+/// Returns the default `config.toml` content written on first run.
+///
+/// The template lives in `default_config.toml` next to this file and is
+/// embedded into the binary via `include_str!` at compile time.  Editing it
+/// only requires touching the `.toml` file — no Rust changes needed.
+fn default_config_toml() -> &'static str {
+    include_str!("default_config.toml")
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        // Try to parse the built-in default template first so users get the
+        // same values whether or not they have a config file.  Fall back to
+        // constructing the struct manually if parsing somehow fails (e.g. the
+        // template has a syntax error introduced during development).
+        toml::from_str(default_config_toml()).unwrap_or_else(|_| Self {
+            general: GeneralConfig::default(),
+            ui: UiConfig::default(),
+            commit: CommitConfig::default(),
+            diff: DiffConfig::default(),
+            github: GithubConfig::default(),
+            workspace: WorkspaceConfig::default(),
+            log: LogConfig::default(),
+            stage: StageConfig::default(),
+            aliases: HashMap::new(),
+            plugins: PluginsConfig::default(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::replace_theme_line;
@@ -567,150 +599,5 @@ mod tests {
         let raw = "theme_extra = \"x\"\ntheme = \"dark\"\n";
         let out = replace_theme_line(raw, "nord").unwrap();
         assert_eq!(out, "theme_extra = \"x\"\ntheme = \"nord\"\n");
-    }
-}
-
-// ─── Default config template ─────────────────────────────────────────────────
-
-/// Returns the default `config.toml` content written on first run.
-///
-/// Using a raw string literal (`r#"…"#`) lets us embed a multi-line TOML
-/// document without any escaping.
-fn default_config_toml() -> &'static str {
-    r#"# g configuration
-# Documentation: https://github.com/your-org/g/
-
-# ─── General ──────────────────────────────────────────────────────────────────
-[general]
-# Default branch name for new repositories and comparisons
-default_branch = "main"
-# Automatically run `git fetch` before branch comparisons
-auto_fetch = false
-# Override pager: "delta" | "less" | "bat" | "" (to disable)
-# pager = "less"
-# Override git executable path
-# git_path = "/usr/bin/git"
-
-# ─── User Interface ───────────────────────────────────────────────────────────
-[ui]
-colors = true
-icons = true                # Unicode icons and box-drawing characters
-date_format = "relative"    # "relative" | "short" | "iso" | "rfc"
-log_limit = 30              # Default number of commits in log
-show_graph = true           # Show branch graph in log
-commit_mode = "interactive"  # "interactive" | "inline" — controls g commit builder only
-# prompt_mode controls ALL interactive prompts (g commit, g stage, g add, g workspace switch, …)
-# "interactive" = full-screen TUI (default) | "inline" = stays in terminal scrollback
-prompt_mode = "interactive"
-# Built-in: dark | light | dracula | nord | gruvbox | solarized-dark | monochrome
-# Or a custom theme: a name under ~/.config/g/themes/<name>.toml, or a path to a .toml file
-theme = "dark"
-# Borders and spacing are defined by the theme itself (see ~/.config/g/themes/).
-# Uncomment to OVERRIDE the theme for every theme you switch to:
-# border_style = "sharp"   # "sharp" | "rounded" | "heavy" | "double" | "ascii"
-# density = "normal"       # "normal" | "compact" | "relaxed"
-
-# ─── Stage ────────────────────────────────────────────────────────────────────
-[stage]
-# When true, pressing `d` to revert a file asks for confirmation.
-# Set to false to revert immediately without a popup.
-confirm_revert = true
-
-# ─── Commit Templates ─────────────────────────────────────────────────────────
-[commit]
-# Conventional commit types shown in interactive mode
-types = [
-    "feat",     # A new feature
-    "fix",      # A bug fix
-    "docs",     # Documentation only changes
-    "style",    # Formatting, missing semi colons, etc
-    "refactor", # Code change that neither fixes a bug nor adds a feature
-    "perf",     # A code change that improves performance
-    "test",     # Adding missing tests
-    "build",    # Changes to build system or dependencies
-    "ci",       # Changes to CI configuration
-    "chore",    # Other changes that don't modify src or test files
-    "revert",   # Reverts a previous commit
-]
-require_scope = false   # Require a scope in commit messages
-require_body = false    # Require a body in commit messages
-prompt_body = false     # Prompt to add a body (skipped when false)
-prompt_footer = false   # Prompt to add a footer (skipped when false)
-max_subject_length = 72 # Maximum subject line length
-# Append "Signed-off-by: Name <email>" to every commit (-s / --signoff)
-sign_off = false
-# Sign commits with a GPG key (-S / --gpg-sign); requires user.signingKey in git config
-gpg_sign = false
-
-# Custom commit template (optional)
-# template = """
-# {type}({scope}): {subject}
-#
-# {body}
-#
-# {footer}
-# """
-
-# ─── Diff Tool ────────────────────────────────────────────────────────────────
-[diff]
-# "auto" detects delta/diff-so-fancy in PATH, falls back to builtin
-# Other options: "delta" | "diff-so-fancy" | "vimdiff" | "/path/to/tool"
-tool = "auto"
-tool_args = []
-context_lines = 3
-
-# ─── GitHub Integration ───────────────────────────────────────────────────────
-[github]
-# GitHub token — prefer setting GITHUB_TOKEN environment variable
-# token = ""
-default_reviewers = []
-default_labels = []
-# For GitHub Enterprise:
-# api_base = "https://github.your-company.com/api/v3"
-api_base = "https://api.github.com"
-
-# ─── Workspace ────────────────────────────────────────────────────────────────
-[workspace]
-# Separator between repo name and workspace name for sibling worktree directories
-# e.g. with "--": ~/proj/myapp--feature-x
-separator = "--"
-
-# ─── Aliases ──────────────────────────────────────────────────────────────────
-[aliases]
-co = "checkout"
-br = "branch"
-st = "status"
-lg = "log"
-cp = "cherry-pick"
-rb = "rebase"
-sw = "switch"
-
-# ─── Plugins ──────────────────────────────────────────────────────────────────
-[plugins]
-# Discover commands named "g-<name>" in PATH
-discover = true
-# Additional plugin paths
-paths = []
-"#
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        // Try to parse the built-in default template first so users get the
-        // same values whether or not they have a config file.  Fall back to
-        // constructing the struct manually if parsing somehow fails (e.g. the
-        // template has a syntax error introduced during development).
-        toml::from_str(default_config_toml()).unwrap_or_else(|_| Self {
-            general: GeneralConfig::default(),
-            ui: UiConfig::default(),
-            commit: CommitConfig::default(),
-            diff: DiffConfig::default(),
-            github: GithubConfig::default(),
-            workspace: WorkspaceConfig::default(),
-            log: LogConfig::default(),
-            stage: StageConfig::default(),
-            aliases: HashMap::new(),
-            plugins: PluginsConfig::default(),
-        })
     }
 }

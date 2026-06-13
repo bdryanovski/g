@@ -65,9 +65,9 @@ mod widgets;
 // the dead-code lint for those here rather than scattering allow-attributes.
 #[allow(unused_imports)]
 pub use render::{
-    is_inline_prompts, is_no_interactive, paint, paint_bold, paint_bold_underline, paint_dim,
-    paint_spec, paint_underline, progress_bar, set_inline_prompts, set_no_interactive, spinner,
-    indent, spinner_error, spinner_success, terminal_width, ProgressBar, Spinner,
+    indent, is_inline_prompts, is_no_interactive, paint, paint_bold, paint_bold_underline,
+    paint_dim, paint_spec, paint_underline, progress_bar, set_inline_prompts, set_no_interactive,
+    spinner, spinner_error, spinner_success, terminal_width, ProgressBar, Spinner,
 };
 
 #[allow(unused_imports)]

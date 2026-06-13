@@ -1,0 +1,86 @@
+name: CI
+
+# Runs on every push to main and every pull request targeting main.
+# Locks in three quality gates so refactor work can't silently regress:
+#
+#   • cargo fmt --check     — every file is formatted with the project rustfmt.
+#   • cargo clippy -D warnings  — zero lint warnings allowed (including
+#                                  the test compilation unit).
+#   • cargo test            — every test passes.
+#
+# A single failure on any gate fails the job.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "build.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "themes/**"
+      - ".github/workflows/check.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "build.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "themes/**"
+      - ".github/workflows/check.yml"
+  workflow_dispatch:
+
+# Cancel an in-flight run when a newer commit lands on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Backtraces in test failures make CI logs actually useful.
+  RUST_BACKTRACE: 1
+
+jobs:
+  check:
+    name: fmt + clippy + test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust (stable + rustfmt + clippy)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          # Bumping the key when Cargo.lock changes is enough — toolchain
+          # version is pinned to `stable` so we don't need it in the key.
+          key: ${{ runner.os }}-cargo-check-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-check-
+            ${{ runner.os }}-cargo-
+
+      # ── Gate 1: formatting ──────────────────────────────────────────────────
+      # Runs before anything else so a formatting drift fails fast (~seconds)
+      # without paying for a full compile.
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+      # ── Gate 2: clippy ──────────────────────────────────────────────────────
+      # `--all-targets` includes the test compilation unit too, so test code
+      # is held to the same standard as the binary.  `-D warnings` promotes
+      # every warning into a build failure.
+      - name: cargo clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      # ── Gate 3: tests ───────────────────────────────────────────────────────
+      - name: cargo test
+        run: cargo test --locked
