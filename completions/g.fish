@@ -68,6 +68,7 @@ complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcomman
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from init" -s V -l version -d 'Print version'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from list" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from list" -s c -d 'Override a configuration value (key=value)' -r
+complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from list" -l json -d 'Emit machine-readable JSON instead of the table view'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from list" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from list" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help'
@@ -96,6 +97,7 @@ complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcomman
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from delete" -s V -l version -d 'Print version'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from status" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from status" -s c -d 'Override a configuration value (key=value)' -r
+complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from status" -l json -d 'Emit machine-readable JSON instead of the rendered view'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from status" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from status" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand workspace; and __fish_seen_subcommand_from status" -s h -l help -d 'Print help'
@@ -151,6 +153,7 @@ complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_fr
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from add" -s V -l version -d 'Print version'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from list" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from list" -s c -d 'Override a configuration value (key=value)' -r
+complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from list" -l json -d 'Emit machine-readable JSON instead of the tree view'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from list" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from list" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help'
@@ -163,6 +166,7 @@ complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_fr
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from view" -s V -l version -d 'Print version'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from details" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from details" -s c -d 'Override a configuration value (key=value)' -r
+complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from details" -l json -d 'Emit machine-readable JSON instead of the rendered view'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from details" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from details" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand stack; and __fish_seen_subcommand_from details" -s h -l help -d 'Print help'
@@ -332,15 +336,29 @@ complete -c g -n "__fish_g_using_subcommand show" -l dry-run -d 'Preview what co
 complete -c g -n "__fish_g_using_subcommand show" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand show" -s h -l help -d 'Print help'
 complete -c g -n "__fish_g_using_subcommand show" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand config" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand config" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand config" -l edit -d 'Open config file in $EDITOR'
-complete -c g -n "__fish_g_using_subcommand config" -l path -d 'Print the path to the config file'
-complete -c g -n "__fish_g_using_subcommand config" -l themes -d 'List available themes (built-in + custom) and exit'
-complete -c g -n "__fish_g_using_subcommand config" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand config" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand config" -s h -l help -d 'Print help'
-complete -c g -n "__fish_g_using_subcommand config" -s V -l version -d 'Print version'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l get -d 'Print the exact current value of `<key>` (scripting-friendly). Pair with a key positional: `g config --get ui.log_limit`' -r
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -s C -d 'Run as if git was started in <path>' -r
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -s c -d 'Override a configuration value (key=value)' -r
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l edit -d 'Open config file in $EDITOR'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l path -d 'Print the path to the config file'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l themes -d 'List available themes (built-in + custom) and exit'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l list -d 'Print every editable scalar setting with its current value and help text'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l menu -d 'Interactive menu: pick a setting, see its current value, choose a new one'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l new-theme -d 'Launch the interactive theme creator.  Writes a new TOML file under `~/.config/g/themes/<name>.toml` that extends an existing theme and overrides only the colors you choose'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l dry-run -d 'Preview what commands would run without making any changes'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -s h -l help -d 'Print help'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -s V -l version -d 'Print version'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -a "set" -d 'Set a config key, validated against the editable schema'
+complete -c g -n "__fish_g_using_subcommand config; and not __fish_seen_subcommand_from set help" -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -s C -d 'Run as if git was started in <path>' -r
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -s c -d 'Override a configuration value (key=value)' -r
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -l dry-run -d 'Preview what commands would run without making any changes'
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -s V -l version -d 'Print version'
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "set" -d 'Set a config key, validated against the editable schema'
+complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand stats" -l days -d 'Number of days to look back for time-based stats' -r
 complete -c g -n "__fish_g_using_subcommand stats" -l import-limit -d 'Maximum number of commits to import (default: all)' -r
 complete -c g -n "__fish_g_using_subcommand stats" -l search -d 'Search commit messages using fuzzy matching' -r
@@ -425,5 +443,6 @@ complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_fro
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from stack" -f -a "up" -d 'Move a stack up or down in the stack list (affects display order and PR ordering)'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from stack" -f -a "down"
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from branch" -f -a "squash" -d 'Collapse all commits on the current branch into one (from merge-base with base)'
+complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from config" -f -a "set" -d 'Set a config key, validated against the editable schema'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from developer" -f -a "db" -d 'Open an interactive SQLite shell connected to the internal g.db database'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from developer" -f -a "repos" -d 'List all repositories tracked in the internal database'

@@ -52,6 +52,7 @@ This document contains the help content for the `g` command-line program.
 * [`g branch squash`↴](#g-branch-squash)
 * [`g show`↴](#g-show)
 * [`g config`↴](#g-config)
+* [`g config set`↴](#g-config-set)
 * [`g stats`↴](#g-stats)
 * [`g developer`↴](#g-developer)
 * [`g developer db`↴](#g-developer-db)
@@ -155,7 +156,11 @@ Moves the repo root into a new sub-directory named after the default branch (e.g
 
 List all workspaces (git worktrees)
 
-**Usage:** `g workspace list`
+**Usage:** `g workspace list [OPTIONS]`
+
+###### **Options:**
+
+* `--json` — Emit machine-readable JSON instead of the table view
 
 
 
@@ -210,7 +215,11 @@ Remove a workspace (git worktree remove)
 
 Show current workspace info
 
-**Usage:** `g workspace status`
+**Usage:** `g workspace status [OPTIONS]`
+
+###### **Options:**
+
+* `--json` — Emit machine-readable JSON instead of the rendered view
 
 
 
@@ -298,7 +307,11 @@ Create a new branch on top of the current stack
 
 List all stacks
 
-**Usage:** `g stack list`
+**Usage:** `g stack list [OPTIONS]`
+
+###### **Options:**
+
+* `--json` — Emit machine-readable JSON instead of the tree view
 
 
 
@@ -314,7 +327,11 @@ Show the current stack as a tree
 
 Show the current stack with commits for each branch
 
-**Usage:** `g stack details`
+**Usage:** `g stack details [OPTIONS]`
+
+###### **Options:**
+
+* `--json` — Emit machine-readable JSON instead of the rendered view
 
 
 
@@ -587,17 +604,40 @@ Enhanced git show
 
 Open interactive config editor
 
-**Usage:** `g config [OPTIONS] [KEY]`
+**Usage:** `g config [OPTIONS] [KEY] [COMMAND]`
+
+###### **Subcommands:**
+
+* `set` — Set a config key, validated against the editable schema
 
 ###### **Arguments:**
 
-* `<KEY>` — Get a config value
+* `<KEY>` — Optional positional key — when present alone, fuzzy-search the summary for matching lines (legacy behaviour)
 
 ###### **Options:**
 
 * `--edit` — Open config file in $EDITOR
 * `--path` — Print the path to the config file
 * `--themes` — List available themes (built-in + custom) and exit
+* `--list` — Print every editable scalar setting with its current value and help text
+* `--menu` — Interactive menu: pick a setting, see its current value, choose a new one
+* `--get <KEY>` — Print the exact current value of `<key>` (scripting-friendly). Pair with a key positional: `g config --get ui.log_limit`
+* `--new-theme` — Launch the interactive theme creator.  Writes a new TOML file under `~/.config/g/themes/<name>.toml` that extends an existing theme and overrides only the colors you choose
+
+
+
+## `g config set`
+
+Set a config key, validated against the editable schema.
+
+Comments and formatting in `config.toml` are preserved.
+
+**Usage:** `g config set <KEY> <VALUE>`
+
+###### **Arguments:**
+
+* `<KEY>` — Dotted key path, e.g. `ui.log_limit` or `ui.theme`
+* `<VALUE>` — New value.  Booleans accept `true`/`false`/`yes`/`no`/`on`/`off`. Enums must match one of the documented choices
 
 
 

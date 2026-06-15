@@ -1,7 +1,9 @@
 //! `g workspace status` — print information about the current worktree
-//! (name, branch, path, age, working-tree status summary).
+//! (name, branch, path, age, working-tree status summary), or emit a
+//! machine-readable JSON document when `--json` is given.
 
 use anyhow::Result;
+use serde::Serialize;
 use std::path::Path;
 
 use crate::commands::git as gitcmd;
@@ -10,13 +12,57 @@ use crate::ui;
 
 use super::shared::{format_relative_time, list_worktrees, load_repo_workspaces};
 
-pub(super) fn run(ctx: &Ctx) -> Result<()> {
+// ─── JSON output shape ──────────────────────────────────────────────────────
+
+#[derive(Serialize, Default)]
+struct GitStatusJson {
+    /// `true` when `git status --porcelain` produces no output.
+    clean: bool,
+    /// Total number of changed entries (staged + unstaged + untracked).
+    changes: usize,
+    staged: usize,
+    unstaged: usize,
+    untracked: usize,
+}
+
+#[derive(Serialize)]
+struct CurrentWorkspaceJson<'a> {
+    name: Option<&'a str>,
+    branch: &'a str,
+    path: String,
+    description: Option<&'a str>,
+    /// RFC 3339 UTC timestamp, or `null` when git-only.
+    created_at: Option<String>,
+    git_status: GitStatusJson,
+}
+
+// ─── run ────────────────────────────────────────────────────────────────────
+
+pub(super) fn run(ctx: &Ctx, json: bool) -> Result<()> {
     let conn = ctx.conn;
     let (_, workspaces) = load_repo_workspaces(conn)?;
     let cwd = std::env::current_dir()?;
     let worktrees = list_worktrees()?;
 
     let current_wt = worktrees.iter().find(|wt| cwd.starts_with(&wt.path));
+
+    // ── JSON output ─────────────────────────────────────────────────────────
+    if json {
+        let payload = current_wt.map(|wt| {
+            let branch = wt.branch.as_deref().unwrap_or("(detached)");
+            let meta = workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
+            CurrentWorkspaceJson {
+                name: meta.map(|ws| ws.name.as_str()),
+                branch,
+                path: wt.path.to_string_lossy().into_owned(),
+                description: meta.and_then(|ws| ws.description.as_deref()),
+                created_at: meta.map(|ws| ws.created_at.to_rfc3339()),
+                git_status: compute_git_status(),
+            }
+        });
+        println!("{}", serde_json::to_string_pretty(&payload)?);
+        return Ok(());
+    }
 
     ui::print_blank();
 
@@ -89,4 +135,27 @@ pub(super) fn run(ctx: &Ctx) -> Result<()> {
 
     ui::print_blank();
     Ok(())
+}
+
+/// Build the `[git_status]` block for the JSON output by parsing
+/// `git status --porcelain` once.
+fn compute_git_status() -> GitStatusJson {
+    let porcelain = gitcmd::git_output_lossy(&["status", "--porcelain"]);
+    let lines: Vec<&str> = porcelain.lines().collect();
+    let staged = lines
+        .iter()
+        .filter(|l| l.len() >= 2 && &l[0..1] != " " && &l[0..1] != "?")
+        .count();
+    let unstaged = lines
+        .iter()
+        .filter(|l| l.len() >= 2 && &l[1..2] != " " && &l[0..1] != "?")
+        .count();
+    let untracked = lines.iter().filter(|l| l.starts_with("??")).count();
+    GitStatusJson {
+        clean: lines.is_empty(),
+        changes: lines.len(),
+        staged,
+        unstaged,
+        untracked,
+    }
 }

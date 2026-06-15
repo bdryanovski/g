@@ -1,0 +1,21 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-config-set 1  "g-config-set " 
+.SH NAME
+g\-config\-set \- Set a config key, validated against the editable schema
+.SH SYNOPSIS
+\fBg\-config\-set\fR [\fB\-h\fR|\fB\-\-help\fR] <\fIKEY\fR> <\fIVALUE\fR> 
+.SH DESCRIPTION
+Set a config key, validated against the editable schema.
+.PP
+Comments and formatting in `config.toml` are preserved.
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fIKEY\fR>
+Dotted key path, e.g. `ui.log_limit` or `ui.theme`
+.TP
+<\fIVALUE\fR>
+New value.  Booleans accept `true`/`false`/`yes`/`no`/`on`/`off`. Enums must match one of the documented choices

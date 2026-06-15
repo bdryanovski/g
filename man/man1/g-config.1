@@ -4,7 +4,7 @@
 .SH NAME
 g\-config \- Open interactive config editor
 .SH SYNOPSIS
-\fBg\-config\fR [\fB\-\-edit\fR] [\fB\-\-path\fR] [\fB\-\-themes\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIKEY\fR] 
+\fBg\-config\fR [\fB\-\-edit\fR] [\fB\-\-path\fR] [\fB\-\-themes\fR] [\fB\-\-list\fR] [\fB\-\-menu\fR] [\fB\-\-get\fR] [\fB\-\-new\-theme\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIKEY\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
 Open interactive config editor
 .SH OPTIONS
@@ -18,8 +18,27 @@ Print the path to the config file
 \fB\-\-themes\fR
 List available themes (built\-in + custom) and exit
 .TP
+\fB\-\-list\fR
+Print every editable scalar setting with its current value and help text
+.TP
+\fB\-\-menu\fR
+Interactive menu: pick a setting, see its current value, choose a new one
+.TP
+\fB\-\-get\fR \fI<KEY>\fR
+Print the exact current value of `<key>` (scripting\-friendly). Pair with a key positional: `g config \-\-get ui.log_limit`
+.TP
+\fB\-\-new\-theme\fR
+Launch the interactive theme creator.  Writes a new TOML file under `~/.config/g/themes/<name>.toml` that extends an existing theme and overrides only the colors you choose
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help
 .TP
 [\fIKEY\fR]
-Get a config value
+Optional positional key — when present alone, fuzzy\-search the summary for matching lines (legacy behaviour)
+.SH SUBCOMMANDS
+.TP
+g\-config\-set(1)
+Set a config key, validated against the editable schema
+.TP
+g\-config\-help(1)
+Print this message or the help of the given subcommand(s)

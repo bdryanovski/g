@@ -24,7 +24,11 @@ pub enum WorkspaceCommands {
     Init,
 
     /// List all workspaces (git worktrees)
-    List,
+    List {
+        /// Emit machine-readable JSON instead of the table view
+        #[arg(long)]
+        json: bool,
+    },
 
     /// Create a new workspace as a sibling worktree directory
     Create {
@@ -59,7 +63,11 @@ pub enum WorkspaceCommands {
     },
 
     /// Show current workspace info
-    Status,
+    Status {
+        /// Emit machine-readable JSON instead of the rendered view
+        #[arg(long)]
+        json: bool,
+    },
 
     /// Rename a workspace (move directory and repair worktree)
     Rename {
@@ -75,11 +83,11 @@ impl WorkspaceCommands {
     pub(super) fn name(&self) -> &'static str {
         match self {
             Self::Init => "init",
-            Self::List => "list",
+            Self::List { .. } => "list",
             Self::Create { .. } => "create",
             Self::Switch { .. } => "switch",
             Self::Delete { .. } => "delete",
-            Self::Status => "status",
+            Self::Status { .. } => "status",
             Self::Rename { .. } => "rename",
         }
     }

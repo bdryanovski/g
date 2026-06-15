@@ -63,9 +63,9 @@ pub fn dispatch(ctx: &Ctx, cmd: StackCommands) -> Result<()> {
     match cmd {
         StackCommands::New { name } => new::run(ctx, &name),
         StackCommands::Add { branch } => add::run(ctx, &branch),
-        StackCommands::List => list::run(ctx),
+        StackCommands::List { json } => list::run(ctx, json),
         StackCommands::View => list::view(ctx),
-        StackCommands::Details => details::run(ctx),
+        StackCommands::Details { json } => details::run(ctx, json),
         StackCommands::Switch { name } => switch::run(ctx, &name),
         StackCommands::Absorb => absorb::run(ctx),
         StackCommands::Squash {

@@ -1,6 +1,7 @@
 //! `g stack details` — current stack with per-branch commits and live PR status.
 
 use anyhow::Result;
+use serde::Serialize;
 
 use crate::commands::git as gitcmd;
 use crate::commands::Ctx;
@@ -10,13 +11,105 @@ use crate::ui;
 
 use super::shared::{current_stack, get_github_token};
 
+// ─── JSON output shape ──────────────────────────────────────────────────────
+
+/// One branch in the JSON output, with the per-branch commits the rendered
+/// view also shows.
+#[derive(Serialize)]
+struct BranchDetails<'a> {
+    name: &'a str,
+    position: i32,
+    is_current: bool,
+    pr_number: Option<u64>,
+    pr_url: Option<String>,
+    /// Commits between this branch and its base — `[]` for the root branch.
+    commits: Vec<CommitJson>,
+}
+
+#[derive(Serialize)]
+struct CommitJson {
+    hash: String,
+    subject: String,
+    author: String,
+    relative_date: String,
+}
+
+#[derive(Serialize)]
+struct StackDetailsJson<'a> {
+    name: &'a str,
+    root_branch: &'a str,
+    branches: Vec<BranchDetails<'a>>,
+}
+
+// ─── run ────────────────────────────────────────────────────────────────────
+
 /// Show the current stack with per-branch commit details and live PR status.
-pub(super) fn run(ctx: &Ctx) -> Result<()> {
+pub(super) fn run(ctx: &Ctx, json: bool) -> Result<()> {
     let conn = ctx.conn;
     let stack = current_stack(conn)?;
     let current_branch = gitcmd::current_branch().unwrap_or_default();
 
     let open_prs = fetch_open_prs();
+
+    if json {
+        let branches: Vec<BranchDetails> = stack
+            .branches
+            .iter()
+            .enumerate()
+            .map(|(i, b)| {
+                let live_pr = open_prs.as_ref().and_then(|prs| prs.get(&b.name));
+                let (pr_number, pr_url) = match live_pr {
+                    Some(pr) => (Some(pr.number), Some(pr.html_url.clone())),
+                    None => (b.pr_number, b.pr_url.clone()),
+                };
+
+                let base = if i == 0 {
+                    &stack.root_branch
+                } else {
+                    &stack.branches[i - 1].name
+                };
+                let commits = if i == 0 && b.name == stack.root_branch {
+                    Vec::new()
+                } else {
+                    let range = format!("{}..{}", base, b.name);
+                    let raw = gitcmd::git_output_lossy(&[
+                        "log",
+                        "--format=%h%x1f%s%x1f%an%x1f%ar",
+                        "--reverse",
+                        &range,
+                    ]);
+                    raw.lines()
+                        .filter_map(|line| {
+                            let parts: Vec<&str> = line.split('\x1f').collect();
+                            (parts.len() >= 4).then(|| CommitJson {
+                                hash: parts[0].to_string(),
+                                subject: parts[1].to_string(),
+                                author: parts[2].to_string(),
+                                relative_date: parts[3].to_string(),
+                            })
+                        })
+                        .collect()
+                };
+
+                BranchDetails {
+                    name: &b.name,
+                    position: b.position,
+                    is_current: b.name == current_branch,
+                    pr_number,
+                    pr_url,
+                    commits,
+                }
+            })
+            .collect();
+
+        let payload = StackDetailsJson {
+            name: &stack.name,
+            root_branch: &stack.root_branch,
+            branches,
+        };
+        println!("{}", serde_json::to_string_pretty(&payload)?);
+        return Ok(());
+    }
 
     ui::print_blank();
     ui::print_fieldset(&format!(

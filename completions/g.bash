@@ -76,6 +76,18 @@ _g() {
             g__subcmd__branch__subcmd__help,squash)
                 cmd="g__subcmd__branch__subcmd__help__subcmd__squash"
                 ;;
+            g__subcmd__config,help)
+                cmd="g__subcmd__config__subcmd__help"
+                ;;
+            g__subcmd__config,set)
+                cmd="g__subcmd__config__subcmd__set"
+                ;;
+            g__subcmd__config__subcmd__help,help)
+                cmd="g__subcmd__config__subcmd__help__subcmd__help"
+                ;;
+            g__subcmd__config__subcmd__help,set)
+                cmd="g__subcmd__config__subcmd__help__subcmd__set"
+                ;;
             g__subcmd__developer,db)
                 cmd="g__subcmd__developer__subcmd__db"
                 ;;
@@ -144,6 +156,9 @@ _g() {
                 ;;
             g__subcmd__help__subcmd__branch,squash)
                 cmd="g__subcmd__help__subcmd__branch__subcmd__squash"
+                ;;
+            g__subcmd__help__subcmd__config,set)
+                cmd="g__subcmd__help__subcmd__config__subcmd__set"
                 ;;
             g__subcmd__help__subcmd__developer,db)
                 cmd="g__subcmd__help__subcmd__developer__subcmd__db"
@@ -613,8 +628,76 @@ _g() {
             return 0
             ;;
         g__subcmd__config)
-            opts="-C -c -h -V --edit --path --themes --dry-run --no-interactive --help --version [KEY]"
+            opts="-C -c -h -V --edit --path --themes --list --menu --get --new-theme --dry-run --no-interactive --help --version [KEY] set help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --get)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -C)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -c)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        g__subcmd__config__subcmd__help)
+            opts="set help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        g__subcmd__config__subcmd__help__subcmd__help)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        g__subcmd__config__subcmd__help__subcmd__set)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        g__subcmd__config__subcmd__set)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <KEY> <VALUE>"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -877,8 +960,22 @@ _g() {
             return 0
             ;;
         g__subcmd__help__subcmd__config)
-            opts=""
+            opts="set"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        g__subcmd__help__subcmd__config__subcmd__set)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -1513,7 +1610,7 @@ _g() {
             return 0
             ;;
         g__subcmd__stack__subcmd__details)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+            opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1831,7 +1928,7 @@ _g() {
             return 0
             ;;
         g__subcmd__stack__subcmd__list)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+            opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2367,7 +2464,7 @@ _g() {
             return 0
             ;;
         g__subcmd__workspace__subcmd__list)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+            opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2411,7 +2508,7 @@ _g() {
             return 0
             ;;
         g__subcmd__workspace__subcmd__status)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+            opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

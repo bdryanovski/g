@@ -58,7 +58,7 @@ pub use clone::run as clone_with_workspace;
 pub fn dispatch(ctx: &Ctx, cmd: WorkspaceCommands) -> Result<()> {
     match cmd {
         WorkspaceCommands::Init => init::run(ctx),
-        WorkspaceCommands::List => list::run(ctx),
+        WorkspaceCommands::List { json } => list::run(ctx, json),
         WorkspaceCommands::Create {
             name,
             branch,
@@ -75,7 +75,7 @@ pub fn dispatch(ctx: &Ctx, cmd: WorkspaceCommands) -> Result<()> {
         ),
         WorkspaceCommands::Switch { name } => switch::run(ctx, name.as_deref()),
         WorkspaceCommands::Delete { name, force } => delete::run(ctx, &name, force),
-        WorkspaceCommands::Status => status::run(ctx),
+        WorkspaceCommands::Status { json } => status::run(ctx, json),
         WorkspaceCommands::Rename { old, new } => rename::run(ctx, &old, &new),
     }
 }

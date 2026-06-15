@@ -423,6 +423,30 @@ fn handle_config(args: cli::ConfigArgs) -> Result<()> {
         return handle_themes();
     }
 
+    if args.new_theme {
+        return create_theme_wizard(None);
+    }
+
+    // ── Subcommand: `g config set <key> <value>` ────────────────────────────
+    if let Some(cli::ConfigCmd::Set { key, value }) = &args.cmd {
+        return handle_config_set(key, value);
+    }
+
+    // ── --get <key>: print exact current value (scripting-friendly) ────────
+    if let Some(key) = &args.get {
+        return handle_config_get(key);
+    }
+
+    // ── --list: every editable scalar with its current value + help ───────
+    if args.list {
+        return handle_config_list();
+    }
+
+    // ── --menu: interactive picker over the schema ────────────────────────
+    if args.menu {
+        return handle_config_menu();
+    }
+
     if let Some(key) = &args.key {
         let cfg = config::load()?;
         // Serialize the whole config to TOML and filter lines that match the key.
@@ -603,7 +627,7 @@ fn handle_themes() -> Result<()> {
     if interactive {
         // Start the cursor on the currently-active theme.
         let current_idx = themes.iter().position(|t| t.name == cfg.ui.theme);
-        let options: Vec<ui::SelectOption> = themes
+        let mut options: Vec<ui::SelectOption> = themes
             .iter()
             .map(|t| {
                 let mut desc = if t.builtin { "built-in" } else { "custom" }.to_string();
@@ -613,6 +637,13 @@ fn handle_themes() -> Result<()> {
                 ui::SelectOption::with_description(&t.name, desc)
             })
             .collect();
+        // Final "Create new theme..." entry — selecting it launches the
+        // wizard instead of switching themes.
+        let create_idx = options.len();
+        options.push(ui::SelectOption::with_description(
+            "+ Create new theme…",
+            "wizard: pick a base, override colours, write a new TOML",
+        ));
 
         let prompt = match current_idx {
             Some(_) => format!("Select a theme (current: {})", cfg.ui.theme),
@@ -620,6 +651,9 @@ fn handle_themes() -> Result<()> {
         };
 
         if let Some(idx) = ui::select(&prompt, &options) {
+            if idx == create_idx {
+                return create_theme_wizard(None);
+            }
             let chosen = &themes[idx].name;
             if *chosen == cfg.ui.theme {
                 ui::print_blank();
@@ -657,6 +691,346 @@ fn handle_themes() -> Result<()> {
         bin_name()
     ));
     Ok(())
+}
+
+// ─── g config get / set / list / menu ────────────────────────────────────────
+
+/// Handle `g config --get <key>`.  Prints the exact value to stdout and exits
+/// non-zero when the key is unknown or has no value set.
+fn handle_config_get(key: &str) -> Result<()> {
+    if config::settings::find(key).is_none() {
+        ui::print_warning(&format!(
+            "Unknown key '{key}' (see `{} config --list`).",
+            bin_name()
+        ));
+        std::process::exit(1);
+    }
+    match config::settings::get(key)? {
+        Some(v) => {
+            ui::print_line(&v);
+            Ok(())
+        }
+        None => {
+            ui::print_warning(&format!("Key '{key}' is not set in the config file."));
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Handle `g config set <key> <value>` (validated + comment-preserving write).
+fn handle_config_set(key: &str, value: &str) -> Result<()> {
+    config::settings::set(key, value)?;
+    ui::print_blank();
+    ui::print_success(&format!(
+        "{} = {}",
+        ui::primary_bold(key),
+        ui::warning(value)
+    ));
+    ui::print_blank();
+    ui::print_tip(&format!("{} config --get {}  to confirm", bin_name(), key));
+    Ok(())
+}
+
+/// Handle `g config --list` — render every editable scalar with its current
+/// value, type and one-line help text.
+fn handle_config_list() -> Result<()> {
+    ui::print_blank();
+    ui::print_fieldset("Editable settings");
+    ui::print_blank();
+
+    let max_key = config::settings::SCHEMA
+        .iter()
+        .map(|s| s.key.len())
+        .max()
+        .unwrap_or(0);
+
+    for s in config::settings::SCHEMA {
+        let current = config::settings::get(s.key)
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| "(unset)".to_string());
+        // Pad the **uncoloured** key so that `:<width` doesn't count ANSI
+        // escape bytes; then colour the already-padded string.
+        let pad = " ".repeat(max_key.saturating_sub(s.key.len()));
+        ui::print_line(&format!(
+            "  {}{}  {}  {}",
+            ui::primary(s.key),
+            pad,
+            ui::warning(&current),
+            ui::muted(s.help),
+        ));
+    }
+    ui::print_blank();
+    ui::print_tip(&format!(
+        "{} config set <key> <value>  to change one",
+        bin_name()
+    ));
+    Ok(())
+}
+
+/// Handle `g config --menu` — interactive picker over the schema.
+fn handle_config_menu() -> Result<()> {
+    use std::io::IsTerminal;
+    if ui::is_no_interactive() || !std::io::stdin().is_terminal() {
+        // Non-interactive context — degrade to the listing view.
+        return handle_config_list();
+    }
+
+    let entries: Vec<(&'static config::settings::Setting, String)> = config::settings::SCHEMA
+        .iter()
+        .map(|s| {
+            let current = config::settings::get(s.key)
+                .ok()
+                .flatten()
+                .unwrap_or_else(|| "(unset)".to_string());
+            (s, current)
+        })
+        .collect();
+
+    let options: Vec<ui::SelectOption> = entries
+        .iter()
+        .map(|(s, current)| {
+            ui::SelectOption::with_description(s.key.to_string(), format!("= {current}"))
+        })
+        .collect();
+
+    let Some(idx) = ui::select("Select a setting to change", &options) else {
+        return Ok(());
+    };
+    let (setting, current) = &entries[idx];
+
+    // Prompt for the new value using the right widget per kind.
+    let new_value: Option<String> = match setting.kind {
+        config::settings::Kind::Bool => {
+            let yes = ui::confirm(
+                &format!("{}  (current: {})", setting.key, current),
+                current == "true",
+            );
+            Some(yes.to_string())
+        }
+        config::settings::Kind::Enum(choices) => {
+            let opts: Vec<ui::SelectOption> = choices
+                .iter()
+                .map(|c| ui::SelectOption::new((*c).to_string()))
+                .collect();
+            ui::select(&format!("{}  (current: {})", setting.key, current), &opts)
+                .map(|i| choices[i].to_string())
+        }
+        // Empty default — the prompt already shows the current value, so
+        // pre-filling would force users to backspace before typing.
+        config::settings::Kind::Int | config::settings::Kind::Str => {
+            ui::input(&format!("{}  (current: {})", setting.key, current), None)
+        }
+    };
+
+    let Some(v) = new_value else {
+        ui::print_info("Cancelled.");
+        return Ok(());
+    };
+
+    if v == *current {
+        ui::print_info("Value unchanged.");
+        return Ok(());
+    }
+
+    config::settings::set(setting.key, &v)?;
+    ui::print_blank();
+    ui::print_success(&format!(
+        "{} = {}",
+        ui::primary_bold(setting.key),
+        ui::warning(&v)
+    ));
+    ui::print_blank();
+    Ok(())
+}
+
+// ─── g config --new-theme: interactive theme wizard ─────────────────────────
+
+/// The seven palette roles the wizard offers to override.  The eight
+/// conventional-commit colors are intentionally omitted — they inherit from
+/// the base theme and are rarely customised.
+const PALETTE_ROLES: &[(&str, &str)] = &[
+    ("primary", "info icon, spinner, active branch"),
+    ("success", "checkmarks, added lines, current branch"),
+    ("warning", "warnings, commit hashes, staged changes"),
+    ("danger", "errors, deleted lines, remote refs"),
+    ("muted", "dates, dividers, dim text"),
+    ("text", "general body text"),
+    ("accent", "section titles, tags, special refs"),
+];
+
+/// Interactive theme creator — drives the user through picking a base theme,
+/// naming the new one, overriding selected palette roles, and choosing border
+/// style + density, then writes the result to
+/// `~/.config/g/themes/<name>.toml`.
+///
+/// When `name` is `Some`, that name is used directly; otherwise the user is
+/// prompted for one.
+fn create_theme_wizard(name: Option<&str>) -> Result<()> {
+    use std::io::IsTerminal;
+    if ui::is_no_interactive() || !std::io::stdin().is_terminal() {
+        anyhow::bail!(
+            "Theme creation requires an interactive terminal. \
+             Re-run without --no-interactive."
+        );
+    }
+
+    ui::print_blank();
+    ui::print_fieldset("Create new theme");
+    ui::print_blank();
+
+    // 1. Base theme — let the user extend any existing built-in or custom.
+    let bases = gather_themes();
+    let base_options: Vec<ui::SelectOption> = bases
+        .iter()
+        .map(|t| {
+            ui::SelectOption::with_description(
+                t.name.clone(),
+                if t.builtin { "built-in" } else { "custom" },
+            )
+        })
+        .collect();
+    let Some(base_idx) = ui::select("Base theme to extend", &base_options) else {
+        ui::print_info("Cancelled.");
+        return Ok(());
+    };
+    let base = &bases[base_idx].name;
+
+    // 2. Name.
+    let dir = ui::theme::themes_dir()
+        .ok_or_else(|| anyhow::anyhow!("could not determine themes directory"))?;
+    let name = match name {
+        Some(n) => n.to_string(),
+        None => {
+            let Some(n) = ui::input_validated("Name for the new theme", None, |raw| {
+                let v = raw.trim();
+                if v.is_empty() {
+                    return Err("Name cannot be empty".into());
+                }
+                if v.contains('/') || v.ends_with(".toml") {
+                    return Err("Name should be a plain identifier (no slashes, no .toml)".into());
+                }
+                Ok(())
+            }) else {
+                ui::print_info("Cancelled.");
+                return Ok(());
+            };
+            n.trim().to_string()
+        }
+    };
+
+    let target = dir.join(format!("{name}.toml"));
+    if target.exists() {
+        anyhow::bail!(
+            "Theme file '{}' already exists. Pick a different name or delete it first.",
+            target.display()
+        );
+    }
+
+    // 3. Palette overrides — Enter to inherit, or type a colour to override.
+    ui::print_blank();
+    ui::print_info(
+        "For each role: press Enter to inherit from the base, or type a colour \
+         (hex like #88c0d0, an ANSI name like brightcyan, or a 256-colour index).",
+    );
+    let mut overrides: Vec<(&'static str, String)> = Vec::new();
+    for (role, hint) in PALETTE_ROLES {
+        let role_owned = role.to_string();
+        let Some(input) = ui::input_validated(&format!("{role}  ({hint})"), None, move |raw| {
+            let v = raw.trim();
+            if v.is_empty() {
+                return Ok(()); // inherit
+            }
+            ui::theme::parse_color(v)
+                .map(|_| ())
+                .map_err(|e| format!("{role_owned}: {e}"))
+        }) else {
+            ui::print_info("Cancelled.");
+            return Ok(());
+        };
+        let trimmed = input.trim();
+        if !trimmed.is_empty() {
+            overrides.push((role, trimmed.to_string()));
+        }
+    }
+
+    // 4. Border style — last option ("inherit") leaves the field absent.
+    let border = pick_or_inherit(
+        "Border style",
+        &["sharp", "rounded", "heavy", "double", "ascii"],
+    )?;
+
+    // 5. Density.
+    let density = pick_or_inherit("Density", &["normal", "compact", "relaxed"])?;
+
+    // 6. Write the file.
+    let mut body = String::new();
+    body.push_str(&format!("# g — custom theme: {name}\n"));
+    body.push_str(&format!(
+        "# Created via `{} config --new-theme`.\n",
+        bin_name()
+    ));
+    body.push_str(&format!("name = \"{name}\"\n"));
+    body.push_str(&format!("extends = \"{base}\"\n"));
+    if let Some(b) = &border {
+        body.push_str(&format!("border_style = \"{b}\"\n"));
+    }
+    if let Some(d) = &density {
+        body.push_str(&format!("density = \"{d}\"\n"));
+    }
+    if !overrides.is_empty() {
+        body.push_str("\n[palette]\n");
+        for (role, val) in &overrides {
+            body.push_str(&format!("{role} = \"{val}\"\n"));
+        }
+    }
+
+    std::fs::create_dir_all(&dir)
+        .with_context(|| format!("Failed to create themes directory '{}'", dir.display()))?;
+    std::fs::write(&target, body)
+        .with_context(|| format!("Failed to write '{}'", target.display()))?;
+
+    ui::print_blank();
+    ui::print_success(&format!(
+        "Created theme '{}' at {}",
+        ui::primary_bold(&name),
+        ui::link_muted(&target.display().to_string())
+    ));
+    ui::print_blank();
+
+    // 7. Offer to activate it.
+    if ui::confirm(&format!("Activate '{}' now?", name), true) {
+        config::set_theme(&name)?;
+        ui::print_blank();
+        ui::print_success(&format!("Theme set to '{}'.", name));
+    } else {
+        ui::print_tip(&format!(
+            "{} config set ui.theme {}  to activate later",
+            bin_name(),
+            name
+        ));
+    }
+    ui::print_blank();
+    Ok(())
+}
+
+/// Helper for the wizard: select one of `choices` or pick "inherit from base"
+/// (the trailing entry) which returns `Ok(None)`.
+fn pick_or_inherit(prompt: &str, choices: &[&str]) -> Result<Option<String>> {
+    let mut opts: Vec<ui::SelectOption> = choices
+        .iter()
+        .map(|c| ui::SelectOption::new((*c).to_string()))
+        .collect();
+    opts.push(ui::SelectOption::with_description(
+        "inherit from base",
+        "leave the field absent",
+    ));
+    let inherit_idx = opts.len() - 1;
+    match ui::select(prompt, &opts) {
+        Some(i) if i == inherit_idx => Ok(None),
+        Some(i) => Ok(Some(choices[i].to_string())),
+        None => Ok(None),
+    }
 }
 
 // Telemetry names moved next to the enum definitions: see

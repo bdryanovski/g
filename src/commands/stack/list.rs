@@ -1,16 +1,68 @@
-//! `g stack list` (and its `view` alias) — print every stack as a tree.
+//! `g stack list` (and its `view` alias) — print every stack as a tree, or
+//! emit a machine-readable JSON document when `--json` is given.
+
+use serde::Serialize;
 
 use crate::commands::prelude::*;
 use crate::storage::stacks as stacks_store;
 
 use super::shared::current_repo_id;
 
+// ─── JSON output shape ──────────────────────────────────────────────────────
+
+/// One branch entry inside a [`StackJson`].
+#[derive(Serialize)]
+struct BranchJson<'a> {
+    name: &'a str,
+    position: i32,
+    is_current: bool,
+    pr_number: Option<u64>,
+    pr_url: Option<&'a str>,
+}
+
+/// One stack in the JSON output.
+#[derive(Serialize)]
+struct StackJson<'a> {
+    name: &'a str,
+    root_branch: &'a str,
+    branches: Vec<BranchJson<'a>>,
+}
+
+// ─── run ────────────────────────────────────────────────────────────────────
+
 /// List all stacks in the current repository.
-pub(super) fn run(ctx: &Ctx) -> Result<()> {
+pub(super) fn run(ctx: &Ctx, json: bool) -> Result<()> {
     let conn = ctx.conn;
     let repo_id = current_repo_id(conn)?;
     let stacks = stacks_store::load_all(conn, repo_id)?;
     let current_branch = gitcmd::current_branch().unwrap_or_default();
+
+    // ── JSON output ─────────────────────────────────────────────────────────
+    //
+    // Always emit a top-level array (possibly empty) so consumers can parse
+    // unconditionally with `jq '.[]'` etc.
+    if json {
+        let payload: Vec<StackJson> = stacks
+            .iter()
+            .map(|s| StackJson {
+                name: &s.name,
+                root_branch: &s.root_branch,
+                branches: s
+                    .branches
+                    .iter()
+                    .map(|b| BranchJson {
+                        name: &b.name,
+                        position: b.position,
+                        is_current: b.name == current_branch,
+                        pr_number: b.pr_number,
+                        pr_url: b.pr_url.as_deref(),
+                    })
+                    .collect(),
+            })
+            .collect();
+        println!("{}", serde_json::to_string_pretty(&payload)?);
+        return Ok(());
+    }
 
     if stacks.is_empty() {
         ui::print_blank();
@@ -71,7 +123,7 @@ pub(super) fn run(ctx: &Ctx) -> Result<()> {
     Ok(())
 }
 
-/// `g stack view` — alias for [`run`].
+/// `g stack view` — alias for [`run`] (the tree view, never JSON).
 pub(super) fn view(ctx: &Ctx) -> Result<()> {
-    run(ctx)
+    run(ctx, false)
 }

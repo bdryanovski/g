@@ -1,7 +1,9 @@
 //! `g workspace list` — render a table of every live worktree with its
-//! optional metadata from the workspaces table.
+//! optional metadata from the workspaces table, or emit machine-readable
+//! JSON when `--json` is given.
 
 use anyhow::Result;
+use serde::Serialize;
 use std::path::Path;
 
 use crate::commands::Ctx;
@@ -9,12 +11,61 @@ use crate::ui;
 
 use super::shared::{format_relative_time, list_worktrees, load_repo_workspaces};
 
-pub(super) fn run(ctx: &Ctx) -> Result<()> {
+// ─── JSON output shape ──────────────────────────────────────────────────────
+
+/// One workspace in the JSON output.  `created_at` and `description` are
+/// `null` for "git-only" worktrees that aren't tracked in the workspaces
+/// table (typically the main repo checkout).
+#[derive(Serialize)]
+struct WorkspaceJson<'a> {
+    name: &'a str,
+    branch: &'a str,
+    path: String,
+    head: &'a str,
+    is_current: bool,
+    /// `null` when the row is git-only (no metadata in `workspaces`).
+    description: Option<&'a str>,
+    /// RFC 3339 UTC timestamp, or `null` when git-only.
+    created_at: Option<String>,
+}
+
+// ─── run ────────────────────────────────────────────────────────────────────
+
+pub(super) fn run(ctx: &Ctx, json: bool) -> Result<()> {
     let conn = ctx.conn;
     let (repo_id, workspaces) = load_repo_workspaces(conn)?;
     let _ = repo_id;
     let worktrees = list_worktrees()?;
     let cwd = std::env::current_dir()?;
+
+    // ── JSON output ─────────────────────────────────────────────────────────
+    if json {
+        let payload: Vec<WorkspaceJson> = worktrees
+            .iter()
+            .filter(|wt| !wt.bare)
+            .map(|wt| {
+                let branch = wt.branch.as_deref().unwrap_or("(detached)");
+                let is_current = cwd.starts_with(&wt.path);
+                let meta = workspaces.iter().find(|ws| Path::new(&ws.path) == wt.path);
+                let head: &str = if wt.head.len() >= 7 {
+                    &wt.head[..7]
+                } else {
+                    &wt.head
+                };
+                WorkspaceJson {
+                    name: meta.map(|ws| ws.name.as_str()).unwrap_or("(main)"),
+                    branch,
+                    path: wt.path.to_string_lossy().into_owned(),
+                    head,
+                    is_current,
+                    description: meta.and_then(|ws| ws.description.as_deref()),
+                    created_at: meta.map(|ws| ws.created_at.to_rfc3339()),
+                }
+            })
+            .collect();
+        println!("{}", serde_json::to_string_pretty(&payload)?);
+        return Ok(());
+    }
 
     if worktrees.is_empty() {
         ui::print_blank();

@@ -33,13 +33,21 @@ pub enum StackCommands {
     },
 
     /// List all stacks
-    List,
+    List {
+        /// Emit machine-readable JSON instead of the tree view
+        #[arg(long)]
+        json: bool,
+    },
 
     /// Show the current stack as a tree
     View,
 
     /// Show the current stack with commits for each branch
-    Details,
+    Details {
+        /// Emit machine-readable JSON instead of the rendered view
+        #[arg(long)]
+        json: bool,
+    },
 
     /// Switch to a different stack (checks out its top branch)
     Switch {
@@ -120,9 +128,9 @@ impl StackCommands {
         match self {
             Self::New { .. } => "new",
             Self::Add { .. } => "add",
-            Self::List => "list",
+            Self::List { .. } => "list",
             Self::View => "view",
-            Self::Details => "details",
+            Self::Details { .. } => "details",
             Self::Switch { .. } => "switch",
             Self::Absorb => "absorb",
             Self::Squash { .. } => "squash",

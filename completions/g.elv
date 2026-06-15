@@ -74,6 +74,7 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;workspace;list'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
+            cand --json 'Emit machine-readable JSON instead of the table view'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help'
@@ -120,6 +121,7 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;workspace;status'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
+            cand --json 'Emit machine-readable JSON instead of the rendered view'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help'
@@ -213,6 +215,7 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;stack;list'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
+            cand --json 'Emit machine-readable JSON instead of the tree view'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help'
@@ -233,6 +236,7 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;stack;details'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
+            cand --json 'Emit machine-readable JSON instead of the rendered view'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help'
@@ -538,17 +542,41 @@ set edit:completion:arg-completer[g] = {|@words|
             cand --version 'Print version'
         }
         &'g;config'= {
+            cand --get 'Print the exact current value of `<key>` (scripting-friendly). Pair with a key positional: `g config --get ui.log_limit`'
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
             cand --edit 'Open config file in $EDITOR'
             cand --path 'Print the path to the config file'
             cand --themes 'List available themes (built-in + custom) and exit'
+            cand --list 'Print every editable scalar setting with its current value and help text'
+            cand --menu 'Interactive menu: pick a setting, see its current value, choose a new one'
+            cand --new-theme 'Launch the interactive theme creator.  Writes a new TOML file under `~/.config/g/themes/<name>.toml` that extends an existing theme and overrides only the colors you choose'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
             cand -h 'Print help'
             cand --help 'Print help'
             cand -V 'Print version'
             cand --version 'Print version'
+            cand set 'Set a config key, validated against the editable schema'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'g;config;set'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+        &'g;config;help'= {
+            cand set 'Set a config key, validated against the editable schema'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'g;config;help;set'= {
+        }
+        &'g;config;help;help'= {
         }
         &'g;stats'= {
             cand --days 'Number of days to look back for time-based stats'
@@ -735,6 +763,9 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;help;show'= {
         }
         &'g;help;config'= {
+            cand set 'Set a config key, validated against the editable schema'
+        }
+        &'g;help;config;set'= {
         }
         &'g;help;stats'= {
         }

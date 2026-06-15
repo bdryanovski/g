@@ -25,6 +25,11 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
+/// Schema-driven, comment-preserving access to individual config keys.
+/// Powers `g config --get`, `g config set`, `g config --list`,
+/// `g config --menu`.
+pub mod settings;
+
 // ─── Config structure ─────────────────────────────────────────────────────────
 
 /// Root configuration struct — mirrors the top-level TOML table.
@@ -543,7 +548,9 @@ fn replace_theme_line(raw: &str, theme: &str) -> Option<String> {
 /// The template lives in `default_config.toml` next to this file and is
 /// embedded into the binary via `include_str!` at compile time.  Editing it
 /// only requires touching the `.toml` file — no Rust changes needed.
-fn default_config_toml() -> &'static str {
+// `pub(super)` so the `settings` submodule can fall back to this when no
+// config file exists on disk yet.
+pub(super) fn default_config_toml() -> &'static str {
     include_str!("default_config.toml")
 }
 

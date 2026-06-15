@@ -50,6 +50,11 @@ pub use branch::BranchSquashCmd;
 pub use commit::CommitArgs;
 pub use compare::CompareArgs;
 pub use config::ConfigArgs;
+// `ConfigCmd` is destructured at runtime by `main::handle_config` but the
+// build script only walks the clap tree via `Cli::command()`, so the
+// re-export looks unused there — allow it for that compilation unit.
+#[allow(unused_imports)]
+pub use config::ConfigCmd;
 pub use developer::DeveloperCommands;
 pub use stack::StackCommands;
 pub use stats::StatsArgs;
