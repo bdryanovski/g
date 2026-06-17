@@ -30,8 +30,8 @@ use runtime::{is_interactive, run_raw, Flow};
 
 // ─── inline_select ────────────────────────────────────────────────────────────
 
-/// Inline single-choice list with `j/k`/arrow navigation. Returns the chosen
-/// index, or `None` on cancel.
+/// Inline single-choice list with `j/k`/arrow navigation and scrollable viewport.
+/// Returns the chosen index, or `None` on cancel.
 pub fn inline_select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
     let n = options.len();
     if n == 0 || !is_interactive() {
@@ -40,37 +40,35 @@ pub fn inline_select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
 
     let mut stdout = io::stdout();
     let max_label = widgets::max_label_width(options);
-    let mut cursor = 0usize;
+    let mut view = widgets::ScrollView::new(n);
+    let mut prev_lines = 0usize;
 
-    runtime::header(prompt, "j/k ↑↓  move   Enter  select   q  cancel");
-    for (i, opt) in options.iter().enumerate() {
-        widgets::option_row(opt, i == cursor, max_label, &mut stdout);
-    }
-    stdout.flush().ok();
+    // Print header with item count for long lists
+    let header_text = if n > view.visible {
+        format!("{} ({} items)", prompt, n)
+    } else {
+        prompt.to_string()
+    };
+    runtime::header(&header_text, "j/k ↑↓  move   Enter  select   q  cancel");
+
+    // Initial render
+    prev_lines = render_select_view(&view, options, max_label, prev_lines, &mut stdout);
 
     run_raw(|key| match key {
         KeyCode::Char('j') | KeyCode::Down => {
-            if cursor < n - 1 {
-                cursor += 1;
-                widgets::redraw_rows(n, &mut stdout, |i, w| {
-                    widgets::option_row(&options[i], i == cursor, max_label, w)
-                });
-            }
+            view.move_down();
+            prev_lines = render_select_view(&view, options, max_label, prev_lines, &mut stdout);
             Flow::Continue
         }
         KeyCode::Char('k') | KeyCode::Up => {
-            if cursor > 0 {
-                cursor -= 1;
-                widgets::redraw_rows(n, &mut stdout, |i, w| {
-                    widgets::option_row(&options[i], i == cursor, max_label, w)
-                });
-            }
+            view.move_up();
+            prev_lines = render_select_view(&view, options, max_label, prev_lines, &mut stdout);
             Flow::Continue
         }
         KeyCode::Enter => {
             let _ = write!(stdout, "\r\n");
             let _ = stdout.flush();
-            Flow::Done(Some(cursor))
+            Flow::Done(Some(view.cursor))
         }
         KeyCode::Esc | KeyCode::Char('q') => {
             let _ = write!(stdout, "\r\n");
@@ -82,10 +80,26 @@ pub fn inline_select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
     .flatten()
 }
 
+/// Render the single-select view with scrolling support.
+fn render_select_view(
+    view: &widgets::ScrollView,
+    options: &[SelectOption],
+    max_label: usize,
+    prev_lines: usize,
+    stdout: &mut io::Stdout,
+) -> usize {
+    widgets::redraw_scrollable(view, prev_lines, stdout, |i, is_cursor, w| {
+        widgets::option_row(&options[i], is_cursor, max_label, w);
+    })
+}
+
 // ─── inline_multi_select ─────────────────────────────────────────────────────
 
-/// Inline checkbox list. `pre_selected` marks items that start checked. Returns
-/// the indices of checked items (empty on cancel).
+/// Inline checkbox list with scrollable viewport. `pre_selected` marks items
+/// that start checked. Returns the indices of checked items (empty on cancel).
+///
+/// For long lists, only a portion of items is visible at once, with scroll
+/// indicators showing how many items are above/below the viewport.
 pub fn inline_multi_select(
     prompt: &str,
     options: &[SelectOption],
@@ -98,55 +112,57 @@ pub fn inline_multi_select(
 
     let mut stdout = io::stdout();
     let max_label = widgets::max_label_width(options);
-    let mut cursor = 0usize;
     let mut checked: Vec<bool> = (0..n)
         .map(|i| pre_selected.get(i).copied().unwrap_or(false))
         .collect();
+    let mut view = widgets::ScrollView::new(n);
+    let mut prev_lines = 0usize;
 
+    // Print header with item count
+    let header_text = if n > view.visible {
+        format!("{} ({} items)", prompt, n)
+    } else {
+        prompt.to_string()
+    };
     runtime::header(
-        prompt,
+        &header_text,
         "j/k ↑↓  move   Space  toggle   a  all   n  none   Enter  confirm   q  cancel",
     );
-    for (i, opt) in options.iter().enumerate() {
-        widgets::multi_row(opt, i == cursor, checked[i], max_label, &mut stdout);
-    }
-    stdout.flush().ok();
+
+    // Initial render
+    prev_lines = render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
 
     let result = run_raw(|key| {
-        let redraw = |cursor: usize, checked: &[bool], stdout: &mut io::Stdout| {
-            widgets::redraw_rows(n, stdout, |i, w| {
-                widgets::multi_row(&options[i], i == cursor, checked[i], max_label, w)
-            });
-        };
         match key {
             KeyCode::Char('j') | KeyCode::Down => {
-                if cursor < n - 1 {
-                    cursor += 1;
-                    redraw(cursor, &checked, &mut stdout);
-                }
+                view.move_down();
+                prev_lines =
+                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
                 Flow::Continue
             }
             KeyCode::Char('k') | KeyCode::Up => {
-                if cursor > 0 {
-                    cursor -= 1;
-                    redraw(cursor, &checked, &mut stdout);
-                }
+                view.move_up();
+                prev_lines =
+                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
                 Flow::Continue
             }
             KeyCode::Char(' ') => {
-                checked[cursor] = !checked[cursor];
-                redraw(cursor, &checked, &mut stdout);
+                checked[view.cursor] = !checked[view.cursor];
+                prev_lines =
+                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
                 Flow::Continue
             }
             KeyCode::Char('a') => {
                 let all = checked.iter().all(|&c| c);
                 checked.iter_mut().for_each(|c| *c = !all);
-                redraw(cursor, &checked, &mut stdout);
+                prev_lines =
+                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
                 Flow::Continue
             }
             KeyCode::Char('n') => {
                 checked.iter_mut().for_each(|c| *c = false);
-                redraw(cursor, &checked, &mut stdout);
+                prev_lines =
+                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
                 Flow::Continue
             }
             KeyCode::Enter => {
@@ -170,6 +186,20 @@ pub fn inline_multi_select(
     });
 
     result.unwrap_or_default()
+}
+
+/// Render the multi-select view with scrolling support.
+fn render_multi_view(
+    view: &widgets::ScrollView,
+    options: &[SelectOption],
+    checked: &[bool],
+    max_label: usize,
+    prev_lines: usize,
+    stdout: &mut io::Stdout,
+) -> usize {
+    widgets::redraw_scrollable(view, prev_lines, stdout, |i, is_cursor, w| {
+        widgets::multi_row(&options[i], is_cursor, checked[i], max_label, w);
+    })
 }
 
 // ─── inline_fuzzy_select ─────────────────────────────────────────────────────

@@ -3,6 +3,7 @@
 
 use anyhow::{bail, Context, Result};
 use std::path::Path;
+use std::process::Command;
 
 use crate::commands::git as gitcmd;
 use crate::commands::{Ctx, Error as CommandError};
@@ -10,6 +11,153 @@ use crate::storage::{stats, workspaces as ws_store};
 use crate::ui;
 
 use super::shared::{list_worktrees, load_repo_workspaces};
+
+/// Attempt to clean up a non-empty worktree directory and remove it.
+///
+/// This handles the "Directory not empty" error from git worktree remove by:
+/// 1. Running `git clean -fd` inside the worktree to remove untracked files/dirs
+/// 2. Retrying the worktree removal
+/// 3. If that fails, attempting a force removal with `rm -rf`
+/// 4. Running `git worktree prune` to clean up the git metadata
+///
+/// If all cleanup attempts fail, returns an error with helpful suggestions.
+fn try_cleanup_and_remove(wt_path: &str, force: bool) -> Result<()> {
+    let path = Path::new(wt_path);
+
+    if !path.exists() {
+        // Directory already gone, just prune
+        gitcmd::git_output(&["worktree", "prune"]).ok();
+        return Ok(());
+    }
+
+    ui::print_info("Directory not empty. Attempting cleanup...");
+
+    // Step 1: Try to clean untracked files in the worktree
+    let clean_result = Command::new(gitcmd::git_exe())
+        .args(["-C", wt_path, "clean", "-fd"])
+        .output();
+
+    if let Ok(output) = clean_result {
+        if output.status.success() {
+            ui::print_info("Cleaned untracked files.");
+        }
+    }
+
+    // Step 2: Retry the worktree removal
+    let mut retry_args = vec!["worktree", "remove"];
+    if force {
+        retry_args.push("--force");
+    }
+    retry_args.push(wt_path);
+
+    if gitcmd::git_output(&retry_args).is_ok() {
+        return Ok(());
+    }
+
+    // Step 3: Still failing - check if we can identify what's blocking
+    let blocking_items = find_blocking_items(wt_path);
+
+    // Step 4: If force flag is set, try harder with rm -rf
+    if force {
+        ui::print_warning("Force removing directory...");
+
+        // First, unregister the worktree from git
+        let _ = gitcmd::git_output(&["worktree", "remove", "--force", wt_path]);
+
+        // Then remove the directory manually
+        if let Err(e) = std::fs::remove_dir_all(path) {
+            bail!(
+                "Failed to force remove directory '{}': {}\n\n\
+                 Blocking items found:\n{}\n\n\
+                 Try manually:\n  \
+                 rm -rf '{}'\n  \
+                 git worktree prune",
+                wt_path,
+                e,
+                blocking_items,
+                wt_path
+            );
+        }
+
+        // Clean up git metadata
+        gitcmd::git_output(&["worktree", "prune"]).ok();
+        return Ok(());
+    }
+
+    // Step 5: Not forced and cleanup failed - provide helpful error
+    bail!(
+        "Cannot remove worktree at '{}': directory not empty.\n\n\
+         Blocking items found:\n{}\n\n\
+         Options:\n  \
+         1. Use --force to remove anyway:\n     \
+            {} workspace delete <name> --force\n\n  \
+         2. Clean manually then retry:\n     \
+            rm -rf '{}'\n     \
+            git worktree prune",
+        wt_path,
+        blocking_items,
+        crate::bin_name(),
+        wt_path
+    );
+}
+
+/// Find files/directories that may be blocking worktree removal.
+fn find_blocking_items(wt_path: &str) -> String {
+    let path = Path::new(wt_path);
+    let mut items = Vec::new();
+
+    // Check for common blocking patterns
+    let blocking_patterns = [
+        "node_modules",
+        ".next",
+        "target",
+        "build",
+        "dist",
+        ".turbo",
+        "__pycache__",
+        ".pytest_cache",
+        "vendor",
+        ".gradle",
+    ];
+
+    if let Ok(entries) = std::fs::read_dir(path) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let name = entry.file_name().to_string_lossy().to_string();
+
+            // Skip .git as it's expected
+            if name == ".git" {
+                continue;
+            }
+
+            let is_blocking = blocking_patterns.iter().any(|&p| name == p);
+            let metadata = entry.metadata().ok();
+            let is_dir = metadata.as_ref().is_some_and(|m| m.is_dir());
+
+            if is_blocking {
+                items.push(format!("  • {} (build artifact)", name));
+            } else if is_dir {
+                // Check if it's a non-empty directory
+                if let Ok(mut sub) = std::fs::read_dir(entry.path()) {
+                    if sub.next().is_some() {
+                        items.push(format!("  • {}/ (directory)", name));
+                    }
+                }
+            } else {
+                items.push(format!("  • {}", name));
+            }
+        }
+    }
+
+    if items.is_empty() {
+        "  (unable to identify specific items)".to_string()
+    } else if items.len() > 10 {
+        items.truncate(10);
+        items.push("  ... and more".to_string());
+        items.join("\n")
+    } else {
+        items.join("\n")
+    }
+}
 
 pub(super) fn run(ctx: &Ctx, name: &str, force: bool) -> Result<()> {
     let conn = ctx.conn;
@@ -77,6 +225,16 @@ pub(super) fn run(ctx: &Ctx, name: &str, force: bool) -> Result<()> {
                     "Cannot remove worktree at '{}': permission denied.\nCheck directory ownership and permissions.",
                     wt_path
                 );
+            } else if msg.contains("Directory not empty") || msg.contains("not empty") {
+                // Attempt to clean up the directory and retry
+                match try_cleanup_and_remove(&wt_path, force) {
+                    Ok(_) => {
+                        // Successfully cleaned up and removed
+                    }
+                    Err(cleanup_err) => {
+                        return Err(cleanup_err);
+                    }
+                }
             } else {
                 return Err(e).context("Failed to remove worktree");
             }
@@ -143,5 +301,34 @@ mod tests {
             Some(CommandError::WorkspaceNotFound(n)) => assert_eq!(n, "ghost"),
             other => panic!("expected WorkspaceNotFound, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn removes_worktree_with_untracked_files() {
+        let repo = TestRepo::new();
+        let ctx = repo.ctx();
+        create::run(&ctx, "dirty-ws", None, None, None, false).unwrap();
+
+        let (_, before) = load_repo_workspaces(&repo.conn).unwrap();
+        let row = before
+            .iter()
+            .find(|w| w.name == "dirty-ws")
+            .expect("setup row")
+            .clone();
+        let wt_path = Path::new(&row.path);
+
+        // Create an untracked file that would cause "directory not empty"
+        let untracked_file = wt_path.join("untracked.txt");
+        std::fs::write(&untracked_file, "test content").unwrap();
+        assert!(untracked_file.exists(), "untracked file should exist");
+
+        // Delete with force should succeed
+        run(&ctx, "dirty-ws", true).expect("delete with force should succeed");
+
+        // The worktree directory is gone
+        assert!(!wt_path.exists(), "worktree dir should be removed");
+        // And the DB row is gone too
+        let (_, after) = load_repo_workspaces(&repo.conn).unwrap();
+        assert!(after.iter().all(|w| w.name != "dirty-ws"));
     }
 }
