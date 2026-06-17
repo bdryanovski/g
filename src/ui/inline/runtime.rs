@@ -26,16 +26,42 @@ pub fn is_interactive() -> bool {
     !is_no_interactive() && io::stdin().is_terminal()
 }
 
+/// A key binding hint: `(key, description)`.
+pub type KeyHint<'a> = (&'a str, &'a str);
+
 /// Print the standard inline header into the scroll buffer: a blank line, the
 /// slash fieldset title, a muted hint line, and a trailing blank.
 ///
 /// This stays in history and is never overwritten by later in-place redraws.
+#[allow(dead_code)]
 pub fn header(prompt: &str, hint: &str) {
     use crate::ui::print::muted;
     println!();
     crate::ui::widgets::print_fieldset(prompt);
     println!();
     println!("{}{}", indent(), muted(hint));
+    println!();
+}
+
+/// Print a header with colored key binding hints.
+///
+/// Each hint is a `(key, description)` pair. Keys are highlighted, descriptions
+/// are muted, with a separator between pairs.
+pub fn header_with_hints(prompt: &str, hints: &[KeyHint]) {
+    use crate::ui::print::{muted, primary};
+
+    println!();
+    crate::ui::widgets::print_fieldset(prompt);
+    println!();
+
+    // Build the colored hint line
+    let hint_parts: Vec<String> = hints
+        .iter()
+        .map(|(key, desc)| format!("{}  {}", primary(key), muted(desc)))
+        .collect();
+
+    let hint_line = hint_parts.join(&format!("   {}   ", muted("│")));
+    println!("{}{}", indent(), hint_line);
     println!();
 }
 

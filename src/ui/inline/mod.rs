@@ -26,7 +26,7 @@ use crossterm::terminal::{self, ClearType};
 use super::interactive::SelectOption;
 use super::print::{muted, paint_text, primary, success, warning};
 use super::render::indent;
-use runtime::{is_interactive, run_raw, Flow};
+use runtime::{is_interactive, run_raw, Flow, KeyHint};
 
 // ─── inline_select ────────────────────────────────────────────────────────────
 
@@ -49,7 +49,13 @@ pub fn inline_select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
     } else {
         prompt.to_string()
     };
-    runtime::header(&header_text, "j/k ↑↓  move   Enter  select   q  cancel");
+
+    let hints: &[KeyHint] = &[
+        ("j/k ↑↓", "move"),
+        ("Enter", "select"),
+        ("q", "cancel"),
+    ];
+    runtime::header_with_hints(&header_text, hints);
 
     // Initial render
     prev_lines = render_select_view(&view, options, max_label, prev_lines, &mut stdout);
@@ -124,10 +130,16 @@ pub fn inline_multi_select(
     } else {
         prompt.to_string()
     };
-    runtime::header(
-        &header_text,
-        "j/k ↑↓  move   Space  toggle   a  all   n  none   Enter  confirm   q  cancel",
-    );
+
+    let hints: &[KeyHint] = &[
+        ("j/k ↑↓", "move"),
+        ("Space", "toggle"),
+        ("a", "all"),
+        ("n", "none"),
+        ("Enter", "confirm"),
+        ("q", "cancel"),
+    ];
+    runtime::header_with_hints(&header_text, hints);
 
     // Initial render
     prev_lines = render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
