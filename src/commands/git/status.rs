@@ -173,15 +173,5 @@ pub fn enhanced_status(_extra_args: &[String]) -> Result<()> {
 
     ui::print_blank();
 
-    if !staged.is_empty() {
-        ui::print_tip(&format!(
-            "{}  commit staged changes",
-            ui::warning(&format!("{} commit", crate::bin_name()))
-        ));
-    } else if !unstaged.is_empty() || !untracked.is_empty() {
-        ui::print_tip("git add <file>  or  git add -A  to stage");
-    }
-    ui::print_blank();
-
     Ok(())
 }

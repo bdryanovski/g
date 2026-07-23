@@ -203,10 +203,7 @@ pub fn interactive_add() -> Result<()> {
                             if count == 1 { "file" } else { "files" }
                         ),
                     );
-                    ui::print_tip(&format!(
-                        "{}  commit staged changes",
-                        ui::warning(&format!("{} commit", crate::bin_name()))
-                    ));
+
                 }
                 Err(e) => ui::spinner_error(pb, &format!("Failed to stage: {e}")),
             }

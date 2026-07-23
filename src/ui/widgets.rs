@@ -23,16 +23,16 @@ use ratatui_cheese::fieldset::{Fieldset, FieldsetFill, FieldsetStyles};
 use super::render::{indent, paint, paint_bold, paint_dim, print_buffer_row, terminal_width};
 use super::theme;
 
-// ─── Fieldset (slash divider) ─────────────────────────────────────────────────
+// ─── Fieldset (dot divider) ───────────────────────────────────────────────────
 
-/// Print a top-level section divider with a slash fill and left-aligned title.
+/// Print a top-level section divider with a dot fill and left-aligned title.
 ///
-/// Uses `ratatui_cheese::fieldset::Fieldset` with `FieldsetFill::Slash`.
+/// Uses `ratatui_cheese::fieldset::Fieldset` with `FieldsetFill::Dot`.
 /// The widget is rendered to an in-memory `Buffer` and flushed to stdout via
 /// `print_buffer_row` — no `Terminal` instance is required.
 ///
 /// ```text
-/// /////  Title  ////////////////////////////////////////////////////
+/// •••••  Title  •••••••••••••••••••••••••••••••••••••••••••••••••••
 /// ```
 pub fn print_fieldset(title: &str) {
     let t = theme::current();
@@ -53,11 +53,11 @@ pub fn print_fieldset(title: &str) {
 
     // ratatui-cheese Fieldset::title takes &str; styling comes from FieldsetStyles.
     // We use a padded title string (" Title ") so there's breathing room around
-    // the text against the slash fill.
+    // the text against the dot fill.
     let padded = format!("  {}  ", title);
     Fieldset::new()
         .title(padded.as_str())
-        .fill(FieldsetFill::Slash)
+        .fill(FieldsetFill::Dot)
         .top_alignment(Alignment::Left)
         .styles(FieldsetStyles {
             title: title_style,

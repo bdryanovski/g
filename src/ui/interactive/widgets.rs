@@ -1,6 +1,6 @@
 //! Theme-aware building blocks for interactive screens.
 //!
-//! These are the reusable visual pieces — a slash header, a help bar, a cursor
+//! These are the reusable visual pieces — a dot header, a help bar, a cursor
 //! list, an input line, a paginator — plus [`scroll_list`], which composes a
 //! header + windowed list + paginator + help bar into a single call so list
 //! prompts stay a few lines long.
@@ -20,13 +20,13 @@ use crate::ui::theme;
 /// `(key, action)` hint pairs shown in a help bar.
 pub type Hints<'a> = &'a [(&'a str, &'a str)];
 
-/// Render a slash-fieldset header with the prompt title.
+/// Render a dot-fieldset header with the prompt title.
 pub fn header(f: &mut ratatui::Frame, title: &str, area: Rect) {
     let t = theme::current();
     let padded = format!("  {}  ", title);
     Fieldset::new()
         .title(padded.as_str())
-        .fill(FieldsetFill::Slash)
+        .fill(FieldsetFill::Dot)
         .top_alignment(Alignment::Left)
         .styles(FieldsetStyles {
             title: Style::default()

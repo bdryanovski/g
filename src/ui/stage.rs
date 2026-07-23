@@ -736,7 +736,7 @@ fn render_fieldset(f: &mut ratatui::Frame, title: &str, area: Rect) {
     let padded = format!("  {}  ", title);
     Fieldset::new()
         .title(padded.as_str())
-        .fill(FieldsetFill::Slash)
+        .fill(FieldsetFill::Dot)
         .top_alignment(Alignment::Left)
         .styles(FieldsetStyles {
             title: title_style,

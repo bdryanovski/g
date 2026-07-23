@@ -31,7 +31,7 @@ impl Spacing {
     pub fn for_density(name: &str) -> Self {
         match name.trim().to_lowercase().as_str() {
             "compact" | "tight" => Self {
-                indent: " ",
+                indent: "",
                 col_gap: " ",
                 label_gap: " ",
                 title_pad: " ",
@@ -39,18 +39,18 @@ impl Spacing {
                 item_gap: 0,
             },
             "relaxed" | "comfortable" | "spacious" => Self {
-                indent: "    ",
-                col_gap: "   ",
+                indent: "  ",
+                col_gap: "  ",
                 label_gap: "  ",
                 title_pad: "  ",
                 section_gap: 2,
                 item_gap: 1,
             },
             _ => Self {
-                indent: "  ",
+                indent: " ",
                 col_gap: "  ",
                 label_gap: " ",
-                title_pad: "  ",
+                title_pad: " ",
                 section_gap: 1,
                 item_gap: 0,
             },
