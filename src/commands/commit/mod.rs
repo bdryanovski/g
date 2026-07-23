@@ -168,9 +168,8 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
                 ),
             );
             if !out.is_empty() {
-                ui::print_indented(&ui::muted(out.lines().last().unwrap_or("")));
+                ui::print_line(&ui::muted(out.lines().last().unwrap_or("")));
             }
-            ui::print_blank();
 
             // Record stats — best-effort, never fails the commit.
             let (commit_type, scope) = parse_conventional_type(subject_line);
