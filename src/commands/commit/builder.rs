@@ -146,13 +146,7 @@ pub(super) fn build_commit_message_interactive(
         message.push_str(&footer);
     }
 
-    // Final preview + confirmation.
-    ui::print_blank();
-    for line in message.lines() {
-        ui::print_indented(&ui::paint_text(line));
-    }
-    ui::print_blank();
-
+    // Final confirmation.
     if !ui::confirm("Commit with this message?", true) {
         bail!("Commit cancelled.");
     }
@@ -244,13 +238,7 @@ pub(super) fn build_commit_message_inline(
         message.push_str(&footer);
     }
 
-    // ── Preview + confirmation ────────────────────────────────────────────────
-    ui::print_blank();
-    for line in message.lines() {
-        ui::print_indented(&ui::paint_text(line));
-    }
-    ui::print_blank();
-
+    // ── Confirmation ───────────────────────────────────────────────────────────
     if !ui::confirm("Commit with this message?", true) {
         bail!("Commit cancelled.");
     }
