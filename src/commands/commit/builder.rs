@@ -147,7 +147,7 @@ pub(super) fn build_commit_message_interactive(
     }
 
     // Final preview + confirmation.
-    ui::print_fieldset("Preview");
+    ui::print_blank();
     for line in message.lines() {
         ui::print_indented(&ui::paint_text(line));
     }
@@ -245,7 +245,7 @@ pub(super) fn build_commit_message_inline(
     }
 
     // ── Preview + confirmation ────────────────────────────────────────────────
-    ui::print_fieldset("Preview");
+    ui::print_blank();
     for line in message.lines() {
         ui::print_indented(&ui::paint_text(line));
     }

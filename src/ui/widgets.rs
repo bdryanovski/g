@@ -54,7 +54,7 @@ pub fn print_fieldset(title: &str) {
     // ratatui-cheese Fieldset::title takes &str; styling comes from FieldsetStyles.
     // We use a padded title string (" Title ") so there's breathing room around
     // the text against the dot fill.
-    let padded = format!("  {}  ", title);
+    let padded = format!(" {} ", title);
     Fieldset::new()
         .title(padded.as_str())
         .fill(FieldsetFill::Dot)
