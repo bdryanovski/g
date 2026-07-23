@@ -153,7 +153,7 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
     let result = gitcmd::git_output(&git_args);
 
     match result {
-        Ok(out) => {
+        Ok(_) => {
             let hash = gitcmd::git_output_lossy(&["rev-parse", "--short", "HEAD"]);
             ui::spinner_success(
                 pb,
