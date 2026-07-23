@@ -11,6 +11,7 @@
 
 pub mod commit;
 pub mod compare;
+pub mod config;
 pub mod ctx;
 pub mod developer;
 pub mod error;
