@@ -483,6 +483,8 @@ Interactive guided commit with message templates
 * `--no-verify` — Don't run pre-commit hooks
 * `-a`, `--all` — Stage all changes before committing
 * `--amend` — Amend the last commit
+* `-s`, `--signoff` — Add Signed-off-by trailer
+* `-S`, `--gpg-sign` — GPG-sign the commit
 
 
 

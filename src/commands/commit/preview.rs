@@ -23,7 +23,6 @@ pub(super) fn show_staged_summary() -> Result<()> {
     if stat.lines().count() > 12 {
         ui::print_indented(&ui::muted("…and more"));
     }
-    ui::print_blank();
     Ok(())
 }
 

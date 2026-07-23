@@ -270,6 +270,8 @@ complete -c g -n "__fish_g_using_subcommand commit" -s c -d 'Override a configur
 complete -c g -n "__fish_g_using_subcommand commit" -l no-verify -d 'Don\'t run pre-commit hooks'
 complete -c g -n "__fish_g_using_subcommand commit" -s a -l all -d 'Stage all changes before committing'
 complete -c g -n "__fish_g_using_subcommand commit" -l amend -d 'Amend the last commit'
+complete -c g -n "__fish_g_using_subcommand commit" -s s -l signoff -d 'Add Signed-off-by trailer'
+complete -c g -n "__fish_g_using_subcommand commit" -s S -l gpg-sign -d 'GPG-sign the commit'
 complete -c g -n "__fish_g_using_subcommand commit" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand commit" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand commit" -s h -l help -d 'Print help'

@@ -139,12 +139,12 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
     if args.amend {
         git_args.push("--amend");
     }
-    // Append "Signed-off-by: Name <email>" trailer — set via [commit] sign_off = true.
-    if cfg.commit.sign_off {
+    // Append "Signed-off-by: Name <email>" trailer — from CLI flag or config.
+    if args.signoff || cfg.commit.sign_off {
         git_args.push("--signoff");
     }
-    // GPG-sign the commit object — set via [commit] gpg_sign = true.
-    if cfg.commit.gpg_sign {
+    // GPG-sign the commit object — from CLI flag or config.
+    if args.gpg_sign || cfg.commit.gpg_sign {
         git_args.push("--gpg-sign");
     }
 

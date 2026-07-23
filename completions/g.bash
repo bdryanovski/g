@@ -604,7 +604,7 @@ _g() {
             return 0
             ;;
         g__commit)
-            opts="-m -b -a -C -c -h -V --message --body --type --scope --no-verify --all --amend --dry-run --no-interactive --help --version"
+            opts="-m -b -a -s -S -C -c -h -V --message --body --type --scope --no-verify --all --amend --signoff --gpg-sign --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

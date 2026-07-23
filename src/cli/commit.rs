@@ -33,4 +33,12 @@ pub struct CommitArgs {
     /// Amend the last commit
     #[arg(long)]
     pub amend: bool,
+
+    /// Add Signed-off-by trailer
+    #[arg(short = 's', long)]
+    pub signoff: bool,
+
+    /// GPG-sign the commit
+    #[arg(short = 'S', long = "gpg-sign")]
+    pub gpg_sign: bool,
 }

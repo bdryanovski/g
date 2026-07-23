@@ -530,6 +530,10 @@ _arguments "${_arguments_options[@]}" : \
 '-a[Stage all changes before committing]' \
 '--all[Stage all changes before committing]' \
 '--amend[Amend the last commit]' \
+'-s[Add Signed-off-by trailer]' \
+'--signoff[Add Signed-off-by trailer]' \
+'-S[GPG-sign the commit]' \
+'--gpg-sign[GPG-sign the commit]' \
 '--dry-run[Preview what commands would run without making any changes]' \
 '--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
 '-h[Print help]' \
