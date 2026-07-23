@@ -15,6 +15,7 @@ pub(super) fn show_staged_summary() -> Result<()> {
 
     ui::print_blank();
     ui::print_fieldset("Staged changes");
+    ui::print_blank();
     // Show at most 12 file lines to keep the output concise.
     // Trim leading whitespace from each line for consistent alignment.
     for line in stat.lines().take(12) {
