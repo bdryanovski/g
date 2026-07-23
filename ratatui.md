@@ -662,7 +662,7 @@ Each `[section]` in the config gets its own slash fieldset, rendered via
 
 //////////////////////////////////////////////////
 
-(diff streams below — passthrough to delta / diff-so-fancy / builtin)
+(diff streams below — passthrough to external pager / builtin)
 ```
 
 The header block uses `print_fieldset` with both a left title (the hash) and

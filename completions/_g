@@ -697,6 +697,152 @@ _arguments "${_arguments_options[@]}" : \
 '*::args -- Extra arguments forwarded to git:_default' \
 && ret=0
 ;;
+(notes)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_g__notes_commands" \
+"*::: :->notes" \
+&& ret=0
+
+    case $state in
+    (notes)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-notes-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':id:_default' \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':id:_default' \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':id:_default' \
+&& ret=0
+;;
+(clear)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--force[Skip the confirmation prompt]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::path -- Restrict to this repo-relative file path (optional):_default' \
+&& ret=0
+;;
+(publish)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':id:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__notes__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-notes-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(clear)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(publish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
 (config)
 _arguments "${_arguments_options[@]}" : \
 '--get=[Print the exact current value of \`<key>\` (scripting-friendly). Pair with a key positional\: \`g config --get ui.log_limit\`]:KEY:_default' \
@@ -1064,6 +1210,46 @@ esac
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(notes)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__help__notes_commands" \
+"*::: :->notes" \
+&& ret=0
+
+    case $state in
+    (notes)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-notes-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(clear)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(publish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (config)
 _arguments "${_arguments_options[@]}" : \
 ":: :_g__help__config_commands" \
@@ -1143,6 +1329,7 @@ _g_commands() {
 'diff:Enhanced git diff using your configured diff tool' \
 'branch:Enhanced branch listing, \`git branch\` passthrough, or \`branch squash\`' \
 'show:Enhanced git show' \
+'notes:Manage private review notes left from \`g diff\`'\''s \`c\` key' \
 'config:Open interactive config editor' \
 'stats:Display a rich usage-statistics report' \
 'developer:Developer / debugging utilities' \
@@ -1295,6 +1482,7 @@ _g__help_commands() {
 'diff:Enhanced git diff using your configured diff tool' \
 'branch:Enhanced branch listing, \`git branch\` passthrough, or \`branch squash\`' \
 'show:Enhanced git show' \
+'notes:Manage private review notes left from \`g diff\`'\''s \`c\` key' \
 'config:Open interactive config editor' \
 'stats:Display a rich usage-statistics report' \
 'developer:Developer / debugging utilities' \
@@ -1379,6 +1567,48 @@ _g__help__help_commands() {
 _g__help__log_commands() {
     local commands; commands=()
     _describe -t commands 'g help log commands' commands "$@"
+}
+(( $+functions[_g__help__notes_commands] )) ||
+_g__help__notes_commands() {
+    local commands; commands=(
+'list:List every saved note in this repo (newest first)' \
+'show:Show a single note by id — prints the body and its anchor' \
+'edit:Edit the body of an existing note in \`\$EDITOR\`' \
+'delete:Delete a single note by id' \
+'clear:Delete all notes for a given file (or every note when no path is given). Requires \`--force\` to actually run — protects against fat-finger typos' \
+'publish:Publish a saved private note to the GitHub PR for the current branch' \
+    )
+    _describe -t commands 'g help notes commands' commands "$@"
+}
+(( $+functions[_g__help__notes__clear_commands] )) ||
+_g__help__notes__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help notes clear commands' commands "$@"
+}
+(( $+functions[_g__help__notes__delete_commands] )) ||
+_g__help__notes__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help notes delete commands' commands "$@"
+}
+(( $+functions[_g__help__notes__edit_commands] )) ||
+_g__help__notes__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help notes edit commands' commands "$@"
+}
+(( $+functions[_g__help__notes__list_commands] )) ||
+_g__help__notes__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help notes list commands' commands "$@"
+}
+(( $+functions[_g__help__notes__publish_commands] )) ||
+_g__help__notes__publish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help notes publish commands' commands "$@"
+}
+(( $+functions[_g__help__notes__show_commands] )) ||
+_g__help__notes__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help notes show commands' commands "$@"
 }
 (( $+functions[_g__help__show_commands] )) ||
 _g__help__show_commands() {
@@ -1554,6 +1784,97 @@ _g__help__workspace__switch_commands() {
 _g__log_commands() {
     local commands; commands=()
     _describe -t commands 'g log commands' commands "$@"
+}
+(( $+functions[_g__notes_commands] )) ||
+_g__notes_commands() {
+    local commands; commands=(
+'list:List every saved note in this repo (newest first)' \
+'show:Show a single note by id — prints the body and its anchor' \
+'edit:Edit the body of an existing note in \`\$EDITOR\`' \
+'delete:Delete a single note by id' \
+'clear:Delete all notes for a given file (or every note when no path is given). Requires \`--force\` to actually run — protects against fat-finger typos' \
+'publish:Publish a saved private note to the GitHub PR for the current branch' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g notes commands' commands "$@"
+}
+(( $+functions[_g__notes__clear_commands] )) ||
+_g__notes__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes clear commands' commands "$@"
+}
+(( $+functions[_g__notes__delete_commands] )) ||
+_g__notes__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes delete commands' commands "$@"
+}
+(( $+functions[_g__notes__edit_commands] )) ||
+_g__notes__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes edit commands' commands "$@"
+}
+(( $+functions[_g__notes__help_commands] )) ||
+_g__notes__help_commands() {
+    local commands; commands=(
+'list:List every saved note in this repo (newest first)' \
+'show:Show a single note by id — prints the body and its anchor' \
+'edit:Edit the body of an existing note in \`\$EDITOR\`' \
+'delete:Delete a single note by id' \
+'clear:Delete all notes for a given file (or every note when no path is given). Requires \`--force\` to actually run — protects against fat-finger typos' \
+'publish:Publish a saved private note to the GitHub PR for the current branch' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g notes help commands' commands "$@"
+}
+(( $+functions[_g__notes__help__clear_commands] )) ||
+_g__notes__help__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help clear commands' commands "$@"
+}
+(( $+functions[_g__notes__help__delete_commands] )) ||
+_g__notes__help__delete_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help delete commands' commands "$@"
+}
+(( $+functions[_g__notes__help__edit_commands] )) ||
+_g__notes__help__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help edit commands' commands "$@"
+}
+(( $+functions[_g__notes__help__help_commands] )) ||
+_g__notes__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help help commands' commands "$@"
+}
+(( $+functions[_g__notes__help__list_commands] )) ||
+_g__notes__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help list commands' commands "$@"
+}
+(( $+functions[_g__notes__help__publish_commands] )) ||
+_g__notes__help__publish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help publish commands' commands "$@"
+}
+(( $+functions[_g__notes__help__show_commands] )) ||
+_g__notes__help__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes help show commands' commands "$@"
+}
+(( $+functions[_g__notes__list_commands] )) ||
+_g__notes__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes list commands' commands "$@"
+}
+(( $+functions[_g__notes__publish_commands] )) ||
+_g__notes__publish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes publish commands' commands "$@"
+}
+(( $+functions[_g__notes__show_commands] )) ||
+_g__notes__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'g notes show commands' commands "$@"
 }
 (( $+functions[_g__show_commands] )) ||
 _g__show_commands() {

@@ -429,12 +429,8 @@ pub fn progress_bar(total: u64, msg: &str) -> ProgressBar {
 
                 let cur = current.load(Ordering::Relaxed);
                 let msg = message.lock().map(|m| m.clone()).unwrap_or_default();
-                let pct = if total > 0 {
-                    ((cur * BAR_WIDTH as u64) / total) as usize
-                } else {
-                    0
-                }
-                .min(BAR_WIDTH);
+                let pct = ((cur * BAR_WIDTH as u64).checked_div(total).unwrap_or(0)) as usize;
+                let pct = pct.min(BAR_WIDTH);
 
                 let bar = format!(
                     "{}{}",

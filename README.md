@@ -7,7 +7,7 @@ A beautiful, opinionated Git CLI built in Rust. `g` is a full drop-in replacemen
 - 🗂️ **Workspaces** — parallel branch checkouts via `git worktree`, no branch switching needed
 - ✍️ **Guided commits** — interactive conventional commit builder with validation
 - 🔍 **Branch comparison** — visual ahead/behind, file stat bars, commit lists
-- 🔌 **Pluggable diff tools** — auto-detects `delta` / `diff-so-fancy`, or configure your own
+- 🔌 **Builtin diff viewer** — syntax-highlighted stack / split / side-by-side TUI, or pipe through any external pager
 - ⚙️ **Config-driven** — everything tweakable via `~/.config/g/config.toml`
 
 ---
@@ -82,7 +82,7 @@ g status
 
 ### `g diff`
 
-Auto-detects and pipes through `delta` or `diff-so-fancy` if available.
+Renders unified diffs with the builtin viewer: a syntax-highlighted stack / split / side-by-side TUI when stdout is a TTY, or inline ANSI otherwise.
 
 ```bash
 g diff
@@ -269,11 +269,11 @@ max_subject_length = 72
 gpg_sign = false
 
 [diff]
-tool = "auto"    # auto-detects delta/diff-so-fancy
-# tool = "delta"
-# tool = "diff-so-fancy"
-# tool = "vimdiff"
-# tool = "/path/to/my-diff"
+tool = "auto"          # builtin renderer (TUI if TTY, inline ANSI otherwise)
+# tool = "builtin"     # same as "auto"
+# tool = "raw"         # forward `git diff` output untouched (no rendering)
+# tool = "/path/to/my-diff"   # pipe `git diff` stdout through any executable
+# tool = "/path/to/your-pager"        # e.g. any executable — pipes git diff through it
 
 [github]
 # token = "..."             # prefer GITHUB_TOKEN env var
@@ -313,15 +313,19 @@ Unlike `git checkout`, `g workspace` uses `git worktree`. This means each worksp
 
 ## Diff Tools
 
-`g diff` auto-detects the best available tool:
+`g diff` uses the builtin viewer by default (`[diff].tool = "auto"`):
 
-| Tool                                                       | Install                      |
-| ---------------------------------------------------------- | ---------------------------- |
-| [delta](https://github.com/dandavison/delta)               | `brew install git-delta`     |
-| [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy) | `brew install diff-so-fancy` |
-| builtin                                                    | (always available)           |
+- **Builtin** — syntax-highlighted TUI (stack / split / side-by-side) when stdout is a TTY, otherwise inline ANSI. Always available.
+- **Raw passthrough** — `tool = "raw"` (or the `--raw` flag) forwards `git diff` output untouched.
+- **External pager** — any other value is treated as an executable path; `git diff` stdout is piped through it generically. Falls back to the builtin renderer if the binary isn't found.
 
-Override in config: `diff.tool = "delta"` or point to any binary.
+```bash
+# Try the builtin viewer:
+g diff
+
+# Hand off to an external pager (any executable on $PATH or an absolute path):
+g -c diff.tool=/path/to/your-pager diff
+```
 
 ---
 

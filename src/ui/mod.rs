@@ -46,6 +46,7 @@
 //! - **Commands own layout; ui owns style** — a command decides *what* to
 //!   print; this module decides *how* it looks.
 
+pub mod diff_tui;
 pub mod stage;
 pub mod theme;
 

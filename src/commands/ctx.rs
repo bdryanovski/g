@@ -38,11 +38,20 @@ pub struct Ctx<'a> {
     /// Held as a plain reference so commands can pass it to storage helpers
     /// without going through an accessor.
     pub conn: &'a Connection,
+    /// Best-effort repo id (FK to `repos(id)`) for the current working
+    /// directory, or `None` when not inside a git repo.  Resolved once in
+    /// `main::run()` and reused by every subcommand — avoids a round-trip to
+    /// SQLite per storage call.
+    pub repo_id: Option<i64>,
 }
 
 impl<'a> Ctx<'a> {
-    /// Create a new context wrapping `conn`.
+    /// Create a new context wrapping `conn` (with `repo_id = None` until
+    /// `main::run()` upserts the current repo and assigns `ctx.repo_id`).
     pub fn new(conn: &'a Connection) -> Self {
-        Self { conn }
+        Self {
+            conn,
+            repo_id: None,
+        }
     }
 }

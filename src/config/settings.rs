@@ -163,12 +163,27 @@ pub const SCHEMA: &[Setting] = &[
     Setting {
         key: "diff.tool",
         kind: Kind::Str,
-        help: "Diff tool: auto | builtin | delta | <path>",
+        help: "Diff tool: auto | builtin | raw | /path/to/executable",
     },
     Setting {
         key: "diff.context_lines",
         kind: Kind::Int,
         help: "Context lines around each diff hunk",
+    },
+    Setting {
+        key: "diff.layout",
+        kind: Kind::Str,
+        help: "TUI layout: auto | stack | split | side",
+    },
+    Setting {
+        key: "diff.line_numbers",
+        kind: Kind::Bool,
+        help: "Show line numbers in the diff gutter",
+    },
+    Setting {
+        key: "diff.wrap_lines",
+        kind: Kind::Bool,
+        help: "Wrap long lines instead of clipping",
     },
     // ── github ─────────────────────────────────────────────────────────────
     Setting {

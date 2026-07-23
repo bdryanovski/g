@@ -37,6 +37,7 @@
 mod cli;
 mod commands;
 mod config;
+mod diff;
 mod github;
 mod storage;
 mod ui;
@@ -176,7 +177,7 @@ fn run() -> Result<()> {
     // The per-invocation runtime context handed to every command. Bundles
     // the DB connection (and any future shared state) so command signatures
     // stay stable as the engine grows.
-    let ctx = commands::Ctx::new(&conn);
+    let mut ctx = commands::Ctx::new(&conn);
 
     // Intercept `g clone --workspace` before clap or git passthrough.
     // Strip the `--workspace` flag and delegate to the workspace handler.
@@ -240,6 +241,7 @@ fn run() -> Result<()> {
     let repo_id = commands::git::repo_root()
         .ok()
         .and_then(|root| storage::repos::upsert(&conn, &root).ok());
+    ctx.repo_id = repo_id;
 
     // Record the command name and subcommand for stats.
     let (cmd_name, sub_name) = cli.command.telemetry_names();
@@ -261,13 +263,14 @@ fn run() -> Result<()> {
             Commands::Commit(args) => commands::commit::commit(&ctx, &args)?,
             Commands::Add(args) => commands::git::dispatch_add(args)?,
             Commands::Stage => commands::stage::stage()?,
-            Commands::Compare(args) => commands::compare::compare(&args)?,
+            Commands::Compare(args) => commands::compare::compare(&ctx, &args)?,
 
             Commands::Log(args) => commands::git::enhanced_log(&args.args)?,
             Commands::Status(args) => commands::git::enhanced_status(&args.args)?,
-            Commands::Diff(args) => commands::git::enhanced_diff(&args.args)?,
+            Commands::Diff(args) => commands::git::enhanced_diff(&ctx, &args.args)?,
             Commands::Branch(args) => commands::git::dispatch_branch(args)?,
-            Commands::Show(args) => commands::git::enhanced_show(&args.args)?,
+            Commands::Show(args) => commands::git::enhanced_show(&ctx, &args.args)?,
+            Commands::Notes(cmd) => commands::notes::dispatch(&ctx, cmd)?,
 
             Commands::Stats(args) => commands::stats::stats(&ctx, &args)?,
             Commands::Config(args) => handle_config(args)?,

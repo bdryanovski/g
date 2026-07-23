@@ -37,7 +37,7 @@ use crate::ui;
 /// - The config cannot be loaded.
 /// - An optional `git fetch` fails.
 /// - Any git command used for counting or displaying commits fails.
-pub fn compare(args: &CompareArgs) -> Result<()> {
+pub fn compare(ctx: &crate::commands::Ctx<'_>, args: &CompareArgs) -> Result<()> {
     let cfg = config::load()?;
 
     let current = gitcmd::current_branch().unwrap_or_else(|_| "HEAD".into());
@@ -89,7 +89,7 @@ pub fn compare(args: &CompareArgs) -> Result<()> {
     // ─── Full diff ────────────────────────────────────────────────────────────
 
     if args.diff {
-        show_full_diff(&base, &head)?;
+        show_full_diff(&base, &head, ctx)?;
     }
 
     ui::print_blank();
@@ -188,10 +188,10 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
 /// # Errors
 ///
 /// Propagates any error from [`gitcmd::enhanced_diff`].
-fn show_full_diff(base: &str, head: &str) -> Result<()> {
+fn show_full_diff(base: &str, head: &str, ctx: &crate::commands::Ctx<'_>) -> Result<()> {
     ui::print_blank();
     let diff_args = vec![format!("{}...{}", base, head)];
-    crate::commands::git::enhanced_diff(&diff_args)
+    crate::commands::git::enhanced_diff(ctx, &diff_args)
 }
 
 /// Colorise a single diffstat file line.

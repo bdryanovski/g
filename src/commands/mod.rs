@@ -15,6 +15,7 @@ pub mod ctx;
 pub mod developer;
 pub mod error;
 pub mod git;
+pub mod notes;
 pub mod prelude;
 pub mod stack;
 pub mod stage;

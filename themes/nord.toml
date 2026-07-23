@@ -23,3 +23,20 @@ cc_perf     = "#d08770"
 cc_test     = "#88c0d0"
 cc_chore    = "#4c566a"
 cc_revert   = "#bf616a"
+
+# Syntax highlighting
+syntax_keyword   = "#81a1c1"
+syntax_string    = "#a3be8c"
+syntax_comment   = "#616e88"
+syntax_function  = "#88c0d0"
+syntax_type      = "#8fbcbb"
+syntax_number    = "#b48ead"
+syntax_operator  = "#81a1c1"
+syntax_variable  = "#d8dee9"
+syntax_constant  = "#5e81ac"
+syntax_attribute = "#d08770"
+
+# Diff colors
+diff_add_bg = "#243329"
+diff_del_bg = "#3b2c2e"
+diff_hunk   = "#5e81ac"

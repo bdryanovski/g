@@ -190,26 +190,7 @@ impl Theme {
     /// Colors match the output that the previous `colored`-based helpers
     /// produced, so the visual appearance is unchanged after migration.
     pub fn default_dark() -> Self {
-        use ratatui::style::Color;
-        let palette = Palette {
-            primary: Color::Cyan,
-            success: Color::Green,
-            warning: Color::Yellow,
-            danger: Color::Red,
-            muted: Color::DarkGray,
-            text: Color::White,
-            accent: Color::Magenta,
-            divider: Color::DarkGray,
-            cc_feat: Color::Green,
-            cc_fix: Color::Red,
-            cc_docs: Color::Blue,
-            cc_refactor: Color::Magenta,
-            cc_perf: Color::Yellow,
-            cc_test: Color::Cyan,
-            cc_chore: Color::DarkGray,
-            cc_revert: Color::Red,
-        };
-        Self::from_palette(palette)
+        Self::from_palette(Palette::base())
     }
 
     /// Light-terminal theme — darker colors on a white/light background.
@@ -235,6 +216,21 @@ impl Theme {
             cc_test: Color::Cyan,
             cc_chore: Color::DarkGray,
             cc_revert: Color::Red,
+            // Syntax highlighting (light theme)
+            syntax_keyword: Color::Magenta,
+            syntax_string: Color::Green,
+            syntax_comment: Color::DarkGray,
+            syntax_function: Color::Blue,
+            syntax_type: Color::Rgb(128, 64, 0), // brown/orange
+            syntax_number: Color::Cyan,
+            syntax_operator: Color::Black,
+            syntax_variable: Color::Black,
+            syntax_constant: Color::Cyan,
+            syntax_attribute: Color::Rgb(128, 64, 0),
+            // Diff colors (light background)
+            diff_add_bg: Color::Rgb(220, 255, 220),
+            diff_del_bg: Color::Rgb(255, 220, 220),
+            diff_hunk: Color::Blue,
         };
         Self::from_palette(palette)
     }

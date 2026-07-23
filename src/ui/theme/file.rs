@@ -134,6 +134,21 @@ struct PaletteSpec {
     cc_test: Option<String>,
     cc_chore: Option<String>,
     cc_revert: Option<String>,
+    // Syntax highlighting
+    syntax_keyword: Option<String>,
+    syntax_string: Option<String>,
+    syntax_comment: Option<String>,
+    syntax_function: Option<String>,
+    syntax_type: Option<String>,
+    syntax_number: Option<String>,
+    syntax_operator: Option<String>,
+    syntax_variable: Option<String>,
+    syntax_constant: Option<String>,
+    syntax_attribute: Option<String>,
+    // Diff colors
+    diff_add_bg: Option<String>,
+    diff_del_bg: Option<String>,
+    diff_hunk: Option<String>,
 }
 
 impl ThemeFile {
@@ -168,6 +183,21 @@ impl ThemeFile {
         set_color(&mut p.cc_test, &s.cc_test)?;
         set_color(&mut p.cc_chore, &s.cc_chore)?;
         set_color(&mut p.cc_revert, &s.cc_revert)?;
+        // Syntax highlighting
+        set_color(&mut p.syntax_keyword, &s.syntax_keyword)?;
+        set_color(&mut p.syntax_string, &s.syntax_string)?;
+        set_color(&mut p.syntax_comment, &s.syntax_comment)?;
+        set_color(&mut p.syntax_function, &s.syntax_function)?;
+        set_color(&mut p.syntax_type, &s.syntax_type)?;
+        set_color(&mut p.syntax_number, &s.syntax_number)?;
+        set_color(&mut p.syntax_operator, &s.syntax_operator)?;
+        set_color(&mut p.syntax_variable, &s.syntax_variable)?;
+        set_color(&mut p.syntax_constant, &s.syntax_constant)?;
+        set_color(&mut p.syntax_attribute, &s.syntax_attribute)?;
+        // Diff colors
+        set_color(&mut p.diff_add_bg, &s.diff_add_bg)?;
+        set_color(&mut p.diff_del_bg, &s.diff_del_bg)?;
+        set_color(&mut p.diff_hunk, &s.diff_hunk)?;
 
         // Re-derive component styles from the (possibly overridden) palette.
         base.styles = Styles::from_palette(&base.palette);

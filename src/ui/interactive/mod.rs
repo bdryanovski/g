@@ -17,7 +17,7 @@
 
 mod layout;
 mod runtime;
-mod widgets;
+pub(crate) mod widgets;
 
 use crossterm::event::KeyCode;
 use ratatui::layout::Constraint::{Length, Min};

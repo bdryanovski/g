@@ -21,6 +21,7 @@
 //!   config.rs     ← ConfigArgs
 //!   stats.rs      ← StatsArgs
 //!   developer.rs  ← DeveloperCommands
+//!   notes.rs      ← NotesCommands
 //! ```
 //!
 //! Every per-domain struct/enum is re-exported below so external call sites
@@ -35,6 +36,7 @@ mod commit;
 mod compare;
 mod config;
 mod developer;
+mod notes;
 mod stack;
 mod stats;
 mod styles;
@@ -56,6 +58,7 @@ pub use config::ConfigArgs;
 #[allow(unused_imports)]
 pub use config::ConfigCmd;
 pub use developer::DeveloperCommands;
+pub use notes::NotesCommands;
 pub use stack::StackCommands;
 pub use stats::StatsArgs;
 pub use workspace::WorkspaceCommands;
@@ -187,6 +190,15 @@ pub enum Commands {
     /// Enhanced git show
     Show(GitPassArgs),
 
+    /// Manage private review notes left from `g diff`'s `c` key.
+    ///
+    /// These notes live in the local SQLite DB and are never published to
+    /// GitHub.  Use `g diff` (and the `c` key inside the TUI) to create them;
+    /// this command surfaces list/show/edit/delete/clear operations from
+    /// outside the TUI.
+    #[command(subcommand)]
+    Notes(NotesCommands),
+
     /// Open interactive config editor
     Config(ConfigArgs),
 
@@ -266,6 +278,7 @@ impl Commands {
             Self::Diff(_) => ("diff", None),
             Self::Branch(_) => ("branch", None),
             Self::Show(_) => ("show", None),
+            Self::Notes(sub) => ("notes", Some(sub.name())),
             Self::Stats(_) => ("stats", None),
             Self::Config(_) => ("config", None),
             Self::Completions { .. } => ("completions", None),

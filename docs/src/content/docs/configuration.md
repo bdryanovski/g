@@ -90,7 +90,11 @@ Drives **`g commit`** interactive flow: allowed types, subject length, GPG.
 
 ### `[diff]`
 
-`tool = "auto"` tries **delta**, then **diff-so-fancy**, then falls back to built-in diff.
+`tool` selects the diff mode:
+
+- `"auto"` / `"builtin"` (default) — builtin renderer (TUI if TTY, inline ANSI otherwise)
+- `"raw"` — forward `git diff` output untouched
+- any other string — path to an external executable; `git diff` stdout is piped through it generically (falls back to builtin if the binary isn't found)
 
 ### `[github]`
 
@@ -127,7 +131,7 @@ Override any supported key for **one** invocation:
 
 ```bash
 g -c ui.log_limit=100 log
-g -c diff.tool=delta diff
+g -c diff.tool=/path/to/your-pager diff   # external pager (any executable on $PATH)
 ```
 
 ## Related docs

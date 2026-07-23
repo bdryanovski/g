@@ -14,7 +14,7 @@
 //!   log.rs        ← `g log` (enhanced)
 //!   status.rs     ← `g status` (enhanced, --porcelain=v2 parsing)
 //!   add.rs        ← `g add` + interactive stager
-//!   diff.rs       ← `g diff` (delta / diff-so-fancy / passthrough)
+//!   diff.rs       ← `g diff` (builtin syntect renderer / passthrough / external pipe)
 //!   branch.rs     ← `g branch` (enhanced + `branch squash`)
 //!   show.rs       ← `g show` (metadata + diff)
 //! ```

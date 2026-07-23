@@ -6,7 +6,7 @@ type DemoId = "log" | "diff" | "workspace" | "stack";
 //
 // log       — CommitEntry::render(): graph + hash (yellow) + subject (conventional
 //             commit type colored) + author (cyan) + date (dim)
-// diff      — enhanced_diff() routed through delta: file header (▌, cyan),
+// diff      — enhanced_diff() builtin renderer: file header (▌, cyan),
 //             + lines (green), - lines (red), context note (dim)
 // workspace — workspace::list() Table with columns: marker ◉/◯, Name, Branch,
 //             Path (dim), HEAD hash (yellow·dim), Created (dim)
@@ -33,7 +33,7 @@ const DEMOS: Record<
       "\x1b[36m▌ src/commands/git.rs\x1b[0m",
       "\x1b[32m+  args.push(format!(\"-n{}\", cfg.ui.log_limit));\x1b[0m",
       "\x1b[31m-  args.push(\"-n20\".to_string());\x1b[0m",
-      "\x1b[90m  … 4 lines context · delta\x1b[0m",
+      "\x1b[90m  … 4 lines context · 1 hunk(s)\x1b[0m",
     ],
   },
   workspace: {

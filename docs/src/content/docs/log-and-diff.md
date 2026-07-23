@@ -1,6 +1,6 @@
 ---
 title: Log & diff
-description: Enhanced history, graph, and diff tooling with delta and diff-so-fancy.
+description: Enhanced history, graph, and diff tooling — builtin viewer or any external pager.
 order: 3
 ---
 
@@ -42,11 +42,15 @@ icons = true
 
 ## Enhanced diff
 
-`g diff` runs a normal Git diff but **pipes through an external tool** when configured or auto-detected:
+`g diff` renders unified diffs with the builtin viewer by default:
+syntax-highlighted stack / split / side-by-side TUI when stdout is a TTY,
+otherwise inline ANSI.  Three modes are available:
 
-- [delta](https://github.com/dandavison/delta)
-- [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)
-- A custom executable (including `vimdiff`)
+- **`auto` / `builtin`** (default) — builtin renderer
+- **`raw`** — forwards `git diff` output untouched (no rendering)
+- **`/path/to/executable`** — pipes `git diff` stdout through any external pager
+  (any executable on `$PATH` or an absolute path); falls back to the builtin
+  renderer if the binary isn't found
 
 ### Examples
 
@@ -56,27 +60,24 @@ g diff --staged
 g diff HEAD~3
 g diff main...feature-branch    # three-dot: merge-base comparison
 g diff main feature-branch -- path/to/file.rs
+g diff --raw                    # passthrough for this single invocation
 ```
 
-### Configure a diff tool
+### Configure the diff mode
 
 ```toml
 [diff]
-tool = "auto"   # default: pick best available
-# tool = "delta"
-# tool = "diff-so-fancy"
-# tool = "vimdiff"
-# tool = "/path/to/my-diff"
-```
+tool = "auto"               # builtin (TUI if TTY, inline ANSI otherwise)
+# tool = "builtin"          # same as "auto"
+# tool = "raw"               # forward `git diff` untouched
+# tool = "/path/to/my-pager" # any executable on $PATH or absolute path
 
-### Install tools (examples)
-
-```bash
-# macOS
-brew install git-delta
-brew install diff-so-fancy
-
-# Many distros package delta as git-delta or delta
+# Optional:
+# tool_args = ["--dark"]      # extra args passed to the external tool
+# context_lines = 3           # unified diff context
+# layout = "auto"             # auto | stack | split | side (TUI only)
+# line_numbers = true
+# wrap_lines = false
 ```
 
 ## Related commands
@@ -128,5 +129,5 @@ g compare --diff                   # full diff through configured tool
 ## Troubleshooting
 
 - **No colors** — check `NO_COLOR` env; set `[ui] colors = true` in config.
-- **Plain diff** — tool not found; install `delta` or set `diff.tool` explicitly.
+- **Plain diff** — `[diff].tool` points at an executable that isn't on `$PATH`; set `tool = "auto"` or install the binary you pointed at.
 - **Pager** — if output is truncated, configure `general.pager` in config (see main README).

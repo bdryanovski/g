@@ -23,6 +23,8 @@ use rusqlite::Connection;
 pub(super) const MIGRATIONS: &[(u32, &str)] = &[
     (1, include_str!("sql/001_initial.sql")),
     (2, include_str!("sql/002_commit_messages.sql")),
+    (3, include_str!("sql/003_review_notes.sql")),
+    (4, include_str!("sql/004_review_notes_email.sql")),
 ];
 
 /// Apply all pending migrations to `conn`.
@@ -108,6 +110,7 @@ mod tests {
             "workspace_events",
             "stack_events",
             "commit_messages",
+            "review_notes",
         ];
 
         for table in &expected {

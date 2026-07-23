@@ -9,7 +9,7 @@ use super::diff::enhanced_diff;
 use super::exec::git_output_lossy;
 
 /// Show a commit's metadata with rich formatting, followed by its diff.
-pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
+pub fn enhanced_show(ctx: &crate::commands::Ctx<'_>, extra_args: &[String]) -> Result<()> {
     let rev = extra_args.first().map(|s| s.as_str()).unwrap_or("HEAD");
 
     let meta_fmt = "%H\x01%h\x01%s\x01%b\x01%an\x01%ae\x01%ai\x01%ar\x01%D\x01%P";
@@ -76,5 +76,5 @@ pub fn enhanced_show(extra_args: &[String]) -> Result<()> {
         a.extend(extra_args.iter().filter(|&s| s != rev).cloned());
         a
     };
-    enhanced_diff(&diff_args)
+    enhanced_diff(ctx, &diff_args)
 }

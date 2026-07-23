@@ -23,3 +23,20 @@ cc_perf     = "yellow"
 cc_test     = "cyan"
 cc_chore    = "darkgray"
 cc_revert   = "red"
+
+# Syntax highlighting (light background)
+syntax_keyword   = "magenta"
+syntax_string    = "#22863a"
+syntax_comment   = "#6a737d"
+syntax_function  = "#6f42c1"
+syntax_type      = "#005cc5"
+syntax_number    = "#005cc5"
+syntax_operator  = "black"
+syntax_variable  = "#24292e"
+syntax_constant  = "#005cc5"
+syntax_attribute = "#e36209"
+
+# Diff colors (light background)
+diff_add_bg = "#dcffe4"
+diff_del_bg = "#ffeef0"
+diff_hunk   = "#6f42c1"

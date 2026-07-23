@@ -140,17 +140,19 @@ Tune limits and colors under `[ui]` and `[diff]` in config. [Log & diff](./log-a
 
 **Who:** You care about consistency in Slack screenshots and local review.
 
-**Goal:** One tool drives `g diff`, `g show`, and `g compare --diff`.
+**Goal:** One mode drives `g diff`, `g show`, and `g compare --diff`.
 
 **What to do**
 
-1. Install [delta](https://github.com/dandavison/delta) (or [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)).
+1. Decide on a render mode. The builtin viewer is the default and needs no extra setup; if you prefer an external pager, install it now (any executable on `$PATH` or an absolute path works).
 
-2. Pin it in `~/.config/g/config.toml`:
+2. Pin the mode in `~/.config/g/config.toml`:
 
    ```toml
    [diff]
-   tool = "delta"
+   tool = "auto"                       # builtin viewer (default)
+   # tool = "raw"                      # passthrough, no rendering
+   # tool = "/path/to/your-pager"      # any executable — pipes git diff through it
    ```
 
 3. Verify:

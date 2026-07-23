@@ -51,6 +51,13 @@ This document contains the help content for the `g` command-line program.
 * [`g branch`↴](#g-branch)
 * [`g branch squash`↴](#g-branch-squash)
 * [`g show`↴](#g-show)
+* [`g notes`↴](#g-notes)
+* [`g notes list`↴](#g-notes-list)
+* [`g notes show`↴](#g-notes-show)
+* [`g notes edit`↴](#g-notes-edit)
+* [`g notes delete`↴](#g-notes-delete)
+* [`g notes clear`↴](#g-notes-clear)
+* [`g notes publish`↴](#g-notes-publish)
 * [`g config`↴](#g-config)
 * [`g config set`↴](#g-config-set)
 * [`g stats`↴](#g-stats)
@@ -99,6 +106,7 @@ Pass --help to any subcommand for detailed usage and examples.
 * `diff` — Enhanced git diff using your configured diff tool
 * `branch` — Enhanced branch listing, `git branch` passthrough, or `branch squash`
 * `show` — Enhanced git show
+* `notes` — Manage private review notes left from `g diff`'s `c` key
 * `config` — Open interactive config editor
 * `stats` — Display a rich usage-statistics report
 * `developer` — Developer / debugging utilities
@@ -597,6 +605,99 @@ Enhanced git show
 ###### **Arguments:**
 
 * `<ARGS>` — Extra arguments forwarded to git
+
+
+
+## `g notes`
+
+Manage private review notes left from `g diff`'s `c` key.
+
+These notes live in the local SQLite DB and are never published to GitHub.  Use `g diff` (and the `c` key inside the TUI) to create them; this command surfaces list/show/edit/delete/clear operations from outside the TUI.
+
+**Usage:** `g notes <COMMAND>`
+
+###### **Subcommands:**
+
+* `list` — List every saved note in this repo (newest first)
+* `show` — Show a single note by id — prints the body and its anchor
+* `edit` — Edit the body of an existing note in `$EDITOR`
+* `delete` — Delete a single note by id
+* `clear` — Delete all notes for a given file (or every note when no path is given). Requires `--force` to actually run — protects against fat-finger typos
+* `publish` — Publish a saved private note to the GitHub PR for the current branch
+
+
+
+## `g notes list`
+
+List every saved note in this repo (newest first)
+
+**Usage:** `g notes list`
+
+
+
+## `g notes show`
+
+Show a single note by id — prints the body and its anchor
+
+**Usage:** `g notes show <ID>`
+
+###### **Arguments:**
+
+* `<ID>`
+
+
+
+## `g notes edit`
+
+Edit the body of an existing note in `$EDITOR`
+
+**Usage:** `g notes edit <ID>`
+
+###### **Arguments:**
+
+* `<ID>`
+
+
+
+## `g notes delete`
+
+Delete a single note by id
+
+**Usage:** `g notes delete <ID>`
+
+###### **Arguments:**
+
+* `<ID>`
+
+
+
+## `g notes clear`
+
+Delete all notes for a given file (or every note when no path is given). Requires `--force` to actually run — protects against fat-finger typos
+
+**Usage:** `g notes clear [OPTIONS] [PATH]`
+
+###### **Arguments:**
+
+* `<PATH>` — Restrict to this repo-relative file path (optional)
+
+###### **Options:**
+
+* `--force` — Skip the confirmation prompt
+
+
+
+## `g notes publish`
+
+Publish a saved private note to the GitHub PR for the current branch.
+
+The "public bucket" of the two-bucket model: this posts the note body as a line-anchored review comment on the open PR whose head matches the current branch.  Requires `GITHUB_TOKEN` in the environment (or a token set in `[github].token`) and an open PR on the current branch.
+
+**Usage:** `g notes publish <ID>`
+
+###### **Arguments:**
+
+* `<ID>`
 
 
 
