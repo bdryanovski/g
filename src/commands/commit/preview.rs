@@ -17,11 +17,12 @@ pub(super) fn show_staged_summary() -> Result<()> {
     ui::print_fieldset("Staged changes");
     // Show at most 12 file lines to keep the output concise.
     for line in stat.lines().take(12) {
-        ui::print_line(&colorize_stat_line(line));
+        ui::print_indented(&colorize_stat_line(line));
     }
     if stat.lines().count() > 12 {
-        ui::print_line(&ui::muted("…and more"));
+        ui::print_indented(&ui::muted("…and more"));
     }
+    ui::print_blank();
     Ok(())
 }
 
