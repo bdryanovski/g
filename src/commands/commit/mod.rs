@@ -78,12 +78,8 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
     // Bail out early if there is nothing staged (and we are not amending).
     let staged = gitcmd::git_output_lossy(&["diff", "--cached", "--name-only"]);
     if staged.is_empty() && !args.amend {
+        ui::print_blank();
         ui::print_warning("Nothing staged to commit.");
-        ui::print_tip(&format!(
-            "Use {} or {} to stage changes.",
-            ui::warning("git add <file>"),
-            ui::warning(&format!("{} commit -a", crate::bin_name()))
-        ));
         return Ok(());
     }
 
@@ -169,7 +165,10 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
             );
             // Print summary line aligned with spinner message (after icon)
             if !out.is_empty() {
-                ui::print_indented(&format!("  {}", ui::muted(out.lines().last().unwrap_or(""))));
+                ui::print_indented(&format!(
+                    "  {}",
+                    ui::muted(out.lines().last().unwrap_or(""))
+                ));
             }
             ui::print_blank();
 
