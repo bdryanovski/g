@@ -163,13 +163,6 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
                     ui::color_subject(subject_line)
                 ),
             );
-            // Print summary line aligned with spinner message (after icon)
-            if !out.is_empty() {
-                ui::print_indented(&format!(
-                    "  {}",
-                    ui::muted(out.lines().last().unwrap_or(""))
-                ));
-            }
             ui::print_blank();
 
             // Record stats — best-effort, never fails the commit.
