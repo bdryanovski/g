@@ -163,7 +163,6 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
                     ui::color_subject(subject_line)
                 ),
             );
-            ui::print_blank();
 
             // Record stats — best-effort, never fails the commit.
             let (commit_type, scope) = parse_conventional_type(subject_line);
