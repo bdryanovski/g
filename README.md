@@ -1,13 +1,16 @@
 # g — Version CLI
 
-A beautiful, opinionated Git CLI built in Rust. `g` is a full drop-in replacement for the `git` command that adds:
+A beautiful, opinionated Git CLI built in Rust. `g` is a full drop-in replacement for the `git`
+command that adds:
 
 - 🎨 **Beautiful colored output** — enhanced log, status, diff, branch, show
-- 🏗️ **Stacked PRs** — create, sync, and publish layered pull requests to GitHub with a single command
+- 🏗️ **Stacked PRs** — create, sync, and publish layered pull requests to GitHub with a single
+  command
 - 🗂️ **Workspaces** — parallel branch checkouts via `git worktree`, no branch switching needed
 - ✍️ **Guided commits** — interactive conventional commit builder with validation
 - 🔍 **Branch comparison** — visual ahead/behind, file stat bars, commit lists
-- 🔌 **Builtin diff viewer** — syntax-highlighted stack / split / side-by-side TUI, or pipe through any external pager
+- 🔌 **Builtin diff viewer** — syntax-highlighted stack / split / side-by-side TUI, or pipe through
+  any external pager
 - ⚙️ **Config-driven** — everything tweakable via `~/.config/g/config.toml`
 
 ---
@@ -54,7 +57,8 @@ g show HEAD
 
 - `-C <path>`: Run as if `g` was started in `<path>` instead of the current working directory.
 - `-c <key=value>`: Override a configuration value for a single command execution.
-- `--dry-run`: Preview what commands would run (git commands, API calls, file changes) without making any actual changes.
+- `--dry-run`: Preview what commands would run (git commands, API calls, file changes) without
+  making any actual changes.
 
 ---
 
@@ -82,7 +86,8 @@ g status
 
 ### `g diff`
 
-Renders unified diffs with the builtin viewer: a syntax-highlighted stack / split / side-by-side TUI when stdout is a TTY, or inline ANSI otherwise.
+Renders unified diffs with the builtin viewer: a syntax-highlighted stack / split / side-by-side TUI
+when stdout is a TTY, or inline ANSI otherwise.
 
 ```bash
 g diff
@@ -140,7 +145,9 @@ g commit --type fix --scope ui -m "fix alignment" # non-interactive
 
 ## Workspaces
 
-Workspaces are an abstraction on top of `git worktree`. Each workspace is a **separate directory** with its own checkout of a branch — no branch switching, no stashing, no context loss. You can have multiple branches checked out simultaneously.
+Workspaces are an abstraction on top of `git worktree`. Each workspace is a **separate directory**
+with its own checkout of a branch — no branch switching, no stashing, no context loss. You can have
+multiple branches checked out simultaneously.
 
 ```bash
 # Create a workspace (creates sibling directory + new branch)
@@ -167,7 +174,9 @@ g workspace delete feature-auth
 g workspace delete feature-auth --force   # if worktree is dirty
 ```
 
-Worktrees are created as **siblings** to your repo. If your repo lives at `~/proj/myapp`, a workspace named `feature-auth` creates a checkout at `~/proj/myapp--feature-auth`. The separator is configurable:
+Worktrees are created as **siblings** to your repo. If your repo lives at `~/proj/myapp`, a
+workspace named `feature-auth` creates a checkout at `~/proj/myapp--feature-auth`. The separator is
+configurable:
 
 ```toml
 [workspace]
@@ -178,7 +187,8 @@ separator = "--"
 
 ## Stacked Pull Requests
 
-Stacked PRs let you break large changes into a series of small, reviewable PRs that each build on the previous one. `g stack` manages the rebase chain and GitHub PR creation for you.
+Stacked PRs let you break large changes into a series of small, reviewable PRs that each build on
+the previous one. `g stack` manages the rebase chain and GitHub PR creation for you.
 
 ### Workflow
 
@@ -189,7 +199,8 @@ Stacked PRs let you break large changes into a series of small, reviewable PRs t
 5. **Commit more changes**: `g commit`
 6. **View the stack**: `g stack view` or `g stack details`
 7. **Sync changes**: If you update a middle branch, run `g stack sync` to propagate changes upwards.
-8. **Squash (optional)**: To keep each branch as a single commit, run `g stack squash` on that branch (see Stack Commands).
+8. **Squash (optional)**: To keep each branch as a single commit, run `g stack squash` on that
+   branch (see Stack Commands).
 9. **Push and PR**: `g stack push` then `g stack pr --open`.
 
 ### Stack Commands
@@ -301,13 +312,22 @@ paths = []
 ## How it Works (Under the Hood)
 
 ### Enhanced Passthrough
-`g` isn't a wrapper; it's an **augmentor**. When you run `g commit`, it runs the interactive builder. When you run `g rebase`, it simply passes it through to `git`. This means your existing muscle memory stays intact.
+
+`g` isn't a wrapper; it's an **augmentor**. When you run `g commit`, it runs the interactive
+builder. When you run `g rebase`, it simply passes it through to `git`. This means your existing
+muscle memory stays intact.
 
 ### Workspace Isolation
-Unlike `git checkout`, `g workspace` uses `git worktree`. This means each workspace has its own `.git` file pointing back to the main repo, but a completely independent file system. No more `git stash` when you need to fix a bug on another branch!
+
+Unlike `git checkout`, `g workspace` uses `git worktree`. This means each workspace has its own
+`.git` file pointing back to the main repo, but a completely independent file system. No more
+`git stash` when you need to fix a bug on another branch!
 
 ### Stack Management
-`g stack` maintains a small TOML file in your config directory that tracks the order of branches. When you `sync`, `g` perform a sequence of rebases. When you `pr`, it uses the GitHub API to set the `base` of each PR to the branch below it in the stack.
+
+`g stack` maintains a small TOML file in your config directory that tracks the order of branches.
+When you `sync`, `g` perform a sequence of rebases. When you `pr`, it uses the GitHub API to set the
+`base` of each PR to the branch below it in the stack.
 
 ---
 
@@ -315,9 +335,11 @@ Unlike `git checkout`, `g workspace` uses `git worktree`. This means each worksp
 
 `g diff` uses the builtin viewer by default (`[diff].tool = "auto"`):
 
-- **Builtin** — syntax-highlighted TUI (stack / split / side-by-side) when stdout is a TTY, otherwise inline ANSI. Always available.
+- **Builtin** — syntax-highlighted TUI (stack / split / side-by-side) when stdout is a TTY,
+  otherwise inline ANSI. Always available.
 - **Raw passthrough** — `tool = "raw"` (or the `--raw` flag) forwards `git diff` output untouched.
-- **External pager** — any other value is treated as an executable path; `git diff` stdout is piped through it generically. Falls back to the builtin renderer if the binary isn't found.
+- **External pager** — any other value is treated as an executable path; `git diff` stdout is piped
+  through it generically. Falls back to the builtin renderer if the binary isn't found.
 
 ```bash
 # Try the builtin viewer:
@@ -396,13 +418,16 @@ cargo run -- status
 cargo run -- workspace list
 ```
 
-`cargo build` automatically runs `build.rs`, which regenerates all documentation artifacts from the source code. See the [Documentation](#documentation) section below.
+`cargo build` automatically runs `build.rs`, which regenerates all documentation artifacts from the
+source code. See the [Documentation](#documentation) section below.
 
 ---
 
 ## Documentation
 
-Documentation is **part of the code**. Every `///` doc-comment on a CLI flag, subcommand, or function is the single source of truth — it powers `--help` output, man pages, shell completions, and the online reference page simultaneously.
+Documentation is **part of the code**. Every `///` doc-comment on a CLI flag, subcommand, or
+function is the single source of truth — it powers `--help` output, man pages, shell completions,
+and the online reference page simultaneously.
 
 ### How it works
 
@@ -416,7 +441,8 @@ src/cli.rs  ←── edit ///  comments here
                └── docs/src/content/docs/cli-reference.md   Astro page regenerated
 ```
 
-Edit a description, add a new flag, rename a subcommand — one `cargo build` and everything is consistent.
+Edit a description, add a new flag, rename a subcommand — one `cargo build` and everything is
+consistent.
 
 ### Man pages
 
@@ -464,12 +490,12 @@ man g-workspace-create
 
 Completion scripts are generated into `completions/` for four shells:
 
-| File | Shell | Install |
-|---|---|---|
-| `completions/_g` | zsh | `cp completions/_g ~/.zsh/completions/_g` |
-| `completions/g.bash` | bash | `cp completions/g.bash ~/.bash_completion` |
-| `completions/g.fish` | fish | `cp completions/g.fish ~/.config/fish/completions/g.fish` |
-| `completions/g.elv` | elvish | `cp completions/g.elv ~/.config/elvish/lib/g.elv` |
+| File                 | Shell  | Install                                                   |
+| -------------------- | ------ | --------------------------------------------------------- |
+| `completions/_g`     | zsh    | `cp completions/_g ~/.zsh/completions/_g`                 |
+| `completions/g.bash` | bash   | `cp completions/g.bash ~/.bash_completion`                |
+| `completions/g.fish` | fish   | `cp completions/g.fish ~/.config/fish/completions/g.fish` |
+| `completions/g.elv`  | elvish | `cp completions/g.elv ~/.config/elvish/lib/g.elv`         |
 
 Restart your shell (or run `compinit` for zsh) after installing.
 
@@ -483,7 +509,8 @@ cargo doc --open
 
 ### Online CLI reference
 
-The full command and flag reference is published as part of the docs site on GitHub Pages. It is auto-generated from `src/cli.rs` by `build.rs` on every push to `main` — no manual update needed.
+The full command and flag reference is published as part of the docs site on GitHub Pages. It is
+auto-generated from `src/cli.rs` by `build.rs` on every push to `main` — no manual update needed.
 
 ---
 
@@ -517,4 +544,3 @@ docs/                 — Astro documentation site (deployed to GitHub Pages)
 ├── workspaces.toml   — Workspace metadata (names, descriptions)
 └── stacks.toml       — Stack store
 ```
-
