@@ -69,6 +69,14 @@ jobs:
           mkdir -p dist
           cp target/${{ matrix.target }}/release/${{ env.BINARY_NAME }} dist/
           cp README.md LICENSE* dist/ 2>/dev/null || true
+          # Include completions
+          mkdir -p dist/completions
+          cp completions/_g dist/completions/
+          cp completions/g.bash dist/completions/
+          cp completions/g.fish dist/completions/
+          # Include man pages
+          mkdir -p dist/man
+          cp man/*.1 dist/man/
           cd dist
           tar -czvf ../${{ env.BINARY_NAME }}-${{ matrix.target }}.${{ matrix.archive }} *
 
@@ -79,6 +87,12 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item "target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}.exe" -Destination dist/
           Copy-Item README.md, LICENSE* -Destination dist/ -ErrorAction SilentlyContinue
+          # Include completions
+          New-Item -ItemType Directory -Force -Path dist/completions
+          Copy-Item completions/_g, completions/g.bash, completions/g.fish -Destination dist/completions/ -ErrorAction SilentlyContinue
+          # Include man pages
+          New-Item -ItemType Directory -Force -Path dist/man
+          Copy-Item man/*.1 -Destination dist/man/ -ErrorAction SilentlyContinue
           Compress-Archive -Path dist/* -DestinationPath "${{ env.BINARY_NAME }}-${{ matrix.target }}.${{ matrix.archive }}"
 
       - name: Upload artifact

@@ -235,6 +235,93 @@ download_file() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Shell Completions
+# ─────────────────────────────────────────────────────────────────────────────
+
+install_completions() {
+    local shell_name
+    shell_name=$(basename "${SHELL:-/bin/bash}")
+    
+    # Check if completions directory exists in extracted archive
+    if [ ! -d "completions" ]; then
+        return
+    fi
+
+    step_start "Installing shell completions"
+    
+    case "$shell_name" in
+        bash)
+            local bash_completion_dir="${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion/completions"
+            mkdir -p "$bash_completion_dir"
+            if [ -f "completions/g.bash" ]; then
+                cp "completions/g.bash" "$bash_completion_dir/g"
+                step_done "Installed bash completions"
+            else
+                step_done "Skipped bash completions"
+            fi
+            ;;
+        zsh)
+            local zsh_completion_dir="${ZDOTDIR:-$HOME}/.zsh/completions"
+            mkdir -p "$zsh_completion_dir"
+            if [ -f "completions/_g" ]; then
+                cp "completions/_g" "$zsh_completion_dir/_g"
+                step_done "Installed zsh completions to ${CYAN}$zsh_completion_dir/_g${RESET}"
+            else
+                step_done "Skipped zsh completions"
+            fi
+            ;;
+        fish)
+            local fish_completion_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fish/completions"
+            mkdir -p "$fish_completion_dir"
+            if [ -f "completions/g.fish" ]; then
+                cp "completions/g.fish" "$fish_completion_dir/g.fish"
+                step_done "Installed fish completions"
+            else
+                step_done "Skipped fish completions"
+            fi
+            ;;
+        *)
+            step_done "Skipped completions (unknown shell: $shell_name)"
+            ;;
+    esac
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Man Pages
+# ─────────────────────────────────────────────────────────────────────────────
+
+install_man_pages() {
+    # Check if man directory exists in extracted archive
+    if [ ! -d "man" ]; then
+        return
+    fi
+    
+    # Check if we can write to man directories
+    local man_dir=""
+    if [ -w "/usr/local/share/man/man1" ]; then
+        man_dir="/usr/local/share/man/man1"
+    elif mkdir -p "$HOME/.local/share/man/man1" 2>/dev/null; then
+        man_dir="$HOME/.local/share/man/man1"
+    fi
+    
+    if [ -z "$man_dir" ]; then
+        return
+    fi
+
+    step_start "Installing man pages"
+    
+    local count=0
+    for manfile in man/*.1; do
+        if [ -f "$manfile" ]; then
+            cp "$manfile" "$man_dir/"
+            ((count++)) || true
+        fi
+    done
+    
+    step_done "Installed ${CYAN}${count}${RESET} man pages to ${CYAN}${man_dir}${RESET}"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Installation
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -308,6 +395,12 @@ install() {
         exit 1
     fi
     step_done "Installed to ${CYAN}${INSTALL_DIR}/${BINARY_NAME}${RESET}"
+
+    # Install shell completions (from extracted archive)
+    install_completions
+
+    # Install man pages (from extracted archive)
+    install_man_pages
 
     echo ""
     echo -e "${GREEN}${BOLD}Installation complete!${RESET}"
