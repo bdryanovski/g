@@ -190,30 +190,55 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             || a == "--create"
     });
 
-    if mutating || (!extra_args.is_empty() && !extra_args[0].starts_with('-')) {
+    if mutating || (!extra_args.is_empty() && !extra_args[0].starts_with('-') && extra_args[0] != "-a" && extra_args[0] != "--all") {
         let mut args = vec!["branch".to_string()];
         args.extend_from_slice(extra_args);
         return passthrough(&args);
     }
 
-    let raw = git_output_lossy(&[
+    // Check if -a/--all flag is present - if so, fetch from remote first
+    let show_all = extra_args.iter().any(|a| a == "-a" || a == "--all");
+    
+    if show_all {
+        // Fetch latest refs from remote (silently)
+        let _ = std::process::Command::new(git_exe())
+            .args(["fetch", "--prune"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
+    }
+
+    // Get local branches with their tracking info
+    let local_raw = git_output_lossy(&[
         "branch",
         "--format=%(refname:short)\t%(objectname:short)\t%(subject)\t%(authorname)\t%(committerdate:relative)\t%(upstream:short)\t%(HEAD)",
-        "-a",
     ]);
 
-    ui::print_blank();
-    let mut table = ui::Table::new(vec![
-        "",
-        "Branch",
-        "Hash",
-        "Last Commit",
-        "Author",
-        "Date",
-        "Tracking",
-    ]);
+    // Get list of branches merged into HEAD to show merge status
+    let merged_output = git_output_lossy(&["branch", "--merged", "HEAD"]);
+    let merged_branches: std::collections::HashSet<String> = merged_output
+        .lines()
+        .map(|l| l.trim().trim_start_matches("* ").to_string())
+        .collect();
 
-    for line in raw.lines() {
+    // Build a set of remote branches that are tracked by local branches
+    let mut tracked_remotes: std::collections::HashSet<String> = std::collections::HashSet::new();
+    
+    // Collect local branches info
+    struct BranchInfo {
+        name: String,
+        hash: String,
+        subject: String,
+        author: String,
+        date: String,
+        upstream: String,
+        is_head: bool,
+        is_remote_only: bool,
+    }
+    
+    let mut branches: Vec<BranchInfo> = Vec::new();
+    
+    for line in local_raw.lines() {
         let fields: Vec<&str> = line.splitn(7, '\t').collect();
         if fields.len() < 7 {
             continue;
@@ -221,60 +246,139 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         let (name, hash, subject, author, date, upstream, head_marker) = (
             fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
         );
+        
+        if !upstream.is_empty() {
+            tracked_remotes.insert(upstream.to_string());
+        }
+        
+        branches.push(BranchInfo {
+            name: name.to_string(),
+            hash: hash.to_string(),
+            subject: subject.to_string(),
+            author: author.to_string(),
+            date: date.to_string(),
+            upstream: upstream.to_string(),
+            is_head: head_marker == "*",
+            is_remote_only: false,
+        });
+    }
 
-        // Remote branches are prefixed with "remotes/" in the ref format.
-        let is_remote = name.starts_with("remotes/");
-        let display_name = if is_remote {
-            name.trim_start_matches("remotes/").to_string()
-        } else {
-            name.to_string()
-        };
+    // If -a flag, also get remote-only branches (those not tracked by any local branch)
+    if show_all {
+        let remote_raw = git_output_lossy(&[
+            "branch",
+            "-r",
+            "--format=%(refname:short)\t%(objectname:short)\t%(subject)\t%(authorname)\t%(committerdate:relative)",
+        ]);
+        
+        for line in remote_raw.lines() {
+            let fields: Vec<&str> = line.splitn(5, '\t').collect();
+            if fields.len() < 5 {
+                continue;
+            }
+            let (name, hash, subject, author, date) = (
+                fields[0], fields[1], fields[2], fields[3], fields[4],
+            );
+            
+            // Skip HEAD pointer (e.g., "origin/HEAD") and bare remote name (e.g., "origin")
+            if name.contains("/HEAD") || !name.contains('/') {
+                continue;
+            }
+            
+            // Skip if this remote is already tracked by a local branch
+            if tracked_remotes.contains(name) {
+                continue;
+            }
+            
+            // Skip if there's a local branch with the same name (after remote prefix)
+            let short_name = name.split('/').skip(1).collect::<Vec<_>>().join("/");
+            let has_local = branches.iter().any(|b| b.name == short_name);
+            if has_local {
+                continue;
+            }
+            
+            branches.push(BranchInfo {
+                name: name.to_string(),
+                hash: hash.to_string(),
+                subject: subject.to_string(),
+                author: author.to_string(),
+                date: date.to_string(),
+                upstream: "—".to_string(),
+                is_head: false,
+                is_remote_only: true,
+            });
+        }
+    }
 
-        let marker = if head_marker == "*" {
+    ui::print_blank();
+    let mut table = ui::Table::new(vec![
+        "",
+        "Branch",
+        "Merged",
+        "Hash",
+        "Last Commit",
+        "Author",
+        "Date",
+        "Tracking",
+    ]);
+
+    for branch in &branches {
+        let marker = if branch.is_head {
             "◉"
-        } else if is_remote {
+        } else if branch.is_remote_only {
             "○"
         } else {
             "◯"
         };
-        let marker_colored = if head_marker == "*" {
+        let marker_colored = if branch.is_head {
             ui::success_bold(marker)
-        } else if is_remote {
-            ui::dimmed(marker)
+        } else if branch.is_remote_only {
+            ui::muted(marker)
         } else {
             ui::muted(marker)
         };
 
-        let branch_colored = if head_marker == "*" {
-            ui::success_bold(&display_name)
-        } else if is_remote {
-            ui::danger(&display_name)
+        let branch_colored = if branch.is_head {
+            ui::success_bold(&branch.name)
+        } else if branch.is_remote_only {
+            ui::muted(&branch.name)
         } else {
-            ui::paint_text(&display_name)
+            ui::paint_text(&branch.name)
         };
 
         // Truncate long subject lines to keep the table readable.
-        let subj = if subject.len() > 40 {
-            format!("{}…", &subject[..39])
+        let subj = if branch.subject.len() > 40 {
+            format!("{}…", &branch.subject[..39])
         } else {
-            subject.to_string()
+            branch.subject.clone()
+        };
+
+        // Check if branch is merged into current HEAD
+        let is_merged = merged_branches.contains(&branch.name) || branch.is_head;
+        let merged_indicator = if is_merged {
+            ui::success_bold("✓")
+        } else {
+            ui::muted("—")
+        };
+
+        let author_display = if branch.author.len() > 18 {
+            format!("{}…", &branch.author[..17])
+        } else {
+            branch.author.clone()
         };
 
         table.add_row(vec![
             marker_colored,
             branch_colored,
-            ui::color_hash(hash),
+            merged_indicator,
+            ui::color_hash(&branch.hash),
             ui::color_subject(&subj),
-            ui::color_author(&if author.len() > 18 {
-                format!("{}…", &author[..17])
-            } else {
-                author.to_string()
-            }),
-            ui::color_date(date),
-            if upstream.is_empty() {
+            ui::color_author(&author_display),
+            ui::color_date(&branch.date),
+            if branch.upstream.is_empty() || branch.upstream == "—" {
                 ui::muted("—")
             } else {
-                ui::color_branch(upstream)
+                ui::color_branch(&branch.upstream)
             },
         ]);
     }
