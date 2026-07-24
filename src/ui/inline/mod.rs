@@ -50,11 +50,7 @@ pub fn inline_select(prompt: &str, options: &[SelectOption]) -> Option<usize> {
         prompt.to_string()
     };
 
-    let hints: &[KeyHint] = &[
-        ("j/k ↑↓", "move"),
-        ("Enter", "select"),
-        ("q", "cancel"),
-    ];
+    let hints: &[KeyHint] = &[("j/k ↑↓", "move"), ("Enter", "select"), ("q", "cancel")];
     runtime::header_with_hints(&header_text, hints);
 
     // Initial render
@@ -144,57 +140,55 @@ pub fn inline_multi_select(
     // Initial render
     prev_lines = render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
 
-    let result = run_raw(|key| {
-        match key {
-            KeyCode::Char('j') | KeyCode::Down => {
-                view.move_down();
-                prev_lines =
-                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
-                Flow::Continue
-            }
-            KeyCode::Char('k') | KeyCode::Up => {
-                view.move_up();
-                prev_lines =
-                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
-                Flow::Continue
-            }
-            KeyCode::Char(' ') => {
-                checked[view.cursor] = !checked[view.cursor];
-                prev_lines =
-                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
-                Flow::Continue
-            }
-            KeyCode::Char('a') => {
-                let all = checked.iter().all(|&c| c);
-                checked.iter_mut().for_each(|c| *c = !all);
-                prev_lines =
-                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
-                Flow::Continue
-            }
-            KeyCode::Char('n') => {
-                checked.iter_mut().for_each(|c| *c = false);
-                prev_lines =
-                    render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
-                Flow::Continue
-            }
-            KeyCode::Enter => {
-                let _ = write!(stdout, "\r\n");
-                let _ = stdout.flush();
-                Flow::Done(
-                    checked
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, &c)| c.then_some(i))
-                        .collect::<Vec<_>>(),
-                )
-            }
-            KeyCode::Esc | KeyCode::Char('q') => {
-                let _ = write!(stdout, "\r\n");
-                let _ = stdout.flush();
-                Flow::Done(vec![])
-            }
-            _ => Flow::Continue,
+    let result = run_raw(|key| match key {
+        KeyCode::Char('j') | KeyCode::Down => {
+            view.move_down();
+            prev_lines =
+                render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
+            Flow::Continue
         }
+        KeyCode::Char('k') | KeyCode::Up => {
+            view.move_up();
+            prev_lines =
+                render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
+            Flow::Continue
+        }
+        KeyCode::Char(' ') => {
+            checked[view.cursor] = !checked[view.cursor];
+            prev_lines =
+                render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
+            Flow::Continue
+        }
+        KeyCode::Char('a') => {
+            let all = checked.iter().all(|&c| c);
+            checked.iter_mut().for_each(|c| *c = !all);
+            prev_lines =
+                render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
+            Flow::Continue
+        }
+        KeyCode::Char('n') => {
+            checked.iter_mut().for_each(|c| *c = false);
+            prev_lines =
+                render_multi_view(&view, options, &checked, max_label, prev_lines, &mut stdout);
+            Flow::Continue
+        }
+        KeyCode::Enter => {
+            let _ = write!(stdout, "\r\n");
+            let _ = stdout.flush();
+            Flow::Done(
+                checked
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, &c)| c.then_some(i))
+                    .collect::<Vec<_>>(),
+            )
+        }
+        KeyCode::Esc | KeyCode::Char('q') => {
+            let _ = write!(stdout, "\r\n");
+            let _ = stdout.flush();
+            Flow::Done(vec![])
+        }
+        _ => Flow::Continue,
     });
 
     result.unwrap_or_default()

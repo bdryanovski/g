@@ -53,7 +53,10 @@ pub fn render_to<W: Write>(out: &mut W, files: &[FileDiff]) -> io::Result<()> {
 /// Emit the `diff --git …` file-header banner with the path prominent.
 fn render_file_header<W: Write>(out: &mut W, file: &FileDiff) -> io::Result<()> {
     let t = theme::current();
-    let banner = paint_bold(t.palette.accent, &format!("{} {}", status_glyph(file.status), file.path));
+    let banner = paint_bold(
+        t.palette.accent,
+        &format!("{} {}", status_glyph(file.status), file.path),
+    );
     if let Some(old) = &file.old_path {
         writeln!(out, "{} ← {}", banner, paint(t.palette.muted, old))?;
     } else {
@@ -242,7 +245,10 @@ diff --git a/x.rs b/x.rs
         let stripped = strip_ansi(&out);
         assert!(stripped.contains("modified"), "header present: {stripped}");
         assert!(stripped.contains("fn main()"), "body present: {stripped}");
-        assert!(stripped.contains('-') || stripped.contains("−"), "has a deletion: {stripped}");
+        assert!(
+            stripped.contains('-') || stripped.contains("−"),
+            "has a deletion: {stripped}"
+        );
     }
 
     /// Strip ANSI SGR escape sequences (`\x1b[…m`) for test comparisons.

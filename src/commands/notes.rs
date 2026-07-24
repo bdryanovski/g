@@ -19,9 +19,9 @@ use crate::ui;
 /// Top-level dispatcher invoked from `main::run()`.
 pub fn dispatch(ctx: &Ctx<'_>, cmd: NotesCommands) -> Result<()> {
     let conn = ctx.conn;
-    let repo_id = ctx.repo_id.ok_or_else(|| {
-        anyhow!("not inside a git repo — `g notes` needs a repo to anchor notes")
-    })?;
+    let repo_id = ctx
+        .repo_id
+        .ok_or_else(|| anyhow!("not inside a git repo — `g notes` needs a repo to anchor notes"))?;
 
     match cmd {
         NotesCommands::List => list(conn, repo_id),
@@ -35,8 +35,8 @@ pub fn dispatch(ctx: &Ctx<'_>, cmd: NotesCommands) -> Result<()> {
 
 /// `g notes list` — print every note in the current repo, newest first.
 fn list(conn: &rusqlite::Connection, repo_id: i64) -> Result<()> {
-    let notes = storage::reviews::load_for_repo(conn, repo_id)
-        .context("Failed to load review notes")?;
+    let notes =
+        storage::reviews::load_for_repo(conn, repo_id).context("Failed to load review notes")?;
     if notes.is_empty() {
         ui::print_line("No private review notes in this repo.");
         return Ok(());
@@ -68,9 +68,7 @@ fn list(conn: &rusqlite::Connection, repo_id: i64) -> Result<()> {
 
 /// `g notes show <id>` — print the body and anchor of a single note.
 fn show(conn: &rusqlite::Connection, id: i64) -> Result<()> {
-    let Some(note) = storage::reviews::load_by_id(conn, id)
-        .context("Failed to load note")?
-    else {
+    let Some(note) = storage::reviews::load_by_id(conn, id).context("Failed to load note")? else {
         bail!("Note {} not found", id);
     };
     let side = match note.line_kind {
@@ -97,9 +95,7 @@ fn show(conn: &rusqlite::Connection, id: i64) -> Result<()> {
 
 /// `g notes edit <id>` — open `$EDITOR` on the body, then persist the new text.
 fn edit(conn: &rusqlite::Connection, id: i64) -> Result<()> {
-    let Some(note) = storage::reviews::load_by_id(conn, id)
-        .context("Failed to load note")?
-    else {
+    let Some(note) = storage::reviews::load_by_id(conn, id).context("Failed to load note")? else {
         bail!("Note {} not found", id);
     };
     let new_body = open_editor(&note.body)?;
@@ -183,9 +179,7 @@ fn clear(
 /// is **not** deleted — the user can `g notes delete <id>` after confirming
 /// the post landed on GitHub.
 fn publish(conn: &rusqlite::Connection, id: i64) -> Result<()> {
-    let Some(note) = storage::reviews::load_by_id(conn, id)
-        .context("Failed to load note")?
-    else {
+    let Some(note) = storage::reviews::load_by_id(conn, id).context("Failed to load note")? else {
         bail!("Note {} not found", id);
     };
     let Some(commit_hash) = note.commit_hash.as_deref() else {

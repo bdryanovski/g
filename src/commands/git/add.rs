@@ -203,7 +203,6 @@ pub fn interactive_add() -> Result<()> {
                             if count == 1 { "file" } else { "files" }
                         ),
                     );
-
                 }
                 Err(e) => ui::spinner_error(pb, &format!("Failed to stage: {e}")),
             }

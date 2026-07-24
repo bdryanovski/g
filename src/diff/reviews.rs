@@ -66,7 +66,11 @@ pub struct RawAnchor<'a> {
 ///
 /// Returns `None` when the row is out of range or the line has no attribution
 /// (e.g. a `NoNewline` marker).
-pub fn anchor_at_row<'a>(files: &'a [FileDiff], file_idx: usize, row: usize) -> Option<RawAnchor<'a>> {
+pub fn anchor_at_row<'a>(
+    files: &'a [FileDiff],
+    file_idx: usize,
+    row: usize,
+) -> Option<RawAnchor<'a>> {
     let file = files.get(file_idx)?;
     let line = locate_row(file, row)?;
     let side = match line.marker() {
@@ -225,8 +229,15 @@ index 1111111..2222222 100644
             side: CommentSide::New,
             commit_hash: Some("abc123".to_string()),
         };
-        let id = save_private_note(&conn, repo_id, &anchor, "nit: use 4", Some("alice"), Some("alice@example.com"))
-            .expect("save");
+        let id = save_private_note(
+            &conn,
+            repo_id,
+            &anchor,
+            "nit: use 4",
+            Some("alice"),
+            Some("alice@example.com"),
+        )
+        .expect("save");
         assert!(id > 0);
 
         let notes = private_notes_for_file(&conn, repo_id, "foo.rs").expect("load");

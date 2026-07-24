@@ -497,8 +497,7 @@ pub fn detect_pr_for_current_branch(
     api_base: &str,
 ) -> Result<Option<(String, String, u64, String)>> {
     let (owner, repo) = detect_repo()?;
-    let branch = gitcmd::current_branch()
-        .context("Need to be on a branch to detect its PR")?;
+    let branch = gitcmd::current_branch().context("Need to be on a branch to detect its PR")?;
     let Some(pr) = find_pr(token, api_base, &owner, &repo, &branch)? else {
         return Ok(None);
     };

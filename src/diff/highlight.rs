@@ -155,13 +155,19 @@ fn syntect_style_to_ratatui(s: syntect::highlighting::Style) -> Style {
     let fg = s.foreground;
     style = style.fg(syntect_color_to_ratatui(fg));
     let mut mods = Modifier::empty();
-    if s.font_style.contains(syntect::highlighting::FontStyle::BOLD) {
+    if s.font_style
+        .contains(syntect::highlighting::FontStyle::BOLD)
+    {
         mods |= Modifier::BOLD;
     }
-    if s.font_style.contains(syntect::highlighting::FontStyle::ITALIC) {
+    if s.font_style
+        .contains(syntect::highlighting::FontStyle::ITALIC)
+    {
         mods |= Modifier::ITALIC;
     }
-    if s.font_style.contains(syntect::highlighting::FontStyle::UNDERLINE) {
+    if s.font_style
+        .contains(syntect::highlighting::FontStyle::UNDERLINE)
+    {
         mods |= Modifier::UNDERLINED;
     }
     style.add_modifier(mods)

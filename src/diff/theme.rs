@@ -89,10 +89,22 @@ fn is_dark_ui(p: &crate::ui::theme::Palette) -> bool {
         // Approximate luminance for the ANSI 16: bright colours are bright;
         // everything else is dark.  Good enough for picking the default syntax
         // theme — explicit user overrides always win.
-        Color::White | Color::LightRed | Color::LightGreen | Color::LightYellow
-        | Color::LightBlue | Color::LightMagenta | Color::LightCyan | Color::Gray => 200,
-        Color::Black | Color::Red | Color::Green | Color::Yellow | Color::Blue
-        | Color::Magenta | Color::Cyan | Color::DarkGray => 60,
+        Color::White
+        | Color::LightRed
+        | Color::LightGreen
+        | Color::LightYellow
+        | Color::LightBlue
+        | Color::LightMagenta
+        | Color::LightCyan
+        | Color::Gray => 200,
+        Color::Black
+        | Color::Red
+        | Color::Green
+        | Color::Yellow
+        | Color::Blue
+        | Color::Magenta
+        | Color::Cyan
+        | Color::DarkGray => 60,
         _ => 128,
     };
     lum(p.text) >= lum(p.muted)

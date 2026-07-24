@@ -85,6 +85,8 @@ mod tests {
             no_verify: false,
             all: false,
             amend: false,
+            signoff: false,
+            gpg_sign: false,
         }
     }
 

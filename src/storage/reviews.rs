@@ -184,7 +184,10 @@ pub fn insert(conn: &Connection, repo_id: i64, note: &NewReviewNote<'_>) -> Resu
         ],
     )
     .with_context(|| {
-        format!("Failed to insert review note for {}:{}", note.path, note.line)
+        format!(
+            "Failed to insert review note for {}:{}",
+            note.path, note.line
+        )
     })?;
 
     Ok(conn.last_insert_rowid())
@@ -212,11 +215,12 @@ pub fn delete(conn: &Connection, id: i64) -> Result<()> {
 
 /// Delete all notes anchored to `path` in `repo_id`.  Returns the count removed.
 pub fn delete_for_file(conn: &Connection, repo_id: i64, path: &str) -> Result<usize> {
-    let n = conn.execute(
-        "DELETE FROM review_notes WHERE repo_id = ?1 AND path = ?2",
-        rusqlite::params![repo_id, path],
-    )
-    .context("Failed to delete review notes for file")?;
+    let n = conn
+        .execute(
+            "DELETE FROM review_notes WHERE repo_id = ?1 AND path = ?2",
+            rusqlite::params![repo_id, path],
+        )
+        .context("Failed to delete review notes for file")?;
     Ok(n)
 }
 
@@ -308,8 +312,7 @@ mod tests {
     #[test]
     fn insert_loads_back() {
         let (conn, repo_id) = db();
-        let id = insert(&conn, repo_id, &sample("src/main.rs", 10, "nit"))
-            .expect("insert");
+        let id = insert(&conn, repo_id, &sample("src/main.rs", 10, "nit")).expect("insert");
         assert!(id > 0);
         let rows = load_for_repo(&conn, repo_id).expect("load");
         assert_eq!(rows.len(), 1);

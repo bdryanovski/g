@@ -126,11 +126,7 @@ fn event_loop(
 
 /// Repopulate `state.annotated_rows` and `state.inline_notes` from the DB
 /// for the currently-focused file.
-fn refresh_annotations(
-    state: &mut AppState,
-    conn: &rusqlite::Connection,
-    repo_id: Option<i64>,
-) {
+fn refresh_annotations(state: &mut AppState, conn: &rusqlite::Connection, repo_id: Option<i64>) {
     state.annotated_rows.clear();
 
     state.inline_notes.clear();

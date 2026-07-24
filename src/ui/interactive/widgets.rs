@@ -255,7 +255,6 @@ pub struct PopupStyle {
     pub bg_color: Option<Color>,
 }
 
-
 /// Calculate centered popup rect within `area`.
 #[allow(dead_code)]
 pub fn popup_rect(area: Rect, width: u16, height: u16) -> Rect {
@@ -263,7 +262,12 @@ pub fn popup_rect(area: Rect, width: u16, height: u16) -> Rect {
     let height = height.min(area.height.saturating_sub(2));
     let x = area.x + (area.width.saturating_sub(width)) / 2;
     let y = area.y + (area.height.saturating_sub(height)) / 2;
-    Rect { x, y, width, height }
+    Rect {
+        x,
+        y,
+        width,
+        height,
+    }
 }
 
 /// Render a confirmation popup with Yes/No options.
@@ -299,7 +303,9 @@ pub fn popup_confirm(
     // Calculate dimensions based on content
     let message_lines: Vec<&str> = message.lines().collect();
     let max_line_len = message_lines.iter().map(|l| l.len()).max().unwrap_or(20);
-    let width = (max_line_len as u16 + 6).max(30).min(area.width.saturating_sub(4));
+    let width = (max_line_len as u16 + 6)
+        .max(30)
+        .min(area.width.saturating_sub(4));
     let height = (message_lines.len() as u16 + 6).min(area.height.saturating_sub(2));
 
     let popup = popup_rect(area, width, height);
@@ -311,7 +317,9 @@ pub fn popup_confirm(
         .style(Style::default().bg(bg_color))
         .title(Span::styled(
             format!(" {} ", title),
-            Style::default().fg(title_color).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(title_color)
+                .add_modifier(Modifier::BOLD),
         ));
 
     // Build content
@@ -343,12 +351,10 @@ pub fn popup_confirm(
         Span::raw("   "),
         Span::styled(format!(" [N] {} ", no_label), no_style),
     ]));
-    lines.push(Line::from(vec![
-        Span::styled(
-            "  [Esc] Cancel",
-            Style::default().fg(t.palette.muted),
-        ),
-    ]));
+    lines.push(Line::from(vec![Span::styled(
+        "  [Esc] Cancel",
+        Style::default().fg(t.palette.muted),
+    )]));
 
     f.render_widget(Paragraph::new(lines).block(block), popup);
 }
@@ -384,7 +390,9 @@ pub fn popup_input(
     let buffer_lines: Vec<&str> = buffer.split('\n').collect();
     let line_count = buffer_lines.len().max(1);
     let width = 60u16.min(area.width.saturating_sub(4));
-    let height = (line_count as u16 + 5).min(area.height.saturating_sub(2)).max(6);
+    let height = (line_count as u16 + 5)
+        .min(area.height.saturating_sub(2))
+        .max(6);
 
     let popup = popup_rect(area, width, height);
     f.render_widget(Clear, popup);
@@ -401,7 +409,9 @@ pub fn popup_input(
         .style(Style::default().bg(bg_color))
         .title(Span::styled(
             format!(" {} · {} ", title, help_text),
-            Style::default().fg(title_color).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(title_color)
+                .add_modifier(Modifier::BOLD),
         ));
 
     // Build content with cursor
@@ -440,13 +450,19 @@ pub fn popup_input(
             let cursor_pos_in_line = cursor_col_byte.min(line_text.len());
             let (head, tail) = line_text.split_at(cursor_pos_in_line);
 
-            spans.push(Span::styled(head.to_string(), Style::default().fg(t.palette.text)));
+            spans.push(Span::styled(
+                head.to_string(),
+                Style::default().fg(t.palette.text),
+            ));
 
             if tail.is_empty() {
                 spans.push(Span::styled("█", Style::default().fg(t.palette.primary)));
             } else {
                 let mut chars = tail.chars();
-                let next_char = chars.next().map(|c| c.to_string()).unwrap_or_else(|| " ".to_string());
+                let next_char = chars
+                    .next()
+                    .map(|c| c.to_string())
+                    .unwrap_or_else(|| " ".to_string());
                 let rest: String = chars.collect();
                 spans.push(Span::styled(
                     next_char,
@@ -458,7 +474,10 @@ pub fn popup_input(
                 spans.push(Span::styled(rest, Style::default().fg(t.palette.text)));
             }
         } else {
-            spans.push(Span::styled(line_text.to_string(), Style::default().fg(t.palette.text)));
+            spans.push(Span::styled(
+                line_text.to_string(),
+                Style::default().fg(t.palette.text),
+            ));
         }
 
         lines.push(Line::from(spans));
@@ -645,10 +664,7 @@ pub fn file_tree(
                     };
 
                     let mut spans = vec![
-                        Span::styled(
-                            format!("{} ", status),
-                            Style::default().fg(status_color),
-                        ),
+                        Span::styled(format!("{} ", status), Style::default().fg(status_color)),
                         Span::styled(
                             name.clone(),
                             if is_selected {

@@ -190,7 +190,12 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             || a == "--create"
     });
 
-    if mutating || (!extra_args.is_empty() && !extra_args[0].starts_with('-') && extra_args[0] != "-a" && extra_args[0] != "--all") {
+    if mutating
+        || (!extra_args.is_empty()
+            && !extra_args[0].starts_with('-')
+            && extra_args[0] != "-a"
+            && extra_args[0] != "--all")
+    {
         let mut args = vec!["branch".to_string()];
         args.extend_from_slice(extra_args);
         return passthrough(&args);
@@ -198,7 +203,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
 
     // Check if -a/--all flag is present - if so, fetch from remote first
     let show_all = extra_args.iter().any(|a| a == "-a" || a == "--all");
-    
+
     if show_all {
         // Fetch latest refs from remote (silently)
         let _ = std::process::Command::new(git_exe())
@@ -223,7 +228,7 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
 
     // Build a set of remote branches that are tracked by local branches
     let mut tracked_remotes: std::collections::HashSet<String> = std::collections::HashSet::new();
-    
+
     // Collect local branches info
     struct BranchInfo {
         name: String,
@@ -235,9 +240,9 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         is_head: bool,
         is_remote_only: bool,
     }
-    
+
     let mut branches: Vec<BranchInfo> = Vec::new();
-    
+
     for line in local_raw.lines() {
         let fields: Vec<&str> = line.splitn(7, '\t').collect();
         if fields.len() < 7 {
@@ -246,11 +251,11 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         let (name, hash, subject, author, date, upstream, head_marker) = (
             fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
         );
-        
+
         if !upstream.is_empty() {
             tracked_remotes.insert(upstream.to_string());
         }
-        
+
         branches.push(BranchInfo {
             name: name.to_string(),
             hash: hash.to_string(),
@@ -270,33 +275,32 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             "-r",
             "--format=%(refname:short)\t%(objectname:short)\t%(subject)\t%(authorname)\t%(committerdate:relative)",
         ]);
-        
+
         for line in remote_raw.lines() {
             let fields: Vec<&str> = line.splitn(5, '\t').collect();
             if fields.len() < 5 {
                 continue;
             }
-            let (name, hash, subject, author, date) = (
-                fields[0], fields[1], fields[2], fields[3], fields[4],
-            );
-            
+            let (name, hash, subject, author, date) =
+                (fields[0], fields[1], fields[2], fields[3], fields[4]);
+
             // Skip HEAD pointer (e.g., "origin/HEAD") and bare remote name (e.g., "origin")
             if name.contains("/HEAD") || !name.contains('/') {
                 continue;
             }
-            
+
             // Skip if this remote is already tracked by a local branch
             if tracked_remotes.contains(name) {
                 continue;
             }
-            
+
             // Skip if there's a local branch with the same name (after remote prefix)
             let short_name = name.split('/').skip(1).collect::<Vec<_>>().join("/");
             let has_local = branches.iter().any(|b| b.name == short_name);
             if has_local {
                 continue;
             }
-            
+
             branches.push(BranchInfo {
                 name: name.to_string(),
                 hash: hash.to_string(),
@@ -332,8 +336,6 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         };
         let marker_colored = if branch.is_head {
             ui::success_bold(marker)
-        } else if branch.is_remote_only {
-            ui::muted(marker)
         } else {
             ui::muted(marker)
         };

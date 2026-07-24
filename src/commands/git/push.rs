@@ -154,7 +154,11 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
                 if let Some(counts) = parse_object_counts(part) {
                     result.compress_objects = Some(counts);
                 }
-                print_progress_line("Compressing", &format!("{} objects", counts_display(result.compress_objects)), true);
+                print_progress_line(
+                    "Compressing",
+                    &format!("{} objects", counts_display(result.compress_objects)),
+                    true,
+                );
             }
 
             // Parse writing line: "Writing objects: 100% (6/6), 6.21 KiB | 3.11 MiB/s, done."
@@ -177,12 +181,19 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
             }
 
             // Parse resolving line: "remote: Resolving deltas: 100% (4/4), completed with 4 local objects."
-            if part.contains("Resolving deltas:") && (part.contains("done") || part.contains("completed")) && !resolve_done {
+            if part.contains("Resolving deltas:")
+                && (part.contains("done") || part.contains("completed"))
+                && !resolve_done
+            {
                 resolve_done = true;
                 if let Some(counts) = parse_object_counts(part) {
                     result.resolve_deltas = Some(counts);
                 }
-                print_progress_line("Resolving", &format!("{} deltas", counts_display(result.resolve_deltas)), true);
+                print_progress_line(
+                    "Resolving",
+                    &format!("{} deltas", counts_display(result.resolve_deltas)),
+                    true,
+                );
             }
 
             // Parse ref update line: "   eb36938..412a832  main -> main"
@@ -227,7 +238,11 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
             0
         };
 
-        let commit_word = if commit_count == 1 { "commit" } else { "commits" };
+        let commit_word = if commit_count == 1 {
+            "commit"
+        } else {
+            "commits"
+        };
 
         println!(
             "  {} Pushed {} ({} {})",
@@ -241,7 +256,7 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
         if let Some(err) = &result.error {
             ui::print_blank();
             println!("  {}", ui::danger(err));
-            
+
             // Provide hints for common errors
             if err.contains("rejected") || err.contains("non-fast-forward") {
                 ui::print_blank();
@@ -301,10 +316,15 @@ fn parse_transfer_stats(line: &str) -> Option<(String, String)> {
     let parts: Vec<&str> = line.split(',').collect();
     for part in parts {
         let part = part.trim();
-        if part.contains('|') && (part.contains("KiB") || part.contains("MiB") || part.contains("B")) {
+        if part.contains('|')
+            && (part.contains("KiB") || part.contains("MiB") || part.contains("B"))
+        {
             let sub_parts: Vec<&str> = part.split('|').collect();
             if sub_parts.len() == 2 {
-                return Some((sub_parts[0].trim().to_string(), sub_parts[1].trim().to_string()));
+                return Some((
+                    sub_parts[0].trim().to_string(),
+                    sub_parts[1].trim().to_string(),
+                ));
             }
         }
     }
@@ -329,7 +349,9 @@ fn parse_ref_update(line: &str) -> Option<(String, String)> {
 
 /// Format object count for display.
 fn counts_display(count: Option<u32>) -> String {
-    count.map(|c| c.to_string()).unwrap_or_else(|| "?".to_string())
+    count
+        .map(|c| c.to_string())
+        .unwrap_or_else(|| "?".to_string())
 }
 // test
 // test

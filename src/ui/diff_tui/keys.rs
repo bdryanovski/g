@@ -9,7 +9,7 @@ use crate::commands::Ctx;
 use crate::diff::parse::FileDiff;
 use crate::diff::reviews;
 
-use super::state::{AppState, get_git_author};
+use super::state::{get_git_author, AppState};
 
 // ─── Action enum ────────────────────────────────────────────────────────────
 
@@ -91,7 +91,11 @@ pub fn handle_key(
         }
         // Edit existing comment at cursor
         (KeyCode::Char('e'), _) if !shift => {
-            if let Some(note) = state.inline_notes.get(&(state.file_idx, state.cursor)).cloned() {
+            if let Some(note) = state
+                .inline_notes
+                .get(&(state.file_idx, state.cursor))
+                .cloned()
+            {
                 let anchor = {
                     let files: Vec<FileDiff> = state.files.iter().map(|(f, _)| f.clone()).collect();
                     reviews::anchor_at_row(&files, state.file_idx, state.cursor)
@@ -108,7 +112,10 @@ pub fn handle_key(
         }
         // Delete comment at cursor
         (KeyCode::Char('d'), _) if !shift => {
-            if state.annotated_rows.contains(&(state.file_idx, state.cursor)) {
+            if state
+                .annotated_rows
+                .contains(&(state.file_idx, state.cursor))
+            {
                 let anchor = {
                     let files: Vec<FileDiff> = state.files.iter().map(|(f, _)| f.clone()).collect();
                     reviews::anchor_at_row(&files, state.file_idx, state.cursor)

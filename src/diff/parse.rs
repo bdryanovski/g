@@ -325,7 +325,11 @@ pub fn parse(raw: &str) -> Vec<FileDiff> {
                     let text = line[1..].to_string();
                     let old_no = hunk.old_start + old_line_offset(hunk);
                     let new_no = hunk.new_start + new_line_offset(hunk);
-                    hunk.lines.push(Line::Context { text, old_no, new_no });
+                    hunk.lines.push(Line::Context {
+                        text,
+                        old_no,
+                        new_no,
+                    });
                 }
                 Some('\\') => {
                     // `\ No newline at end of file` — annotate the previous line.
@@ -337,7 +341,8 @@ pub fn parse(raw: &str) -> Vec<FileDiff> {
                     // (e.g. `--` color separators in `--color=always` output
                     // when the parser was fed colour codes by mistake).
                 }
-                None => { // empty line — treat as a context line of empty text.
+                None => {
+                    // empty line — treat as a context line of empty text.
                     let old_no = hunk.old_start + old_line_offset(hunk);
                     let new_no = hunk.new_start + new_line_offset(hunk);
                     hunk.lines.push(Line::Context {
@@ -526,7 +531,7 @@ index 0000000..abc1234
     fn counts_lines_in_first_hunk() {
         let first = &parse(SAMPLE)[0].hunks[0];
         assert_eq!(first.lines.len(), 5); // 3 context + 1 del + 2 add… but we have 1 ctx, 1 del, 2 add, 1 ctx = 5
-        // Walk expected kinds:
+                                          // Walk expected kinds:
         use Line::*;
         let kinds: Vec<&'static str> = first
             .lines
@@ -551,7 +556,14 @@ index 0000000..abc1234
         //  Add       new=12
         //  Context   old=12 new=13
         let ctx0 = &first.lines[0];
-        assert!(matches!(ctx0, Line::Context { old_no: 10, new_no: 10, .. }));
+        assert!(matches!(
+            ctx0,
+            Line::Context {
+                old_no: 10,
+                new_no: 10,
+                ..
+            }
+        ));
         let del = &first.lines[1];
         assert!(matches!(del, Line::Del { old_no: 11, .. }));
         let add1 = &first.lines[2];
@@ -559,18 +571,43 @@ index 0000000..abc1234
         let add2 = &first.lines[3];
         assert!(matches!(add2, Line::Add { new_no: 12, .. }));
         let ctx1 = &first.lines[4];
-        assert!(matches!(ctx1, Line::Context { old_no: 12, new_no: 13, .. }));
+        assert!(matches!(
+            ctx1,
+            Line::Context {
+                old_no: 12,
+                new_no: 13,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn per_hunk_stat_sums_additions_and_deletions() {
         let main = &parse(SAMPLE)[0];
         // Hunk 0: ctx + del + 2 add + ctx → 2 added, 1 deleted.
-        assert_eq!(main.hunks[0].stat(), Stat { added: 2, deleted: 1 });
+        assert_eq!(
+            main.hunks[0].stat(),
+            Stat {
+                added: 2,
+                deleted: 1
+            }
+        );
         // Hunk 1: del + 2 add + ctx → 2 added, 1 deleted.
-        assert_eq!(main.hunks[1].stat(), Stat { added: 2, deleted: 1 });
+        assert_eq!(
+            main.hunks[1].stat(),
+            Stat {
+                added: 2,
+                deleted: 1
+            }
+        );
         // File total: 4 added, 2 deleted.
-        assert_eq!(main.stat(), Stat { added: 4, deleted: 2 });
+        assert_eq!(
+            main.stat(),
+            Stat {
+                added: 4,
+                deleted: 2
+            }
+        );
     }
 
     #[test]
@@ -654,7 +691,6 @@ index 0..1
 
     #[test]
     fn line_text_and_marker_helpers() {
-        use Line::*;
         let ctx = Line::Context {
             text: "x".into(),
             old_no: 1,
@@ -665,13 +701,19 @@ index 0..1
         assert_eq!(ctx.old_no(), Some(1));
         assert_eq!(ctx.new_no(), Some(1));
 
-        let add = Line::Add { text: "y".into(), new_no: 2 };
+        let add = Line::Add {
+            text: "y".into(),
+            new_no: 2,
+        };
         assert_eq!(add.text(), "y");
         assert_eq!(add.marker(), '+');
         assert_eq!(add.old_no(), None);
         assert_eq!(add.new_no(), Some(2));
 
-        let del = Line::Del { text: "z".into(), old_no: 3 };
+        let del = Line::Del {
+            text: "z".into(),
+            old_no: 3,
+        };
         assert_eq!(del.text(), "z");
         assert_eq!(del.marker(), '-');
 

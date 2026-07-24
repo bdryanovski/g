@@ -14,7 +14,7 @@ use crate::diff::parse::{FileDiff, Status};
 use crate::diff::reviews;
 use crate::ui::theme;
 
-use super::state::{AppState, DiffLayout, DisplayNote, relative_time};
+use super::state::{relative_time, AppState, DiffLayout, DisplayNote};
 
 // ─── Top-level draw ─────────────────────────────────────────────────────────
 
@@ -148,7 +148,14 @@ fn draw_sidebar(f: &mut ratatui::Frame, state: &mut AppState, area: Rect) {
         state.sidebar_scroll = max_scroll;
     }
 
-    file_tree(f, &entries, state.file_idx, state.sidebar_scroll, area, true);
+    file_tree(
+        f,
+        &entries,
+        state.file_idx,
+        state.sidebar_scroll,
+        area,
+        true,
+    );
 }
 
 /// Ensure the selected file is visible in the sidebar by adjusting scroll.
@@ -180,7 +187,10 @@ pub fn ensure_sidebar_file_visible(state: &mut AppState, viewport_height: usize)
 }
 
 /// Find the visual row index for a file in the tree (accounting for directory headers).
-fn find_visual_row_for_file(entries: &[crate::ui::interactive::widgets::FileEntry], file_idx: usize) -> usize {
+fn find_visual_row_for_file(
+    entries: &[crate::ui::interactive::widgets::FileEntry],
+    file_idx: usize,
+) -> usize {
     use std::collections::BTreeMap;
 
     // Group files by directory (same logic as build_tree_nodes)
@@ -397,8 +407,14 @@ fn draw_scrollbar(f: &mut ratatui::Frame, state: &AppState, area: Rect) {
         };
 
         lines.push(Line::from(vec![
-            Span::styled(file_char.to_string(), Style::default().fg(t.palette.primary)),
-            Span::styled(global_char.to_string(), Style::default().fg(t.palette.accent)),
+            Span::styled(
+                file_char.to_string(),
+                Style::default().fg(t.palette.primary),
+            ),
+            Span::styled(
+                global_char.to_string(),
+                Style::default().fg(t.palette.accent),
+            ),
         ]));
     }
 
@@ -502,10 +518,7 @@ fn draw_help_overlay(f: &mut ratatui::Frame, area: Rect) {
         },
         HelpSection {
             title: "",
-            bindings: &[
-                ("?", "close help"),
-                ("q", "quit"),
-            ],
+            bindings: &[("?", "close help"), ("q", "quit")],
         },
     ];
 
@@ -554,10 +567,7 @@ fn draw_help_overlay(f: &mut ratatui::Frame, area: Rect) {
                         .fg(t.palette.primary)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(
-                    *desc,
-                    Style::default().fg(t.palette.text),
-                ),
+                Span::styled(*desc, Style::default().fg(t.palette.text)),
             ]));
         }
     }
@@ -982,9 +992,7 @@ fn render_display_note(note: &DisplayNote, max_width: usize) -> Vec<Line<'static
         Span::styled("─".repeat(left_border), Style::default().fg(border_fg)),
         Span::styled(
             label,
-            Style::default()
-                .fg(label_fg)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(label_fg).add_modifier(Modifier::BOLD),
         ),
         Span::styled("─".repeat(right_border), Style::default().fg(border_fg)),
         Span::styled("╮", Style::default().fg(border_fg)),

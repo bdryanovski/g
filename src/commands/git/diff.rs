@@ -201,10 +201,7 @@ fn get_untracked_diffs(cfg: &config::Config) -> Result<Vec<diff::parse::FileDiff
     }
 
     let stdout = String::from_utf8_lossy(&out.stdout);
-    let untracked: Vec<&str> = stdout
-        .lines()
-        .filter(|l| !l.is_empty())
-        .collect();
+    let untracked: Vec<&str> = stdout.lines().filter(|l| !l.is_empty()).collect();
 
     if untracked.is_empty() {
         return Ok(vec![]);
@@ -220,7 +217,10 @@ fn get_untracked_diffs(cfg: &config::Config) -> Result<Vec<diff::parse::FileDiff
                 path: path.to_string(),
                 old_path: None,
                 status: diff::parse::Status::Added,
-                stat: Some(diff::parse::Stat { added: 0, deleted: 0 }),
+                stat: Some(diff::parse::Stat {
+                    added: 0,
+                    deleted: 0,
+                }),
                 hunks: vec![],
             });
             continue;
