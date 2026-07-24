@@ -13,6 +13,7 @@ set -euo pipefail
 REPO="bdryanovski/g"
 BINARY_NAME="g"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
+TMP_DIR=""
 
 # Colors
 RED='\033[0;31m'
@@ -72,11 +73,13 @@ step() {
 }
 
 step_start() {
-    echo -ne "  ${CYAN}○${RESET} $1..."
+    echo -ne "  ${CYAN}○${RESET} $1...\r"
 }
 
 step_done() {
-    echo -e "\r  ${GREEN}✓${RESET} $1    "
+    # Clear the line first, then print the result
+    echo -ne "\033[2K"
+    echo -e "  ${GREEN}✓${RESET} $1"
 }
 
 step_fail() {
@@ -264,16 +267,15 @@ install() {
     step_done "Latest version: ${CYAN}${version}${RESET}"
 
     # Create temp directory
-    local tmp_dir
-    tmp_dir=$(mktemp -d)
-    trap 'rm -rf "$tmp_dir"' EXIT
+    TMP_DIR=$(mktemp -d)
+    trap 'rm -rf "$TMP_DIR"' EXIT
 
     # Download archive
     local archive_name="${BINARY_NAME}-${target}.${ext}"
     local download_url="https://github.com/${REPO}/releases/download/${version}/${archive_name}"
     
     step_start "Downloading ${archive_name}"
-    if ! download_file "$download_url" "$tmp_dir/$archive_name" 2>/dev/null; then
+    if ! download_file "$download_url" "$TMP_DIR/$archive_name" 2>/dev/null; then
         step_fail "Download failed"
         error "Could not download: $download_url"
         error "Please check if the release exists for your platform."
@@ -283,7 +285,7 @@ install() {
 
     # Extract archive
     step_start "Extracting archive"
-    cd "$tmp_dir"
+    cd "$TMP_DIR"
     if [ "$ext" = "tar.gz" ]; then
         tar -xzf "$archive_name"
     else
@@ -315,8 +317,21 @@ install() {
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         print_shell_setup
     else
-        echo -e "  Run ${CYAN}${BOLD}g --help${RESET} to get started!"
-        echo ""
+        # Check if another g binary takes precedence
+        local which_g
+        which_g=$(command -v g 2>/dev/null || true)
+        if [ -n "$which_g" ] && [ "$which_g" != "$INSTALL_DIR/$BINARY_NAME" ]; then
+            warn "Another 'g' binary found at: ${CYAN}${which_g}${RESET}"
+            warn "The installed binary is at: ${CYAN}${INSTALL_DIR}/${BINARY_NAME}${RESET}"
+            echo ""
+            echo -e "  To use the newly installed version, either:"
+            echo -e "    1. Remove the other binary: ${WHITE}rm ${which_g}${RESET}"
+            echo -e "    2. Or add ${CYAN}${INSTALL_DIR}${RESET} earlier in your PATH"
+            echo ""
+        else
+            echo -e "  Run ${CYAN}${BOLD}g --help${RESET} to get started!"
+            echo ""
+        fi
     fi
 }
 
