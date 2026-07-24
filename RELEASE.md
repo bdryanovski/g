@@ -4,19 +4,19 @@ This document describes how to create, validate, and publish releases for `g`.
 
 ## Version Numbering
 
-We use [Calendar Versioning](https://calver.org/) with the format `YY.MM.PATCH`:
+We use [Calendar Versioning](https://calver.org/) with the format `YY.M.PATCH`:
 
 - **YY**: Two-digit year (e.g., 24, 25, 26)
-- **MM**: Two-digit month (01-12)
+- **M**: Month without leading zero (1-12)
 - **PATCH**: Incremental patch number within the month (starts at 0)
 
 **Examples:**
-- `v24.07.0` — First release in July 2024
-- `v24.07.1` — Second release in July 2024 (bug fix)
-- `v24.08.0` — First release in August 2024
-- `v26.01.0` — First release in January 2026
+- `v24.7.0` — First release in July 2024
+- `v24.7.1` — Second release in July 2024 (bug fix)
+- `v24.8.0` — First release in August 2024
+- `v26.1.0` — First release in January 2026
 
-**Pre-release versions** use suffixes: `v24.07.0-alpha`, `v24.07.0-beta.1`, `v24.07.0-rc.1`
+**Pre-release versions** use suffixes: `v24.7.0-alpha`, `v24.7.0-beta.1`, `v24.7.0-rc.1`
 
 ## Creating a Release
 
@@ -42,12 +42,12 @@ git status
 Calculate the version based on today's date:
 
 ```bash
-# Format: YY.MM.PATCH
-# Example for first release in July 2024: 24.07.0
-# Example for second release in July 2024: 24.07.1
+# Format: YY.M.PATCH
+# Example for first release in July 2024: 24.7.0
+# Example for second release in July 2024: 24.7.1
 
 # Check existing tags for this month
-git tag -l "v$(date +%y.%m).*"
+git tag -l "v$(date +%y.%-m).*"
 ```
 
 ### 3. Update Version
@@ -56,14 +56,14 @@ Update the version in `Cargo.toml`:
 
 ```toml
 [package]
-version = "24.07.0"  # Update to current YY.MM.PATCH
+version = "24.7.0"  # Update to current YY.M.PATCH
 ```
 
 Commit the version bump:
 
 ```bash
 git add Cargo.toml Cargo.lock
-git commit -m "chore: bump version to v24.07.0"
+git commit -m "chore: bump version to v24.7.0"
 git push origin main
 ```
 
@@ -71,10 +71,10 @@ git push origin main
 
 ```bash
 # Create annotated tag
-git tag -a v24.07.0 -m "Release v24.07.0"
+git tag -a v24.7.0 -m "Release v24.7.0"
 
 # Push the tag (this triggers the release workflow)
-git push origin v24.07.0
+git push origin v24.7.0
 ```
 
 ### 5. Monitor the Build
@@ -100,10 +100,10 @@ Once the workflow completes:
 3. Verify checksums:
    ```bash
    # Download checksums file
-   curl -LO https://github.com/bdryanovski/g/releases/download/v24.07.0/checksums-sha256.txt
+   curl -LO https://github.com/bdryanovski/g/releases/download/v24.7.0/checksums-sha256.txt
    
    # Download a binary
-   curl -LO https://github.com/bdryanovski/g/releases/download/v24.07.0/g-aarch64-apple-darwin.tar.gz
+   curl -LO https://github.com/bdryanovski/g/releases/download/v24.7.0/g-aarch64-apple-darwin.tar.gz
    
    # Verify checksum
    sha256sum -c checksums-sha256.txt --ignore-missing
@@ -125,14 +125,14 @@ You can also trigger a release manually without pushing a tag:
 
 1. Go to **Actions** > **Release**
 2. Click **Run workflow**
-3. Enter the tag name (e.g., `v24.07.0`)
+3. Enter the tag name (e.g., `v24.7.0`)
 4. Click **Run workflow**
 
 Note: This creates the release but doesn't create the git tag. You should create the tag afterwards:
 
 ```bash
-git tag -a v24.07.0 -m "Release v24.07.0"
-git push origin v24.07.0
+git tag -a v24.7.0 -m "Release v24.7.0"
+git push origin v24.7.0
 ```
 
 ## Validating a Release
@@ -198,7 +198,7 @@ For urgent fixes to a released version:
 
 ```bash
 # Create hotfix branch from the release tag
-git checkout -b hotfix/v24.07.1 v24.07.0
+git checkout -b hotfix/v24.7.1 v24.7.0
 
 # Make fixes
 # ... edit files ...
@@ -206,15 +206,15 @@ git checkout -b hotfix/v24.07.1 v24.07.0
 # Commit and push
 git add .
 git commit -m "fix: critical bug description"
-git push origin hotfix/v24.07.1
+git push origin hotfix/v24.7.1
 
 # Create PR to main, merge it, then:
 git checkout main
 git pull
 
 # Tag the hotfix release
-git tag -a v24.07.1 -m "Hotfix release v24.07.1"
-git push origin v24.07.1
+git tag -a v24.7.1 -m "Hotfix release v24.7.1"
+git push origin v24.7.1
 ```
 
 ## Rollback a Release
@@ -223,7 +223,7 @@ If a release has critical issues:
 
 1. **Delete the release** (not the tag) from GitHub Releases page
 2. Fix the issues
-3. Create a new patch release (e.g., v24.07.1)
+3. Create a new patch release (e.g., v24.7.1)
 
 Do NOT delete tags that have been published, as users may have already downloaded them.
 
