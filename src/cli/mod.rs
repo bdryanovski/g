@@ -190,6 +190,9 @@ pub enum Commands {
     /// Enhanced git show
     Show(GitPassArgs),
 
+    /// Enhanced git push with progress display
+    Push(GitPassArgs),
+
     /// Manage private review notes left from `g diff`'s `c` key.
     ///
     /// These notes live in the local SQLite DB and are never published to
@@ -278,6 +281,7 @@ impl Commands {
             Self::Diff(_) => ("diff", None),
             Self::Branch(_) => ("branch", None),
             Self::Show(_) => ("show", None),
+            Self::Push(_) => ("push", None),
             Self::Notes(sub) => ("notes", Some(sub.name())),
             Self::Stats(_) => ("stats", None),
             Self::Config(_) => ("config", None),

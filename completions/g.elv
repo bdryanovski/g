@@ -37,6 +37,7 @@ set edit:completion:arg-completer[g] = {|@words|
             cand diff 'Enhanced git diff using your configured diff tool'
             cand branch 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
             cand show 'Enhanced git show'
+            cand push 'Enhanced git push with progress display'
             cand notes 'Manage private review notes left from `g diff`''s `c` key'
             cand config 'Open interactive config editor'
             cand stats 'Display a rich usage-statistics report'
@@ -546,6 +547,16 @@ set edit:completion:arg-completer[g] = {|@words|
             cand -V 'Print version'
             cand --version 'Print version'
         }
+        &'g;push'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
         &'g;notes'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
@@ -768,6 +779,7 @@ set edit:completion:arg-completer[g] = {|@words|
             cand diff 'Enhanced git diff using your configured diff tool'
             cand branch 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
             cand show 'Enhanced git show'
+            cand push 'Enhanced git push with progress display'
             cand notes 'Manage private review notes left from `g diff`''s `c` key'
             cand config 'Open interactive config editor'
             cand stats 'Display a rich usage-statistics report'
@@ -868,6 +880,8 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;help;branch;squash'= {
         }
         &'g;help;show'= {
+        }
+        &'g;help;push'= {
         }
         &'g;help;notes'= {
             cand list 'List every saved note in this repo (newest first)'

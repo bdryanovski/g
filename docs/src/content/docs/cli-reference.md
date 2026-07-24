@@ -51,6 +51,7 @@ This document contains the help content for the `g` command-line program.
 * [`g branch`↴](#g-branch)
 * [`g branch squash`↴](#g-branch-squash)
 * [`g show`↴](#g-show)
+* [`g push`↴](#g-push)
 * [`g notes`↴](#g-notes)
 * [`g notes list`↴](#g-notes-list)
 * [`g notes show`↴](#g-notes-show)
@@ -106,6 +107,7 @@ Pass --help to any subcommand for detailed usage and examples.
 * `diff` — Enhanced git diff using your configured diff tool
 * `branch` — Enhanced branch listing, `git branch` passthrough, or `branch squash`
 * `show` — Enhanced git show
+* `push` — Enhanced git push with progress display
 * `notes` — Manage private review notes left from `g diff`'s `c` key
 * `config` — Open interactive config editor
 * `stats` — Display a rich usage-statistics report
@@ -603,6 +605,18 @@ Collapse all commits on the current branch into one (from merge-base with base)
 Enhanced git show
 
 **Usage:** `g show [ARGS]...`
+
+###### **Arguments:**
+
+* `<ARGS>` — Extra arguments forwarded to git
+
+
+
+## `g push`
+
+Enhanced git push with progress display
+
+**Usage:** `g push [ARGS]...`
 
 ###### **Arguments:**
 

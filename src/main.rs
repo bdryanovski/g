@@ -270,6 +270,7 @@ fn run() -> Result<()> {
             Commands::Diff(args) => commands::git::enhanced_diff(&ctx, &args.args)?,
             Commands::Branch(args) => commands::git::dispatch_branch(args)?,
             Commands::Show(args) => commands::git::enhanced_show(&ctx, &args.args)?,
+            Commands::Push(args) => commands::git::enhanced_push(&args.args)?,
             Commands::Notes(cmd) => commands::notes::dispatch(&ctx, cmd)?,
 
             Commands::Stats(args) => commands::stats::stats(&ctx, &args)?,
