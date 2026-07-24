@@ -17,439 +17,439 @@ _g() {
                 cmd="g"
                 ;;
             g,add)
-                cmd="g__subcmd__add"
+                cmd="g__add"
                 ;;
             g,branch)
-                cmd="g__subcmd__branch"
+                cmd="g__branch"
                 ;;
             g,commit)
-                cmd="g__subcmd__commit"
+                cmd="g__commit"
                 ;;
             g,compare)
-                cmd="g__subcmd__compare"
+                cmd="g__compare"
                 ;;
             g,completions)
-                cmd="g__subcmd__completions"
+                cmd="g__completions"
                 ;;
             g,config)
-                cmd="g__subcmd__config"
+                cmd="g__config"
                 ;;
             g,developer)
-                cmd="g__subcmd__developer"
+                cmd="g__developer"
                 ;;
             g,diff)
-                cmd="g__subcmd__diff"
+                cmd="g__diff"
                 ;;
             g,help)
-                cmd="g__subcmd__help"
+                cmd="g__help"
                 ;;
             g,log)
-                cmd="g__subcmd__log"
+                cmd="g__log"
                 ;;
             g,notes)
-                cmd="g__subcmd__notes"
+                cmd="g__notes"
                 ;;
             g,show)
-                cmd="g__subcmd__show"
+                cmd="g__show"
                 ;;
             g,stack)
-                cmd="g__subcmd__stack"
+                cmd="g__stack"
                 ;;
             g,stage)
-                cmd="g__subcmd__stage"
+                cmd="g__stage"
                 ;;
             g,stats)
-                cmd="g__subcmd__stats"
+                cmd="g__stats"
                 ;;
             g,status)
-                cmd="g__subcmd__status"
+                cmd="g__status"
                 ;;
             g,workspace)
-                cmd="g__subcmd__workspace"
+                cmd="g__workspace"
                 ;;
-            g__subcmd__branch,help)
-                cmd="g__subcmd__branch__subcmd__help"
+            g__branch,help)
+                cmd="g__branch__help"
                 ;;
-            g__subcmd__branch,squash)
-                cmd="g__subcmd__branch__subcmd__squash"
+            g__branch,squash)
+                cmd="g__branch__squash"
                 ;;
-            g__subcmd__branch__subcmd__help,help)
-                cmd="g__subcmd__branch__subcmd__help__subcmd__help"
+            g__branch__help,help)
+                cmd="g__branch__help__help"
                 ;;
-            g__subcmd__branch__subcmd__help,squash)
-                cmd="g__subcmd__branch__subcmd__help__subcmd__squash"
+            g__branch__help,squash)
+                cmd="g__branch__help__squash"
                 ;;
-            g__subcmd__config,help)
-                cmd="g__subcmd__config__subcmd__help"
+            g__config,help)
+                cmd="g__config__help"
                 ;;
-            g__subcmd__config,set)
-                cmd="g__subcmd__config__subcmd__set"
+            g__config,set)
+                cmd="g__config__set"
                 ;;
-            g__subcmd__config__subcmd__help,help)
-                cmd="g__subcmd__config__subcmd__help__subcmd__help"
+            g__config__help,help)
+                cmd="g__config__help__help"
                 ;;
-            g__subcmd__config__subcmd__help,set)
-                cmd="g__subcmd__config__subcmd__help__subcmd__set"
+            g__config__help,set)
+                cmd="g__config__help__set"
                 ;;
-            g__subcmd__developer,db)
-                cmd="g__subcmd__developer__subcmd__db"
+            g__developer,db)
+                cmd="g__developer__db"
                 ;;
-            g__subcmd__developer,help)
-                cmd="g__subcmd__developer__subcmd__help"
+            g__developer,help)
+                cmd="g__developer__help"
                 ;;
-            g__subcmd__developer,repos)
-                cmd="g__subcmd__developer__subcmd__repos"
+            g__developer,repos)
+                cmd="g__developer__repos"
                 ;;
-            g__subcmd__developer__subcmd__help,db)
-                cmd="g__subcmd__developer__subcmd__help__subcmd__db"
+            g__developer__help,db)
+                cmd="g__developer__help__db"
                 ;;
-            g__subcmd__developer__subcmd__help,help)
-                cmd="g__subcmd__developer__subcmd__help__subcmd__help"
+            g__developer__help,help)
+                cmd="g__developer__help__help"
                 ;;
-            g__subcmd__developer__subcmd__help,repos)
-                cmd="g__subcmd__developer__subcmd__help__subcmd__repos"
+            g__developer__help,repos)
+                cmd="g__developer__help__repos"
                 ;;
-            g__subcmd__help,add)
-                cmd="g__subcmd__help__subcmd__add"
+            g__help,add)
+                cmd="g__help__add"
                 ;;
-            g__subcmd__help,branch)
-                cmd="g__subcmd__help__subcmd__branch"
+            g__help,branch)
+                cmd="g__help__branch"
                 ;;
-            g__subcmd__help,commit)
-                cmd="g__subcmd__help__subcmd__commit"
+            g__help,commit)
+                cmd="g__help__commit"
                 ;;
-            g__subcmd__help,compare)
-                cmd="g__subcmd__help__subcmd__compare"
+            g__help,compare)
+                cmd="g__help__compare"
                 ;;
-            g__subcmd__help,completions)
-                cmd="g__subcmd__help__subcmd__completions"
+            g__help,completions)
+                cmd="g__help__completions"
                 ;;
-            g__subcmd__help,config)
-                cmd="g__subcmd__help__subcmd__config"
+            g__help,config)
+                cmd="g__help__config"
                 ;;
-            g__subcmd__help,developer)
-                cmd="g__subcmd__help__subcmd__developer"
+            g__help,developer)
+                cmd="g__help__developer"
                 ;;
-            g__subcmd__help,diff)
-                cmd="g__subcmd__help__subcmd__diff"
+            g__help,diff)
+                cmd="g__help__diff"
                 ;;
-            g__subcmd__help,help)
-                cmd="g__subcmd__help__subcmd__help"
+            g__help,help)
+                cmd="g__help__help"
                 ;;
-            g__subcmd__help,log)
-                cmd="g__subcmd__help__subcmd__log"
+            g__help,log)
+                cmd="g__help__log"
                 ;;
-            g__subcmd__help,notes)
-                cmd="g__subcmd__help__subcmd__notes"
+            g__help,notes)
+                cmd="g__help__notes"
                 ;;
-            g__subcmd__help,show)
-                cmd="g__subcmd__help__subcmd__show"
+            g__help,show)
+                cmd="g__help__show"
                 ;;
-            g__subcmd__help,stack)
-                cmd="g__subcmd__help__subcmd__stack"
+            g__help,stack)
+                cmd="g__help__stack"
                 ;;
-            g__subcmd__help,stage)
-                cmd="g__subcmd__help__subcmd__stage"
+            g__help,stage)
+                cmd="g__help__stage"
                 ;;
-            g__subcmd__help,stats)
-                cmd="g__subcmd__help__subcmd__stats"
+            g__help,stats)
+                cmd="g__help__stats"
                 ;;
-            g__subcmd__help,status)
-                cmd="g__subcmd__help__subcmd__status"
+            g__help,status)
+                cmd="g__help__status"
                 ;;
-            g__subcmd__help,workspace)
-                cmd="g__subcmd__help__subcmd__workspace"
+            g__help,workspace)
+                cmd="g__help__workspace"
                 ;;
-            g__subcmd__help__subcmd__branch,squash)
-                cmd="g__subcmd__help__subcmd__branch__subcmd__squash"
+            g__help__branch,squash)
+                cmd="g__help__branch__squash"
                 ;;
-            g__subcmd__help__subcmd__config,set)
-                cmd="g__subcmd__help__subcmd__config__subcmd__set"
+            g__help__config,set)
+                cmd="g__help__config__set"
                 ;;
-            g__subcmd__help__subcmd__developer,db)
-                cmd="g__subcmd__help__subcmd__developer__subcmd__db"
+            g__help__developer,db)
+                cmd="g__help__developer__db"
                 ;;
-            g__subcmd__help__subcmd__developer,repos)
-                cmd="g__subcmd__help__subcmd__developer__subcmd__repos"
+            g__help__developer,repos)
+                cmd="g__help__developer__repos"
                 ;;
-            g__subcmd__help__subcmd__notes,clear)
-                cmd="g__subcmd__help__subcmd__notes__subcmd__clear"
+            g__help__notes,clear)
+                cmd="g__help__notes__clear"
                 ;;
-            g__subcmd__help__subcmd__notes,delete)
-                cmd="g__subcmd__help__subcmd__notes__subcmd__delete"
+            g__help__notes,delete)
+                cmd="g__help__notes__delete"
                 ;;
-            g__subcmd__help__subcmd__notes,edit)
-                cmd="g__subcmd__help__subcmd__notes__subcmd__edit"
+            g__help__notes,edit)
+                cmd="g__help__notes__edit"
                 ;;
-            g__subcmd__help__subcmd__notes,list)
-                cmd="g__subcmd__help__subcmd__notes__subcmd__list"
+            g__help__notes,list)
+                cmd="g__help__notes__list"
                 ;;
-            g__subcmd__help__subcmd__notes,publish)
-                cmd="g__subcmd__help__subcmd__notes__subcmd__publish"
+            g__help__notes,publish)
+                cmd="g__help__notes__publish"
                 ;;
-            g__subcmd__help__subcmd__notes,show)
-                cmd="g__subcmd__help__subcmd__notes__subcmd__show"
+            g__help__notes,show)
+                cmd="g__help__notes__show"
                 ;;
-            g__subcmd__help__subcmd__stack,absorb)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__absorb"
+            g__help__stack,absorb)
+                cmd="g__help__stack__absorb"
                 ;;
-            g__subcmd__help__subcmd__stack,add)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__add"
+            g__help__stack,add)
+                cmd="g__help__stack__add"
                 ;;
-            g__subcmd__help__subcmd__stack,delete)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__delete"
+            g__help__stack,delete)
+                cmd="g__help__stack__delete"
                 ;;
-            g__subcmd__help__subcmd__stack,details)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__details"
+            g__help__stack,details)
+                cmd="g__help__stack__details"
                 ;;
-            g__subcmd__help__subcmd__stack,down)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__down"
+            g__help__stack,down)
+                cmd="g__help__stack__down"
                 ;;
-            g__subcmd__help__subcmd__stack,fold)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__fold"
+            g__help__stack,fold)
+                cmd="g__help__stack__fold"
                 ;;
-            g__subcmd__help__subcmd__stack,list)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__list"
+            g__help__stack,list)
+                cmd="g__help__stack__list"
                 ;;
-            g__subcmd__help__subcmd__stack,new)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__new"
+            g__help__stack,new)
+                cmd="g__help__stack__new"
                 ;;
-            g__subcmd__help__subcmd__stack,pr)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__pr"
+            g__help__stack,pr)
+                cmd="g__help__stack__pr"
                 ;;
-            g__subcmd__help__subcmd__stack,push)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__push"
+            g__help__stack,push)
+                cmd="g__help__stack__push"
                 ;;
-            g__subcmd__help__subcmd__stack,remove)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__remove"
+            g__help__stack,remove)
+                cmd="g__help__stack__remove"
                 ;;
-            g__subcmd__help__subcmd__stack,squash)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__squash"
+            g__help__stack,squash)
+                cmd="g__help__stack__squash"
                 ;;
-            g__subcmd__help__subcmd__stack,switch)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__switch"
+            g__help__stack,switch)
+                cmd="g__help__stack__switch"
                 ;;
-            g__subcmd__help__subcmd__stack,sync)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__sync"
+            g__help__stack,sync)
+                cmd="g__help__stack__sync"
                 ;;
-            g__subcmd__help__subcmd__stack,up)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__up"
+            g__help__stack,up)
+                cmd="g__help__stack__up"
                 ;;
-            g__subcmd__help__subcmd__stack,view)
-                cmd="g__subcmd__help__subcmd__stack__subcmd__view"
+            g__help__stack,view)
+                cmd="g__help__stack__view"
                 ;;
-            g__subcmd__help__subcmd__workspace,create)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__create"
+            g__help__workspace,create)
+                cmd="g__help__workspace__create"
                 ;;
-            g__subcmd__help__subcmd__workspace,delete)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__delete"
+            g__help__workspace,delete)
+                cmd="g__help__workspace__delete"
                 ;;
-            g__subcmd__help__subcmd__workspace,init)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__init"
+            g__help__workspace,init)
+                cmd="g__help__workspace__init"
                 ;;
-            g__subcmd__help__subcmd__workspace,list)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__list"
+            g__help__workspace,list)
+                cmd="g__help__workspace__list"
                 ;;
-            g__subcmd__help__subcmd__workspace,rename)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__rename"
+            g__help__workspace,rename)
+                cmd="g__help__workspace__rename"
                 ;;
-            g__subcmd__help__subcmd__workspace,status)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__status"
+            g__help__workspace,status)
+                cmd="g__help__workspace__status"
                 ;;
-            g__subcmd__help__subcmd__workspace,switch)
-                cmd="g__subcmd__help__subcmd__workspace__subcmd__switch"
+            g__help__workspace,switch)
+                cmd="g__help__workspace__switch"
                 ;;
-            g__subcmd__notes,clear)
-                cmd="g__subcmd__notes__subcmd__clear"
+            g__notes,clear)
+                cmd="g__notes__clear"
                 ;;
-            g__subcmd__notes,delete)
-                cmd="g__subcmd__notes__subcmd__delete"
+            g__notes,delete)
+                cmd="g__notes__delete"
                 ;;
-            g__subcmd__notes,edit)
-                cmd="g__subcmd__notes__subcmd__edit"
+            g__notes,edit)
+                cmd="g__notes__edit"
                 ;;
-            g__subcmd__notes,help)
-                cmd="g__subcmd__notes__subcmd__help"
+            g__notes,help)
+                cmd="g__notes__help"
                 ;;
-            g__subcmd__notes,list)
-                cmd="g__subcmd__notes__subcmd__list"
+            g__notes,list)
+                cmd="g__notes__list"
                 ;;
-            g__subcmd__notes,publish)
-                cmd="g__subcmd__notes__subcmd__publish"
+            g__notes,publish)
+                cmd="g__notes__publish"
                 ;;
-            g__subcmd__notes,show)
-                cmd="g__subcmd__notes__subcmd__show"
+            g__notes,show)
+                cmd="g__notes__show"
                 ;;
-            g__subcmd__notes__subcmd__help,clear)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__clear"
+            g__notes__help,clear)
+                cmd="g__notes__help__clear"
                 ;;
-            g__subcmd__notes__subcmd__help,delete)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__delete"
+            g__notes__help,delete)
+                cmd="g__notes__help__delete"
                 ;;
-            g__subcmd__notes__subcmd__help,edit)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__edit"
+            g__notes__help,edit)
+                cmd="g__notes__help__edit"
                 ;;
-            g__subcmd__notes__subcmd__help,help)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__help"
+            g__notes__help,help)
+                cmd="g__notes__help__help"
                 ;;
-            g__subcmd__notes__subcmd__help,list)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__list"
+            g__notes__help,list)
+                cmd="g__notes__help__list"
                 ;;
-            g__subcmd__notes__subcmd__help,publish)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__publish"
+            g__notes__help,publish)
+                cmd="g__notes__help__publish"
                 ;;
-            g__subcmd__notes__subcmd__help,show)
-                cmd="g__subcmd__notes__subcmd__help__subcmd__show"
+            g__notes__help,show)
+                cmd="g__notes__help__show"
                 ;;
-            g__subcmd__stack,absorb)
-                cmd="g__subcmd__stack__subcmd__absorb"
+            g__stack,absorb)
+                cmd="g__stack__absorb"
                 ;;
-            g__subcmd__stack,add)
-                cmd="g__subcmd__stack__subcmd__add"
+            g__stack,add)
+                cmd="g__stack__add"
                 ;;
-            g__subcmd__stack,delete)
-                cmd="g__subcmd__stack__subcmd__delete"
+            g__stack,delete)
+                cmd="g__stack__delete"
                 ;;
-            g__subcmd__stack,details)
-                cmd="g__subcmd__stack__subcmd__details"
+            g__stack,details)
+                cmd="g__stack__details"
                 ;;
-            g__subcmd__stack,down)
-                cmd="g__subcmd__stack__subcmd__down"
+            g__stack,down)
+                cmd="g__stack__down"
                 ;;
-            g__subcmd__stack,fold)
-                cmd="g__subcmd__stack__subcmd__fold"
+            g__stack,fold)
+                cmd="g__stack__fold"
                 ;;
-            g__subcmd__stack,help)
-                cmd="g__subcmd__stack__subcmd__help"
+            g__stack,help)
+                cmd="g__stack__help"
                 ;;
-            g__subcmd__stack,list)
-                cmd="g__subcmd__stack__subcmd__list"
+            g__stack,list)
+                cmd="g__stack__list"
                 ;;
-            g__subcmd__stack,new)
-                cmd="g__subcmd__stack__subcmd__new"
+            g__stack,new)
+                cmd="g__stack__new"
                 ;;
-            g__subcmd__stack,pr)
-                cmd="g__subcmd__stack__subcmd__pr"
+            g__stack,pr)
+                cmd="g__stack__pr"
                 ;;
-            g__subcmd__stack,push)
-                cmd="g__subcmd__stack__subcmd__push"
+            g__stack,push)
+                cmd="g__stack__push"
                 ;;
-            g__subcmd__stack,remove)
-                cmd="g__subcmd__stack__subcmd__remove"
+            g__stack,remove)
+                cmd="g__stack__remove"
                 ;;
-            g__subcmd__stack,squash)
-                cmd="g__subcmd__stack__subcmd__squash"
+            g__stack,squash)
+                cmd="g__stack__squash"
                 ;;
-            g__subcmd__stack,switch)
-                cmd="g__subcmd__stack__subcmd__switch"
+            g__stack,switch)
+                cmd="g__stack__switch"
                 ;;
-            g__subcmd__stack,sync)
-                cmd="g__subcmd__stack__subcmd__sync"
+            g__stack,sync)
+                cmd="g__stack__sync"
                 ;;
-            g__subcmd__stack,up)
-                cmd="g__subcmd__stack__subcmd__up"
+            g__stack,up)
+                cmd="g__stack__up"
                 ;;
-            g__subcmd__stack,view)
-                cmd="g__subcmd__stack__subcmd__view"
+            g__stack,view)
+                cmd="g__stack__view"
                 ;;
-            g__subcmd__stack__subcmd__help,absorb)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__absorb"
+            g__stack__help,absorb)
+                cmd="g__stack__help__absorb"
                 ;;
-            g__subcmd__stack__subcmd__help,add)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__add"
+            g__stack__help,add)
+                cmd="g__stack__help__add"
                 ;;
-            g__subcmd__stack__subcmd__help,delete)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__delete"
+            g__stack__help,delete)
+                cmd="g__stack__help__delete"
                 ;;
-            g__subcmd__stack__subcmd__help,details)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__details"
+            g__stack__help,details)
+                cmd="g__stack__help__details"
                 ;;
-            g__subcmd__stack__subcmd__help,down)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__down"
+            g__stack__help,down)
+                cmd="g__stack__help__down"
                 ;;
-            g__subcmd__stack__subcmd__help,fold)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__fold"
+            g__stack__help,fold)
+                cmd="g__stack__help__fold"
                 ;;
-            g__subcmd__stack__subcmd__help,help)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__help"
+            g__stack__help,help)
+                cmd="g__stack__help__help"
                 ;;
-            g__subcmd__stack__subcmd__help,list)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__list"
+            g__stack__help,list)
+                cmd="g__stack__help__list"
                 ;;
-            g__subcmd__stack__subcmd__help,new)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__new"
+            g__stack__help,new)
+                cmd="g__stack__help__new"
                 ;;
-            g__subcmd__stack__subcmd__help,pr)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__pr"
+            g__stack__help,pr)
+                cmd="g__stack__help__pr"
                 ;;
-            g__subcmd__stack__subcmd__help,push)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__push"
+            g__stack__help,push)
+                cmd="g__stack__help__push"
                 ;;
-            g__subcmd__stack__subcmd__help,remove)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__remove"
+            g__stack__help,remove)
+                cmd="g__stack__help__remove"
                 ;;
-            g__subcmd__stack__subcmd__help,squash)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__squash"
+            g__stack__help,squash)
+                cmd="g__stack__help__squash"
                 ;;
-            g__subcmd__stack__subcmd__help,switch)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__switch"
+            g__stack__help,switch)
+                cmd="g__stack__help__switch"
                 ;;
-            g__subcmd__stack__subcmd__help,sync)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__sync"
+            g__stack__help,sync)
+                cmd="g__stack__help__sync"
                 ;;
-            g__subcmd__stack__subcmd__help,up)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__up"
+            g__stack__help,up)
+                cmd="g__stack__help__up"
                 ;;
-            g__subcmd__stack__subcmd__help,view)
-                cmd="g__subcmd__stack__subcmd__help__subcmd__view"
+            g__stack__help,view)
+                cmd="g__stack__help__view"
                 ;;
-            g__subcmd__workspace,create)
-                cmd="g__subcmd__workspace__subcmd__create"
+            g__workspace,create)
+                cmd="g__workspace__create"
                 ;;
-            g__subcmd__workspace,delete)
-                cmd="g__subcmd__workspace__subcmd__delete"
+            g__workspace,delete)
+                cmd="g__workspace__delete"
                 ;;
-            g__subcmd__workspace,help)
-                cmd="g__subcmd__workspace__subcmd__help"
+            g__workspace,help)
+                cmd="g__workspace__help"
                 ;;
-            g__subcmd__workspace,init)
-                cmd="g__subcmd__workspace__subcmd__init"
+            g__workspace,init)
+                cmd="g__workspace__init"
                 ;;
-            g__subcmd__workspace,list)
-                cmd="g__subcmd__workspace__subcmd__list"
+            g__workspace,list)
+                cmd="g__workspace__list"
                 ;;
-            g__subcmd__workspace,rename)
-                cmd="g__subcmd__workspace__subcmd__rename"
+            g__workspace,rename)
+                cmd="g__workspace__rename"
                 ;;
-            g__subcmd__workspace,status)
-                cmd="g__subcmd__workspace__subcmd__status"
+            g__workspace,status)
+                cmd="g__workspace__status"
                 ;;
-            g__subcmd__workspace,switch)
-                cmd="g__subcmd__workspace__subcmd__switch"
+            g__workspace,switch)
+                cmd="g__workspace__switch"
                 ;;
-            g__subcmd__workspace__subcmd__help,create)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__create"
+            g__workspace__help,create)
+                cmd="g__workspace__help__create"
                 ;;
-            g__subcmd__workspace__subcmd__help,delete)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__delete"
+            g__workspace__help,delete)
+                cmd="g__workspace__help__delete"
                 ;;
-            g__subcmd__workspace__subcmd__help,help)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__help"
+            g__workspace__help,help)
+                cmd="g__workspace__help__help"
                 ;;
-            g__subcmd__workspace__subcmd__help,init)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__init"
+            g__workspace__help,init)
+                cmd="g__workspace__help__init"
                 ;;
-            g__subcmd__workspace__subcmd__help,list)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__list"
+            g__workspace__help,list)
+                cmd="g__workspace__help__list"
                 ;;
-            g__subcmd__workspace__subcmd__help,rename)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__rename"
+            g__workspace__help,rename)
+                cmd="g__workspace__help__rename"
                 ;;
-            g__subcmd__workspace__subcmd__help,status)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__status"
+            g__workspace__help,status)
+                cmd="g__workspace__help__status"
                 ;;
-            g__subcmd__workspace__subcmd__help,switch)
-                cmd="g__subcmd__workspace__subcmd__help__subcmd__switch"
+            g__workspace__help,switch)
+                cmd="g__workspace__help__switch"
                 ;;
             *)
                 ;;
@@ -479,8 +479,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__add)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__add)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [ARGS]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -501,8 +501,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__branch)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version squash help"
+        g__branch)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [REST]... squash help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -523,7 +523,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__branch__subcmd__help)
+        g__branch__help)
             opts="squash help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -537,7 +537,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__branch__subcmd__help__subcmd__help)
+        g__branch__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -551,7 +551,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__branch__subcmd__help__subcmd__squash)
+        g__branch__help__squash)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -565,7 +565,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__branch__subcmd__squash)
+        g__branch__squash)
             opts="-m -b -C -c -h -V --message --base --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -603,7 +603,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__commit)
+        g__commit)
             opts="-m -b -a -s -S -C -c -h -V --message --body --type --scope --no-verify --all --amend --signoff --gpg-sign --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -649,8 +649,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__compare)
-            opts="-C -c -h -V --stat --diff --commits --dry-run --no-interactive --help --version"
+        g__compare)
+            opts="-C -c -h -V --stat --diff --commits --dry-run --no-interactive --help --version [BASE] [HEAD]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -671,7 +671,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__completions)
+        g__completions)
             opts="-C -c -h -V --dry-run --no-interactive --help --version bash elvish fish powershell zsh"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -693,8 +693,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__config)
-            opts="-C -c -h -V --edit --path --themes --list --menu --get --new-theme --dry-run --no-interactive --help --version set help"
+        g__config)
+            opts="-C -c -h -V --edit --path --themes --list --menu --get --new-theme --dry-run --no-interactive --help --version [KEY] set help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -719,7 +719,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__config__subcmd__help)
+        g__config__help)
             opts="set help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -733,7 +733,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__config__subcmd__help__subcmd__help)
+        g__config__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -747,7 +747,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__config__subcmd__help__subcmd__set)
+        g__config__help__set)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -761,8 +761,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__config__subcmd__set)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__config__set)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <KEY> <VALUE>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -783,7 +783,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer)
+        g__developer)
             opts="-C -c -h -V --dry-run --no-interactive --help --version db repos help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -805,7 +805,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer__subcmd__db)
+        g__developer__db)
             opts="-C -c -h -V --path --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -827,7 +827,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer__subcmd__help)
+        g__developer__help)
             opts="db repos help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -841,7 +841,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer__subcmd__help__subcmd__db)
+        g__developer__help__db)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -855,7 +855,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer__subcmd__help__subcmd__help)
+        g__developer__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -869,7 +869,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer__subcmd__help__subcmd__repos)
+        g__developer__help__repos)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -883,7 +883,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__developer__subcmd__repos)
+        g__developer__repos)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -905,8 +905,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__diff)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__diff)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [ARGS]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -927,7 +927,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help)
+        g__help)
             opts="workspace stack commit add stage compare log status diff branch show notes config stats developer completions help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -941,7 +941,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__add)
+        g__help__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -955,7 +955,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__branch)
+        g__help__branch)
             opts="squash"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -969,7 +969,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__branch__subcmd__squash)
+        g__help__branch__squash)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -983,7 +983,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__commit)
+        g__help__commit)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -997,7 +997,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__compare)
+        g__help__compare)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1011,7 +1011,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__completions)
+        g__help__completions)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1025,7 +1025,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__config)
+        g__help__config)
             opts="set"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1039,7 +1039,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__config__subcmd__set)
+        g__help__config__set)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1053,7 +1053,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__developer)
+        g__help__developer)
             opts="db repos"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1067,7 +1067,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__developer__subcmd__db)
+        g__help__developer__db)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1081,7 +1081,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__developer__subcmd__repos)
+        g__help__developer__repos)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1095,7 +1095,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__diff)
+        g__help__diff)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1109,7 +1109,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__help)
+        g__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1123,7 +1123,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__log)
+        g__help__log)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1137,7 +1137,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes)
+        g__help__notes)
             opts="list show edit delete clear publish"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1151,7 +1151,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes__subcmd__clear)
+        g__help__notes__clear)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1165,7 +1165,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes__subcmd__delete)
+        g__help__notes__delete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1179,7 +1179,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes__subcmd__edit)
+        g__help__notes__edit)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1193,7 +1193,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes__subcmd__list)
+        g__help__notes__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1207,7 +1207,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes__subcmd__publish)
+        g__help__notes__publish)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1221,7 +1221,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__notes__subcmd__show)
+        g__help__notes__show)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1235,7 +1235,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__show)
+        g__help__show)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1249,7 +1249,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack)
+        g__help__stack)
             opts="new add list view details switch absorb squash fold sync push pr remove delete up down"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1263,7 +1263,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__absorb)
+        g__help__stack__absorb)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1277,7 +1277,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__add)
+        g__help__stack__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1291,7 +1291,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__delete)
+        g__help__stack__delete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1305,7 +1305,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__details)
+        g__help__stack__details)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1319,7 +1319,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__down)
+        g__help__stack__down)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1333,7 +1333,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__fold)
+        g__help__stack__fold)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1347,7 +1347,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__list)
+        g__help__stack__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1361,7 +1361,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__new)
+        g__help__stack__new)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1375,7 +1375,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__pr)
+        g__help__stack__pr)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1389,7 +1389,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__push)
+        g__help__stack__push)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1403,7 +1403,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__remove)
+        g__help__stack__remove)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1417,7 +1417,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__squash)
+        g__help__stack__squash)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1431,7 +1431,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__switch)
+        g__help__stack__switch)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1445,7 +1445,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__sync)
+        g__help__stack__sync)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1459,7 +1459,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__up)
+        g__help__stack__up)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1473,7 +1473,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stack__subcmd__view)
+        g__help__stack__view)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1487,7 +1487,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stage)
+        g__help__stage)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1501,7 +1501,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__stats)
+        g__help__stats)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1515,7 +1515,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__status)
+        g__help__status)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1529,7 +1529,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace)
+        g__help__workspace)
             opts="init list create switch delete status rename"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1543,7 +1543,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__create)
+        g__help__workspace__create)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1557,7 +1557,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__delete)
+        g__help__workspace__delete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1571,7 +1571,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__init)
+        g__help__workspace__init)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1585,7 +1585,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__list)
+        g__help__workspace__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1599,7 +1599,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__rename)
+        g__help__workspace__rename)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1613,7 +1613,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__status)
+        g__help__workspace__status)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1627,7 +1627,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__help__subcmd__workspace__subcmd__switch)
+        g__help__workspace__switch)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1641,8 +1641,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__log)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__log)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [ARGS]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1663,7 +1663,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes)
+        g__notes)
             opts="-C -c -h -V --dry-run --no-interactive --help --version list show edit delete clear publish help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1685,8 +1685,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__clear)
-            opts="-C -c -h -V --force --dry-run --no-interactive --help --version"
+        g__notes__clear)
+            opts="-C -c -h -V --force --dry-run --no-interactive --help --version [PATH]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1707,8 +1707,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__delete)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__notes__delete)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <ID>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1729,8 +1729,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__edit)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__notes__edit)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <ID>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1751,7 +1751,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help)
+        g__notes__help)
             opts="list show edit delete clear publish help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1765,7 +1765,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__clear)
+        g__notes__help__clear)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1779,7 +1779,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__delete)
+        g__notes__help__delete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1793,7 +1793,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__edit)
+        g__notes__help__edit)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1807,7 +1807,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__help)
+        g__notes__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1821,7 +1821,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__list)
+        g__notes__help__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1835,7 +1835,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__publish)
+        g__notes__help__publish)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1849,7 +1849,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__help__subcmd__show)
+        g__notes__help__show)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1863,7 +1863,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__list)
+        g__notes__list)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1885,8 +1885,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__publish)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__notes__publish)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <ID>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1907,8 +1907,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__notes__subcmd__show)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__notes__show)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <ID>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1929,8 +1929,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__show)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__show)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [ARGS]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1951,7 +1951,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack)
+        g__stack)
             opts="-C -c -h -V --dry-run --no-interactive --help --version new add list view details switch absorb squash fold sync push pr remove delete up down help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1973,7 +1973,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__absorb)
+        g__stack__absorb)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1995,8 +1995,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__add)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__stack__add)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <BRANCH>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2017,8 +2017,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__delete)
-            opts="-C -c -h -V --branches --dry-run --no-interactive --help --version"
+        g__stack__delete)
+            opts="-C -c -h -V --branches --dry-run --no-interactive --help --version <NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2039,7 +2039,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__details)
+        g__stack__details)
             opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2061,7 +2061,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__down)
+        g__stack__down)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2083,7 +2083,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__fold)
+        g__stack__fold)
             opts="-C -c -h -V --keep --no-interactive --dry-run --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2105,7 +2105,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help)
+        g__stack__help)
             opts="new add list view details switch absorb squash fold sync push pr remove delete up down help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2119,7 +2119,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__absorb)
+        g__stack__help__absorb)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2133,7 +2133,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__add)
+        g__stack__help__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2147,7 +2147,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__delete)
+        g__stack__help__delete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2161,7 +2161,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__details)
+        g__stack__help__details)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2175,7 +2175,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__down)
+        g__stack__help__down)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2189,7 +2189,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__fold)
+        g__stack__help__fold)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2203,7 +2203,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__help)
+        g__stack__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2217,7 +2217,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__list)
+        g__stack__help__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2231,7 +2231,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__new)
+        g__stack__help__new)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2245,7 +2245,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__pr)
+        g__stack__help__pr)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2259,7 +2259,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__push)
+        g__stack__help__push)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2273,7 +2273,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__remove)
+        g__stack__help__remove)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2287,7 +2287,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__squash)
+        g__stack__help__squash)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2301,7 +2301,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__switch)
+        g__stack__help__switch)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2315,7 +2315,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__sync)
+        g__stack__help__sync)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2329,7 +2329,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__up)
+        g__stack__help__up)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2343,7 +2343,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__help__subcmd__view)
+        g__stack__help__view)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2357,7 +2357,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__list)
+        g__stack__list)
             opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2379,8 +2379,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__new)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__stack__new)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2401,7 +2401,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__pr)
+        g__stack__pr)
             opts="-C -c -h -V --open --draft --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2423,7 +2423,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__push)
+        g__stack__push)
             opts="-C -c -h -V --force --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2445,8 +2445,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__remove)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__stack__remove)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <BRANCH>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2467,7 +2467,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__squash)
+        g__stack__squash)
             opts="-m -C -c -h -V --message --no-interactive --dry-run --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2497,8 +2497,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__switch)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__stack__switch)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2519,7 +2519,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__sync)
+        g__stack__sync)
             opts="-C -c -h -V --no-interactive --dry-run --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2541,7 +2541,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__up)
+        g__stack__up)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2563,7 +2563,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stack__subcmd__view)
+        g__stack__view)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2585,7 +2585,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stage)
+        g__stage)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2607,7 +2607,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__stats)
+        g__stats)
             opts="-C -c -h -V --days --no-git --import --import-limit --search --duplicates --message-stats --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2641,8 +2641,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__status)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__status)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [ARGS]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2663,7 +2663,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace)
+        g__workspace)
             opts="-C -c -h -V --dry-run --no-interactive --help --version init list create switch delete status rename help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2685,8 +2685,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__create)
-            opts="-b -d -C -c -h -V --branch --description --copy --dry-run --no-interactive --help --version"
+        g__workspace__create)
+            opts="-b -d -C -c -h -V --branch --description --copy --dry-run --no-interactive --help --version <NAME> [START_POINT]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2723,8 +2723,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__delete)
-            opts="-C -c -h -V --force --dry-run --no-interactive --help --version"
+        g__workspace__delete)
+            opts="-C -c -h -V --force --dry-run --no-interactive --help --version <NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2745,7 +2745,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help)
+        g__workspace__help)
             opts="init list create switch delete status rename help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2759,7 +2759,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__create)
+        g__workspace__help__create)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2773,7 +2773,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__delete)
+        g__workspace__help__delete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2787,7 +2787,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__help)
+        g__workspace__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2801,7 +2801,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__init)
+        g__workspace__help__init)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2815,7 +2815,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__list)
+        g__workspace__help__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2829,7 +2829,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__rename)
+        g__workspace__help__rename)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2843,7 +2843,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__status)
+        g__workspace__help__status)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2857,7 +2857,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__help__subcmd__switch)
+        g__workspace__help__switch)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2871,7 +2871,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__init)
+        g__workspace__init)
             opts="-C -c -h -V --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2893,7 +2893,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__list)
+        g__workspace__list)
             opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2915,8 +2915,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__rename)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__workspace__rename)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version <OLD> <NEW>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2937,7 +2937,7 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__status)
+        g__workspace__status)
             opts="-C -c -h -V --json --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2959,8 +2959,8 @@ _g() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        g__subcmd__workspace__subcmd__switch)
-            opts="-C -c -h -V --dry-run --no-interactive --help --version"
+        g__workspace__switch)
+            opts="-C -c -h -V --dry-run --no-interactive --help --version [NAME]"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
