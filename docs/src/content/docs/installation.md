@@ -1,59 +1,80 @@
 ---
 title: Installation
-description: Install g with Cargo from crates.io or from source, plus GitHub token setup.
+description: Install g via installer script, prebuilt binaries, or from source.
 order: 2
 ---
 
 ## Requirements
 
-- **Rust toolchain** (stable) with `cargo` on your `PATH`
-- **Git** installed and available as `git` (or set `general.git_path` in `~/.config/g/config.toml`)
+- **Git** (2.0+) — required, `g` is a Git enhancement layer
+- **GitHub Token** — optional, needed for PR and stack features
 
 Check versions:
 
 ```bash
-rustc --version
-cargo --version
 git --version
 ```
 
-## Install from crates.io
+## Quick Install (Recommended)
 
-When the crate is published:
+**Using curl:**
 
 ```bash
-cargo install g
+curl -fsSL https://raw.githubusercontent.com/bdryanovski/g/main/install.sh | bash
 ```
 
-Pin a version for reproducible environments:
+**Using wget:**
 
 ```bash
-cargo install g --version 0.1.0
+wget -qO- https://raw.githubusercontent.com/bdryanovski/g/main/install.sh | bash
 ```
 
-Verify:
+The installer will:
+
+1. Detect your OS and architecture
+2. Download the correct binary from GitHub releases
+3. Install to `~/.local/bin`
+4. Show shell setup instructions
+
+**Custom install location:**
 
 ```bash
-which g
-g --version
+INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/bdryanovski/g/main/install.sh | bash
 ```
 
-> **Note:** The package name in this repository is `g` (see the root `Cargo.toml`). If the crates.io name differs when you publish, substitute that name in `cargo install`.
+## Manual Download
 
-## Install from this repository
+Download the appropriate archive from the [Releases page](https://github.com/bdryanovski/g/releases):
 
-The Rust project lives at the **repository root**; `docs/` is only the website.
+| Platform | Architecture  | Download                             |
+| -------- | ------------- | ------------------------------------ |
+| Linux    | x86_64        | `g-x86_64-unknown-linux-gnu.tar.gz`  |
+| Linux    | ARM64         | `g-aarch64-unknown-linux-gnu.tar.gz` |
+| macOS    | Intel         | `g-x86_64-apple-darwin.tar.gz`       |
+| macOS    | Apple Silicon | `g-aarch64-apple-darwin.tar.gz`      |
+| Windows  | x86_64        | `g-x86_64-pc-windows-msvc.zip`       |
+
+**Extract and install:**
 
 ```bash
-git clone https://github.com/YOUR_ORG/vcli.git
-cd vcli
+# Linux/macOS
+tar -xzf g-*.tar.gz
+chmod +x g
+mv g ~/.local/bin/
+
+# Windows (PowerShell)
+Expand-Archive g-*.zip -DestinationPath .
+Move-Item g.exe $env:LOCALAPPDATA\Programs\
+```
+
+## Build from Source
+
+Requires the Rust toolchain (stable):
+
+```bash
+git clone https://github.com/bdryanovski/g.git
+cd g
 cargo install --path .
-```
-
-Release-optimized binary:
-
-```bash
-cargo install --path . --locked
 ```
 
 The binary is placed in `~/.cargo/bin` by default. Ensure it is on your `PATH`:
@@ -65,10 +86,11 @@ source ~/.zshrc
 
 ## Update
 
+Re-run the installer script, or:
+
 ```bash
-cargo install g --force
-# or from a git checkout:
-cd vcli && git pull && cargo install --path . --force
+# From source
+cd g && git pull && cargo install --path . --force
 ```
 
 ## GitHub token (stacks & PRs)
@@ -112,7 +134,18 @@ g diff --stat
 
 ## Shell completions
 
-Completion generation is not built into the CLI yet. Until it ships, many users rely on **git** completions for passthrough commands or hand-written completions for `g`.
+Generate completions for your shell:
+
+```bash
+# Bash
+g completions bash >> ~/.bash_completion
+
+# Zsh
+g completions zsh > ~/.zsh/completions/_g
+
+# Fish
+g completions fish > ~/.config/fish/completions/g.fish
+```
 
 ## Next
 

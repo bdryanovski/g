@@ -231,16 +231,18 @@ Switch with `g workspace switch` (no argument opens the fuzzy picker) and `exit`
 
 **Who:** You are cloning a repo that you know will involve parallel branches — a client project, a new service, a long engagement.
 
-**Goal:** Get the container layout (all worktrees as named sub-directories) from the very first `clone`.
+**Goal:** Get the container layout (all worktrees as named sub-directories) right after cloning.
 
 **What to do**
 
 ```bash
-g clone https://github.com/org/api-service.git --workspace
-cd api-service/main
+git clone https://github.com/org/api-service.git
+cd api-service
+g workspace init
+cd ../api-service/main
 ```
 
-`g` detects the remote default branch before cloning, creates the container, and places the primary checkout at `api-service/main/`. From now on `g workspace create <name>` puts new worktrees at `api-service/<name>/`.
+`g workspace init` reorganizes the repo into a container layout with the primary checkout at `api-service/main/`. From now on `g workspace create <name>` puts new worktrees at `api-service/<name>/`.
 
 ---
 
@@ -337,7 +339,7 @@ g compare --diff main release/1.4   # optional full patch
 |------------|------------|
 | Split a giant PR | `g stack new` / `g stack add` / `g stack pr` |
 | Fix prod while coding a feature | `g workspace create` / `g workspace switch` |
-| Clone a repo workspace-ready | `g clone <url> --workspace` |
+| Set up a repo for workspaces | `git clone <url> && cd <repo> && g workspace init` |
 | Convert an existing repo to worktree layout | `g workspace init` |
 | Navigate between workspaces interactively | `g workspace switch` (no argument) |
 | Copy `.env` and local config to a new workspace | `g workspace create <name> --copy` |

@@ -23,7 +23,7 @@ Workspaces wrap **`git worktree`**: each workspace is a **separate directory** o
 | Two long-running tracks at once | Clone the repo a second time | One object store, two named directories |
 | Review a teammate's branch locally | Abandon your current state | Create a workspace for their branch, switch in seconds |
 | Work on a feature that needs `.env` tweaks | Manually copy files each time | `--copy` brings your untracked files along |
-| Onboarding a fresh repo | `git clone`, settle for flat layout | `g clone --workspace`, container layout from day one |
+| Onboarding a fresh repo | `git clone`, settle for flat layout | `git clone` then `g workspace init`, container layout from day one |
 
 ---
 
@@ -41,7 +41,7 @@ Each workspace lives next to the repo root, joined by a configurable separator:
 
 ### Container layout
 
-Enabled by `g workspace init` or `g clone --workspace`. The original repo path becomes a **container** directory; each workspace is a child:
+Enabled by `g workspace init`. The original repo path becomes a **container** directory; each workspace is a child:
 
 ```text
 ~/projects/myapp/                   ← container
@@ -180,21 +180,17 @@ Once in container layout, every future `g workspace create` places new worktrees
 **What to do**
 
 ```bash
-g clone https://github.com/org/api-service.git --workspace
-cd api-service/main
+git clone https://github.com/org/api-service.git
+cd api-service
+g workspace init
+cd ../api-service/main
 ```
 
 What happened:
 
 ```text
 ~/projects/api-service/         ← container created
-~/projects/api-service/main/    ← repo cloned here (or /master, detected automatically)
-```
-
-Any extra `git clone` flags work as normal:
-
-```bash
-g clone https://github.com/org/api-service.git --workspace --depth 1 -q
+~/projects/api-service/main/    ← repo moved here
 ```
 
 From now on, `g workspace create feature-x` places the worktree at `api-service/feature-x/`.
@@ -404,22 +400,6 @@ g workspace create payments -b feat/payments
 ```
 
 If neither local nor remote is found, a new branch is created from the current HEAD (or from `start_point` if given).
-
----
-
-## Clone with workspace layout
-
-```bash
-g clone <url> [dest] --workspace
-```
-
-`g` determines the remote's default branch via `git ls-remote` before cloning, so the first worktree always has the right name. Extra flags (`--depth`, `--branch`, `-q`) are forwarded to `git clone`:
-
-```bash
-g clone https://github.com/org/repo.git            --workspace
-g clone https://github.com/org/repo.git my-project --workspace
-g clone https://github.com/org/repo.git            --workspace --depth 1
-```
 
 ---
 
