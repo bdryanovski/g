@@ -79,6 +79,7 @@ pub fn remote_branch_exists(name: &str) -> Result<bool> {
 }
 
 /// Get the merge-base between two branches.
+#[allow(dead_code)]
 pub fn merge_base(branch1: &str, branch2: &str) -> Result<String> {
     git_output(&["merge-base", branch1, branch2])
         .with_context(|| format!("Failed to find merge-base between {} and {}", branch1, branch2))
@@ -172,6 +173,7 @@ pub fn verify_rules(workflow: &Workflow, operation: &str) -> Result<()> {
 }
 
 /// Format a merge strategy for display.
+#[allow(dead_code)]
 pub fn format_merge_strategy(strategy: &MergeStrategy) -> &'static str {
     match strategy {
         MergeStrategy::Merge => "merge",
