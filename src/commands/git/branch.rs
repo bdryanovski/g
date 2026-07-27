@@ -505,22 +505,19 @@ fn fuzzy_branch_picker(branches: &[BranchInfo]) -> Option<String> {
         }
 
         // Clear screen and render
-        execute!(stdout, cursor::MoveTo(0, 0), terminal::Clear(terminal::ClearType::All)).ok();
+        execute!(
+            stdout,
+            cursor::MoveTo(0, 0),
+            terminal::Clear(terminal::ClearType::All)
+        )
+        .ok();
 
         // Header
-        println!(
-            "  {}",
-            ui::primary_bold("Switch to branch")
-        );
+        println!("  {}", ui::primary_bold("Switch to branch"));
         println!();
 
         // Search box
-        println!(
-            "  {} {}{}",
-            ui::muted("Search:"),
-            query,
-            ui::muted("▌")
-        );
+        println!("  {} {}{}", ui::muted("Search:"), query, ui::muted("▌"));
         println!();
 
         // Table header
@@ -533,7 +530,10 @@ fn fuzzy_branch_picker(branches: &[BranchInfo]) -> Option<String> {
             ui::muted("Last Commit"),
             width = name_width
         );
-        println!("  {}", ui::muted(&"─".repeat((term_width as usize).saturating_sub(4))));
+        println!(
+            "  {}",
+            ui::muted(&"─".repeat((term_width as usize).saturating_sub(4)))
+        );
 
         // Render visible branches
         let visible_branches: Vec<_> = filtered
@@ -636,10 +636,14 @@ fn fuzzy_branch_picker(branches: &[BranchInfo]) -> Option<String> {
                         break Some(filtered[cursor_pos].name.clone());
                     }
                 }
-                KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() || key.code == KeyCode::Up => {
+                KeyCode::Up | KeyCode::Char('k')
+                    if key.modifiers.is_empty() || key.code == KeyCode::Up =>
+                {
                     cursor_pos = cursor_pos.saturating_sub(1);
                 }
-                KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() || key.code == KeyCode::Down => {
+                KeyCode::Down | KeyCode::Char('j')
+                    if key.modifiers.is_empty() || key.code == KeyCode::Down =>
+                {
                     if !filtered.is_empty() {
                         cursor_pos = (cursor_pos + 1).min(filtered.len() - 1);
                     }
@@ -649,7 +653,9 @@ fn fuzzy_branch_picker(branches: &[BranchInfo]) -> Option<String> {
                     cursor_pos = 0;
                     scroll_offset = 0;
                 }
-                KeyCode::Char(c) if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT => {
+                KeyCode::Char(c)
+                    if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT =>
+                {
                     query.push(c);
                     cursor_pos = 0;
                     scroll_offset = 0;

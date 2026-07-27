@@ -115,7 +115,6 @@ pub struct BranchType {
     pub merge_strategy: MergeStrategy,
 
     // ─── Lifecycle options ────────────────────────────────────────────────────
-
     /// Delete branch after successful merge.
     #[serde(default)]
     pub delete_after_merge: Option<bool>,
@@ -137,7 +136,6 @@ pub struct BranchType {
     pub max_age_hours: Option<u32>,
 
     // ─── Tagging options ──────────────────────────────────────────────────────
-
     /// Create a git tag when finishing the branch.
     #[serde(default)]
     pub tag_on_finish: Option<bool>,
@@ -148,7 +146,6 @@ pub struct BranchType {
     pub tag_pattern: Option<String>,
 
     // ─── Validation options ───────────────────────────────────────────────────
-
     /// Regex pattern for validating the branch name portion (after prefix).
     /// Example: "^[a-z0-9-]+$" for lowercase alphanumeric with hyphens.
     #[serde(default)]
@@ -159,7 +156,6 @@ pub struct BranchType {
     pub require_ticket: Option<bool>,
 
     // ─── PR integration options ───────────────────────────────────────────────
-
     /// PR template name to use when creating pull requests.
     #[serde(default)]
     pub pr_template: Option<String>,
@@ -348,8 +344,6 @@ pub struct WorkflowHooks {
     pub on_publish: Option<Vec<String>>,
 }
 
-
-
 // ─── Workflow rules ───────────────────────────────────────────────────────────
 
 /// Global rules that apply to all branch types in a workflow.
@@ -420,7 +414,11 @@ impl Workflow {
         }
 
         // First try to find a type with a matching prefix
-        if let Some(t) = self.types.iter().find(|t| !t.prefix.is_empty() && branch.starts_with(&t.prefix)) {
+        if let Some(t) = self
+            .types
+            .iter()
+            .find(|t| !t.prefix.is_empty() && branch.starts_with(&t.prefix))
+        {
             return Some(t);
         }
 
@@ -467,8 +465,8 @@ impl Workflow {
 
         // Check type-specific pattern
         if let Some(ref pattern) = branch_type.naming_pattern {
-            let re = regex::Regex::new(pattern)
-                .map_err(|e| format!("Invalid naming pattern: {}", e))?;
+            let re =
+                regex::Regex::new(pattern).map_err(|e| format!("Invalid naming pattern: {}", e))?;
             if !re.is_match(name) {
                 return Err(format!(
                     "Branch name '{}' does not match pattern '{}' for type '{}'",
@@ -626,10 +624,9 @@ mod tests {
         };
 
         // No pattern means any name is valid
-        assert!(workflow.validate_branch_name(
-            workflow.get_type("feature").unwrap(),
-            "any-name"
-        ).is_ok());
+        assert!(workflow
+            .validate_branch_name(workflow.get_type("feature").unwrap(), "any-name")
+            .is_ok());
     }
 
     #[test]
@@ -647,13 +644,21 @@ mod tests {
         let branch_type = workflow.get_type("feature").unwrap();
 
         // Valid names
-        assert!(workflow.validate_branch_name(branch_type, "login-page").is_ok());
-        assert!(workflow.validate_branch_name(branch_type, "add-user-auth").is_ok());
+        assert!(workflow
+            .validate_branch_name(branch_type, "login-page")
+            .is_ok());
+        assert!(workflow
+            .validate_branch_name(branch_type, "add-user-auth")
+            .is_ok());
 
         // Invalid names
         assert!(workflow.validate_branch_name(branch_type, "Login").is_err());
-        assert!(workflow.validate_branch_name(branch_type, "123-feature").is_err());
-        assert!(workflow.validate_branch_name(branch_type, "feature with spaces").is_err());
+        assert!(workflow
+            .validate_branch_name(branch_type, "123-feature")
+            .is_err());
+        assert!(workflow
+            .validate_branch_name(branch_type, "feature with spaces")
+            .is_err());
     }
 
     #[test]
@@ -829,10 +834,9 @@ mod tests {
     #[test]
     fn test_workflows_config_get() {
         let mut config = WorkflowsConfig::default();
-        config.workflows.insert(
-            "gitflow".to_string(),
-            Workflow::default(),
-        );
+        config
+            .workflows
+            .insert("gitflow".to_string(), Workflow::default());
 
         assert!(config.get("gitflow").is_some());
         assert!(config.get("nonexistent").is_none());
@@ -844,7 +848,9 @@ mod tests {
         assert!(config.is_empty());
 
         let mut config2 = WorkflowsConfig::default();
-        config2.workflows.insert("test".to_string(), Workflow::default());
+        config2
+            .workflows
+            .insert("test".to_string(), Workflow::default());
         assert!(!config2.is_empty());
     }
 
@@ -869,8 +875,14 @@ mod tests {
         };
 
         // Should match prefixed branches
-        assert_eq!(workflow.type_for_branch("feature/login").unwrap().name, "feature");
-        assert_eq!(workflow.type_for_branch("hotfix/CVE-123").unwrap().name, "hotfix");
+        assert_eq!(
+            workflow.type_for_branch("feature/login").unwrap().name,
+            "feature"
+        );
+        assert_eq!(
+            workflow.type_for_branch("hotfix/CVE-123").unwrap().name,
+            "hotfix"
+        );
 
         // Should not match unrecognized branches (no catch-all)
         assert!(workflow.type_for_branch("random-branch").is_none());
@@ -895,10 +907,22 @@ mod tests {
         };
 
         // Should match any branch name
-        assert_eq!(workflow.type_for_branch("my-feature").unwrap().name, "feature");
-        assert_eq!(workflow.type_for_branch("experiment-f").unwrap().name, "feature");
-        assert_eq!(workflow.type_for_branch("fix-bug-123").unwrap().name, "feature");
-        assert_eq!(workflow.type_for_branch("anything-goes").unwrap().name, "feature");
+        assert_eq!(
+            workflow.type_for_branch("my-feature").unwrap().name,
+            "feature"
+        );
+        assert_eq!(
+            workflow.type_for_branch("experiment-f").unwrap().name,
+            "feature"
+        );
+        assert_eq!(
+            workflow.type_for_branch("fix-bug-123").unwrap().name,
+            "feature"
+        );
+        assert_eq!(
+            workflow.type_for_branch("anything-goes").unwrap().name,
+            "feature"
+        );
 
         // Should NOT match main branch
         assert!(workflow.type_for_branch("main").is_none());
@@ -926,10 +950,16 @@ mod tests {
         };
 
         // Specific prefix should take priority
-        assert_eq!(workflow.type_for_branch("hotfix/urgent").unwrap().name, "hotfix");
+        assert_eq!(
+            workflow.type_for_branch("hotfix/urgent").unwrap().name,
+            "hotfix"
+        );
 
         // Other branches fall through to catch-all
-        assert_eq!(workflow.type_for_branch("my-feature").unwrap().name, "feature");
+        assert_eq!(
+            workflow.type_for_branch("my-feature").unwrap().name,
+            "feature"
+        );
         assert_eq!(workflow.type_for_branch("random").unwrap().name, "feature");
 
         // Main is still excluded
@@ -953,6 +983,9 @@ mod tests {
         assert!(workflow.type_for_branch("develop").is_none());
 
         // But should match other branches
-        assert_eq!(workflow.type_for_branch("my-branch").unwrap().name, "feature");
+        assert_eq!(
+            workflow.type_for_branch("my-branch").unwrap().name,
+            "feature"
+        );
     }
 }

@@ -16,7 +16,10 @@ pub fn run(_ctx: &Ctx, args: PublishArgs) -> Result<()> {
     let (workflow_name, workflow) = get_active_workflow()?;
 
     // Get the branch to publish
-    let branch = args.branch.clone().unwrap_or_else(|| current_branch().unwrap_or_default());
+    let branch = args
+        .branch
+        .clone()
+        .unwrap_or_else(|| current_branch().unwrap_or_default());
     if branch.is_empty() {
         bail!("Could not determine current branch. Are you in a git repository?");
     }
@@ -227,9 +230,7 @@ fn create_or_update_pr(
         }
     }
 
-    let output = std::process::Command::new("gh")
-        .args(&gh_args)
-        .output()?;
+    let output = std::process::Command::new("gh").args(&gh_args).output()?;
 
     if output.status.success() {
         let url = String::from_utf8_lossy(&output.stdout).trim().to_string();

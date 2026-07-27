@@ -126,8 +126,7 @@ fn select_base_workflow() -> Result<Workflow> {
         Ok(Workflow::default())
     } else {
         let preset_name = &preset_names[idx - 1];
-        workflow_presets::get_preset(preset_name)
-            .ok_or_else(|| anyhow::anyhow!("Preset not found"))
+        workflow_presets::get_preset(preset_name).ok_or_else(|| anyhow::anyhow!("Preset not found"))
     }
 }
 
@@ -292,7 +291,8 @@ fn create_branch_type_interactive() -> Result<Option<BranchType>> {
     let default_prefix = format!("{}/", name);
     let prefix = input("Branch prefix", Some(&default_prefix)).unwrap_or(default_prefix);
 
-    let source = input("Source branch (create from)", Some("main")).unwrap_or_else(|| "main".into());
+    let source =
+        input("Source branch (create from)", Some("main")).unwrap_or_else(|| "main".into());
 
     let target = input("Target branch (merge to)", Some(&source)).unwrap_or_else(|| source.clone());
 

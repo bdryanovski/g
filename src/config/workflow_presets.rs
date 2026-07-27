@@ -17,8 +17,7 @@
 //! - `multi-version` - LTS support with backport workflow
 
 use super::workflow::{
-    BranchTarget, BranchType, MergeStrategy, Workflow, WorkflowDocs, WorkflowRules,
-    WorkflowsConfig,
+    BranchTarget, BranchType, MergeStrategy, Workflow, WorkflowDocs, WorkflowRules, WorkflowsConfig,
 };
 use std::collections::HashMap;
 

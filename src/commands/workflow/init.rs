@@ -5,9 +5,9 @@ use std::fs;
 use std::io::{self, Write};
 
 use crate::cli::workflow::InitArgs;
-use crate::config::{self, workflow::WorkflowsConfig};
-use crate::config::workflow_presets;
 use crate::commands::Ctx;
+use crate::config::workflow_presets;
+use crate::config::{self, workflow::WorkflowsConfig};
 use crate::ui::{self, print_section};
 
 pub fn run(_ctx: &Ctx, args: InitArgs) -> Result<()> {
@@ -60,7 +60,10 @@ fn init_local(args: InitArgs) -> Result<()> {
         }
     } else {
         // Create .gitignore to exclude everything
-        fs::write(&gitignore_path, "# Ignore all files in .g/ - local workflow config only\n/*\n")?;
+        fs::write(
+            &gitignore_path,
+            "# Ignore all files in .g/ - local workflow config only\n/*\n",
+        )?;
         ui::print_info("Created .g/.gitignore to prevent tracking");
     }
 
@@ -81,9 +84,12 @@ fn init_local(args: InitArgs) -> Result<()> {
     let include_inline = if args.no_interactive {
         false
     } else {
-        prompt_confirm("Include workflow definition inline (allows customization)?", false)?
+        prompt_confirm(
+            "Include workflow definition inline (allows customization)?",
+            false,
+        )?
     };
-    
+
     if include_inline {
         if let Some(workflow) = workflow_presets::get_preset(&workflow_name) {
             workflows.workflows.insert(workflow_name.clone(), workflow);
@@ -100,7 +106,7 @@ fn init_local(args: InitArgs) -> Result<()> {
     let templates_dir = g_dir.join("templates");
     if !templates_dir.exists() {
         fs::create_dir_all(&templates_dir)?;
-        
+
         // Create example PR template
         let feature_template = templates_dir.join("feature.md");
         if !feature_template.exists() {
@@ -129,7 +135,7 @@ fn init_global(args: InitArgs) -> Result<()> {
 
     if !cfg.workflows.is_empty() {
         ui::print_info("Global workflows already configured.");
-        
+
         // List existing
         println!();
         println!("Configured workflows:");
@@ -167,7 +173,10 @@ fn init_global(args: InitArgs) -> Result<()> {
     ui::print_success(&format!("Workflow '{}' is now available", workflow_name));
     println!();
     println!("Usage:");
-    println!("  g workflow use {}      # Activate this workflow", workflow_name);
+    println!(
+        "  g workflow use {}      # Activate this workflow",
+        workflow_name
+    );
     println!("  g workflow start feature my-feature");
     println!();
 
@@ -237,7 +246,7 @@ fn generate_workflow_toml(workflows: &WorkflowsConfig, name: &str) -> String {
     content.push_str("#   g workflow publish\n");
     content.push_str("#   g workflow finish\n");
     content.push_str("#\n");
-    content.push_str("\n");
+    content.push('\n');
 
     // Add the actual config
     if let Ok(toml) = toml::to_string_pretty(workflows) {

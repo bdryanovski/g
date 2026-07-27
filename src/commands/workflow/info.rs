@@ -6,7 +6,7 @@ use crate::cli::workflow::InfoArgs;
 use crate::commands::workflow::shared::get_workflow;
 use crate::commands::Ctx;
 use crate::config::workflow_presets;
-use crate::ui::{muted, primary_bold, success, danger, text_bold, Diagram, Panel};
+use crate::ui::{danger, muted, primary_bold, success, text_bold, Diagram, Panel};
 
 pub fn run(_ctx: &Ctx, args: InfoArgs) -> Result<()> {
     let workflow = get_workflow(&args.name)?;
@@ -81,9 +81,12 @@ pub fn run(_ctx: &Ctx, args: InfoArgs) -> Result<()> {
 
         panel.print_line(&format!(
             "   {} {}  {} {}  {} {}",
-            muted("from:"), source,
-            muted("→"), target,
-            muted("via:"), bt.merge_strategy
+            muted("from:"),
+            source,
+            muted("→"),
+            target,
+            muted("via:"),
+            bt.merge_strategy
         ));
 
         // Options as badges
@@ -143,7 +146,10 @@ pub fn run(_ctx: &Ctx, args: InfoArgs) -> Result<()> {
             panel.print_line(&format!("     {} Require clean working tree", muted("•")));
         }
         if rules.require_up_to_date == Some(true) {
-            panel.print_line(&format!("     {} Require source branch up-to-date", muted("•")));
+            panel.print_line(&format!(
+                "     {} Require source branch up-to-date",
+                muted("•")
+            ));
         }
         if let Some(days) = rules.max_branch_age_days {
             panel.print_line(&format!("     {} Warn after {} days", muted("•"), days));
@@ -158,7 +164,11 @@ pub fn run(_ctx: &Ctx, args: InfoArgs) -> Result<()> {
         let hook_count = count_hooks(hooks);
         if hook_count > 0 {
             panel.print_empty();
-            panel.print_line(&format!("   {} {} hook(s) configured", muted("Hooks:"), hook_count));
+            panel.print_line(&format!(
+                "   {} {} hook(s) configured",
+                muted("Hooks:"),
+                hook_count
+            ));
         }
     }
 
@@ -223,10 +233,20 @@ fn print_pros_cons_in_panel(panel: &Panel, pros: &[&str], cons: &[&str]) {
 
 fn count_hooks(hooks: &crate::config::workflow::WorkflowHooks) -> usize {
     let mut count = 0;
-    if let Some(ref cmds) = hooks.pre_start { count += cmds.len(); }
-    if let Some(ref cmds) = hooks.post_start { count += cmds.len(); }
-    if let Some(ref cmds) = hooks.pre_finish { count += cmds.len(); }
-    if let Some(ref cmds) = hooks.post_finish { count += cmds.len(); }
-    if let Some(ref cmds) = hooks.on_publish { count += cmds.len(); }
+    if let Some(ref cmds) = hooks.pre_start {
+        count += cmds.len();
+    }
+    if let Some(ref cmds) = hooks.post_start {
+        count += cmds.len();
+    }
+    if let Some(ref cmds) = hooks.pre_finish {
+        count += cmds.len();
+    }
+    if let Some(ref cmds) = hooks.post_finish {
+        count += cmds.len();
+    }
+    if let Some(ref cmds) = hooks.on_publish {
+        count += cmds.len();
+    }
     count
 }

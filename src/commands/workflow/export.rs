@@ -5,8 +5,8 @@ use std::fs;
 
 use crate::cli::workflow::ExportArgs;
 use crate::commands::workflow::shared::get_workflow;
-use crate::config::workflow::WorkflowsConfig;
 use crate::commands::Ctx;
+use crate::config::workflow::WorkflowsConfig;
 use crate::ui;
 
 pub fn run(_ctx: &Ctx, args: ExportArgs) -> Result<()> {

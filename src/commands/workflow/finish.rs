@@ -4,21 +4,19 @@ use anyhow::{bail, Result};
 
 use crate::cli::workflow::FinishArgs;
 use crate::commands::git::{git_output, is_dry_run, require_clean_tree};
-use crate::commands::workflow::hooks::{
-    extract_ticket, run_post_finish, run_pre_finish, HookEnv,
-};
-use crate::commands::workflow::shared::{
-    current_branch, detect_branch_type, get_active_workflow,
-};
-use crate::config::workflow::MergeStrategy;
+use crate::commands::workflow::hooks::{extract_ticket, run_post_finish, run_pre_finish, HookEnv};
+use crate::commands::workflow::shared::{current_branch, detect_branch_type, get_active_workflow};
 use crate::commands::Ctx;
+use crate::config::workflow::MergeStrategy;
 use crate::ui;
 
 pub fn run(ctx: &Ctx, args: FinishArgs) -> Result<()> {
     let (workflow_name, workflow) = get_active_workflow()?;
 
     // Get the branch to finish
-    let branch = args.branch.unwrap_or_else(|| current_branch().unwrap_or_default());
+    let branch = args
+        .branch
+        .unwrap_or_else(|| current_branch().unwrap_or_default());
     if branch.is_empty() {
         bail!("Could not determine current branch. Are you in a git repository?");
     }
@@ -101,11 +99,7 @@ pub fn run(ctx: &Ctx, args: FinishArgs) -> Result<()> {
 
     // Print summary
     println!();
-    ui::print_success(&format!(
-        "Finished '{}' -> {}",
-        branch,
-        targets.join(", ")
-    ));
+    ui::print_success(&format!("Finished '{}' -> {}", branch, targets.join(", ")));
 
     if should_delete {
         ui::print_info(&format!("Branch '{}' has been deleted.", branch));
@@ -114,17 +108,10 @@ pub fn run(ctx: &Ctx, args: FinishArgs) -> Result<()> {
     Ok(())
 }
 
-fn merge_to_target(
-    _ctx: &Ctx,
-    branch: &str,
-    target: &str,
-    strategy: &MergeStrategy,
-) -> Result<()> {
+fn merge_to_target(_ctx: &Ctx, branch: &str, target: &str, strategy: &MergeStrategy) -> Result<()> {
     ui::print_info(&format!(
         "Merging '{}' into '{}' using {} strategy...",
-        branch,
-        target,
-        strategy
+        branch, target, strategy
     ));
 
     if is_dry_run() {
@@ -144,7 +131,13 @@ fn merge_to_target(
     // Perform merge based on strategy
     match strategy {
         MergeStrategy::Merge => {
-            git_output(&["merge", "--no-ff", branch, "-m", &format!("Merge branch '{}'", branch)])?;
+            git_output(&[
+                "merge",
+                "--no-ff",
+                branch,
+                "-m",
+                &format!("Merge branch '{}'", branch),
+            ])?;
         }
         MergeStrategy::Squash => {
             git_output(&["merge", "--squash", branch])?;
@@ -163,7 +156,11 @@ fn merge_to_target(
         MergeStrategy::CherryPick => {
             // Get commits to cherry-pick
             let merge_base = git_output(&["merge-base", target, branch])?;
-            let commits = git_output(&["rev-list", "--reverse", &format!("{}..{}", merge_base, branch)])?;
+            let commits = git_output(&[
+                "rev-list",
+                "--reverse",
+                &format!("{}..{}", merge_base, branch),
+            ])?;
 
             for commit in commits.lines() {
                 if !commit.is_empty() {
@@ -182,11 +179,13 @@ fn merge_to_target(
     Ok(())
 }
 
-fn create_tag(_ctx: &Ctx, branch_type: &crate::config::workflow::BranchType, branch: &str) -> Result<()> {
+fn create_tag(
+    _ctx: &Ctx,
+    branch_type: &crate::config::workflow::BranchType,
+    branch: &str,
+) -> Result<()> {
     let pattern = branch_type
-        .tag_pattern
-        .as_ref()
-        .map(|p| p.as_str())
+        .tag_pattern.as_deref()
         .unwrap_or("{name}");
 
     // Extract name from branch (without prefix)
@@ -203,7 +202,10 @@ fn create_tag(_ctx: &Ctx, branch_type: &crate::config::workflow::BranchType, bra
     let tag = pattern
         .replace("{name}", &name)
         .replace("{type}", &branch_type.name)
-        .replace("{date}", &chrono::Local::now().format("%Y-%m-%d").to_string());
+        .replace(
+            "{date}",
+            &chrono::Local::now().format("%Y-%m-%d").to_string(),
+        );
 
     // Handle {version} - try to extract from name
     let tag = if tag.contains("{version}") {

@@ -4,9 +4,9 @@ use anyhow::Result;
 
 use crate::cli::workflow::UseArgs;
 use crate::commands::workflow::shared::get_workflow;
-use crate::config::{self, workflow::WorkflowsConfig};
-use crate::config::workflow_presets;
 use crate::commands::Ctx;
+use crate::config::workflow_presets;
+use crate::config::{self, workflow::WorkflowsConfig};
 use crate::ui;
 
 pub fn run(_ctx: &Ctx, args: UseArgs) -> Result<()> {

@@ -32,7 +32,6 @@ use clap::{Args, Subcommand};
                   \x20 g workflow init --local      set up .g/ folder in repo")]
 pub enum WorkflowCommands {
     // ─── Lifecycle operations ─────────────────────────────────────────────────
-
     /// Start a new branch using workflow rules
     ///
     /// Creates a branch with the proper prefix, from the correct source branch,
@@ -59,7 +58,6 @@ pub enum WorkflowCommands {
     Publish(PublishArgs),
 
     // ─── Status and information ───────────────────────────────────────────────
-
     /// Show workflow status of current branch
     ///
     /// Displays the current branch's workflow context including type, source,
@@ -85,7 +83,6 @@ pub enum WorkflowCommands {
     Use(UseArgs),
 
     // ─── Configuration ────────────────────────────────────────────────────────
-
     /// Create a new workflow interactively
     ///
     /// Opens a full-screen wizard to define a custom workflow with branch
@@ -110,7 +107,6 @@ pub enum WorkflowCommands {
     Validate(ValidateArgs),
 
     // ─── Sharing ──────────────────────────────────────────────────────────────
-
     /// Clone a workflow with a new name
     ///
     /// Creates a copy of an existing workflow (preset or custom) that

@@ -5,8 +5,8 @@ use std::fs;
 
 use crate::cli::workflow::EditArgs;
 use crate::commands::workflow::shared::{get_active_workflow, get_workflow};
-use crate::config::{self, workflow::WorkflowsConfig};
 use crate::commands::Ctx;
+use crate::config::{self, workflow::WorkflowsConfig};
 use crate::ui;
 
 pub fn run(_ctx: &Ctx, args: EditArgs) -> Result<()> {
@@ -31,9 +31,8 @@ pub fn run(_ctx: &Ctx, args: EditArgs) -> Result<()> {
     let full_content = toml::to_string_pretty(&workflows)?;
 
     // Get editor
-    let editor = std::env::var("EDITOR").unwrap_or_else(|_| {
-        std::env::var("VISUAL").unwrap_or_else(|_| "vim".to_string())
-    });
+    let editor = std::env::var("EDITOR")
+        .unwrap_or_else(|_| std::env::var("VISUAL").unwrap_or_else(|_| "vim".to_string()));
 
     // Create temp file
     let temp_file = std::env::temp_dir().join(format!("g-workflow-{}.toml", name));
@@ -65,16 +64,14 @@ pub fn run(_ctx: &Ctx, args: EditArgs) -> Result<()> {
     };
 
     // Get the edited workflow
-    let edited_workflow = parsed.workflows.get(&name).ok_or_else(|| {
-        anyhow::anyhow!("Workflow '{}' not found in edited content", name)
-    })?;
+    let edited_workflow = parsed
+        .workflows
+        .get(&name)
+        .ok_or_else(|| anyhow::anyhow!("Workflow '{}' not found in edited content", name))?;
 
     // Determine where to save (check if it's in local config)
     let repo_path = config::repo_workflow_path().ok();
-    let is_local = repo_path
-        .as_ref()
-        .map(|p| p.exists())
-        .unwrap_or(false);
+    let is_local = repo_path.as_ref().map(|p| p.exists()).unwrap_or(false);
 
     if is_local {
         // Check if this workflow is in local config
@@ -92,7 +89,9 @@ pub fn run(_ctx: &Ctx, args: EditArgs) -> Result<()> {
         if local_workflows.workflows.contains_key(&name) {
             // Save to local config
             let mut updated = local_workflows;
-            updated.workflows.insert(name.clone(), edited_workflow.clone());
+            updated
+                .workflows
+                .insert(name.clone(), edited_workflow.clone());
             config::save_repo_workflows(&updated)?;
             ui::print_success(&format!("Saved '{}' to .g/workflow.toml", name));
             return Ok(());
@@ -101,7 +100,9 @@ pub fn run(_ctx: &Ctx, args: EditArgs) -> Result<()> {
 
     // Save to global config
     let mut cfg = config::load()?;
-    cfg.workflows.workflows.insert(name.clone(), edited_workflow.clone());
+    cfg.workflows
+        .workflows
+        .insert(name.clone(), edited_workflow.clone());
     config::save(&cfg)?;
 
     ui::print_success(&format!("Saved '{}' to global config", name));

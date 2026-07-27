@@ -3,8 +3,8 @@
 use anyhow::Result;
 
 use crate::commands::workflow::shared::{get_active_workflow, load_workflows};
-use crate::config::workflow_presets;
 use crate::commands::Ctx;
+use crate::config::workflow_presets;
 use crate::ui::{muted, primary_bold, print_section};
 
 pub fn run(_ctx: &Ctx) -> Result<()> {
@@ -34,7 +34,7 @@ pub fn run(_ctx: &Ctx) -> Result<()> {
     all_workflows.sort_by(|a, b| a.0.cmp(b.0));
 
     for (name, is_custom) in &all_workflows {
-        let is_active = active_name.as_ref().map(|a| a.as_str()) == Some(*name);
+        let is_active = active_name.as_deref() == Some(*name);
 
         // Get workflow (from user config or preset)
         let workflow = if *is_custom {
@@ -53,9 +53,7 @@ pub fn run(_ctx: &Ctx) -> Result<()> {
         let source = if *is_custom { "" } else { "(preset)" };
 
         // Get description
-        let description = docs
-            .map(|d| d.description)
-            .unwrap_or("Custom workflow");
+        let description = docs.map(|d| d.description).unwrap_or("Custom workflow");
 
         // Get branch types
         let types: Vec<&str> = wf.types.iter().map(|t| t.name.as_str()).collect();

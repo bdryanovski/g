@@ -6,8 +6,8 @@ use crate::commands::git::git_output;
 use crate::commands::workflow::shared::{
     commits_ahead_behind, current_branch, detect_branch_type, get_active_workflow,
 };
-use crate::config::workflow_presets;
 use crate::commands::Ctx;
+use crate::config::workflow_presets;
 use crate::ui::{self, print_section};
 
 pub fn run(_ctx: &Ctx) -> Result<()> {
@@ -60,13 +60,20 @@ pub fn run(_ctx: &Ctx) -> Result<()> {
         // Branch age
         if let Ok(created) = git_output(&["log", "--format=%ci", "--reverse", &branch, "-1"]) {
             if !created.is_empty() {
-                println!("  Created:   {}", created.split_whitespace().next().unwrap_or(&created));
+                println!(
+                    "  Created:   {}",
+                    created.split_whitespace().next().unwrap_or(&created)
+                );
             }
         }
 
         // Commit count on this branch
         if let Ok(merge_base) = git_output(&["merge-base", source, &branch]) {
-            if let Ok(count) = git_output(&["rev-list", "--count", &format!("{}..{}", merge_base, branch)]) {
+            if let Ok(count) = git_output(&[
+                "rev-list",
+                "--count",
+                &format!("{}..{}", merge_base, branch),
+            ]) {
                 println!("  Commits:   {}", count);
             }
         }
@@ -110,7 +117,7 @@ pub fn run(_ctx: &Ctx) -> Result<()> {
             let prefix = if bt.prefix.is_empty() {
                 "(no prefix)".to_string()
             } else {
-                format!("{}", bt.prefix)
+                bt.prefix.to_string()
             };
             println!("    {} -> {}", bt.name, prefix);
         }
@@ -148,7 +155,13 @@ fn print_pr_status(branch: &str) {
     }
 
     let output = std::process::Command::new("gh")
-        .args(["pr", "view", branch, "--json", "number,state,url,reviewDecision"])
+        .args([
+            "pr",
+            "view",
+            branch,
+            "--json",
+            "number,state,url,reviewDecision",
+        ])
         .output();
 
     if let Ok(output) = output {

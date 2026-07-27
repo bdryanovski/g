@@ -220,7 +220,7 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
             if part.starts_with("remote:") {
                 let msg = part.strip_prefix("remote:").unwrap_or(part).trim();
                 // Skip empty lines and progress indicators
-                if !msg.is_empty() 
+                if !msg.is_empty()
                     && !msg.contains("Compressing")
                     && !msg.contains("Counting")
                     && !msg.contains("Resolving")
@@ -258,12 +258,15 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
         } else {
             // Existing branch - show hash range and commit count
             let hash_range = match (&result.old_hash, &result.new_hash) {
-                (Some(old), Some(new)) => format!("{}..{}", ui::color_hash(old), ui::color_hash(new)),
+                (Some(old), Some(new)) => {
+                    format!("{}..{}", ui::color_hash(old), ui::color_hash(new))
+                }
                 _ => String::new(),
             };
 
             // Count commits pushed
-            let commit_count = if let (Some(old), Some(new)) = (&result.old_hash, &result.new_hash) {
+            let commit_count = if let (Some(old), Some(new)) = (&result.old_hash, &result.new_hash)
+            {
                 let count_output = super::exec::git_output_lossy(&[
                     "rev-list",
                     "--count",

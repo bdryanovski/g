@@ -2,10 +2,10 @@
 
 use anyhow::{bail, Context, Result};
 
+use crate::commands::git::{git_output, require_clean_tree};
 use crate::config;
 use crate::config::workflow::{BranchType, MergeStrategy, Workflow, WorkflowsConfig};
 use crate::config::workflow_presets;
-use crate::commands::git::{git_output, require_clean_tree};
 
 /// Load the effective workflow configuration.
 ///
@@ -62,8 +62,7 @@ pub fn get_workflow(name: &str) -> Result<Workflow> {
 
 /// Get the current git branch name.
 pub fn current_branch() -> Result<String> {
-    git_output(&["branch", "--show-current"])
-        .context("Failed to get current branch")
+    git_output(&["branch", "--show-current"]).context("Failed to get current branch")
 }
 
 /// Check if a branch exists locally.
@@ -74,20 +73,33 @@ pub fn branch_exists(name: &str) -> Result<bool> {
 
 /// Check if a branch exists on the remote.
 pub fn remote_branch_exists(name: &str) -> Result<bool> {
-    let result = git_output(&["rev-parse", "--verify", &format!("refs/remotes/origin/{}", name)]);
+    let result = git_output(&[
+        "rev-parse",
+        "--verify",
+        &format!("refs/remotes/origin/{}", name),
+    ]);
     Ok(result.is_ok())
 }
 
 /// Get the merge-base between two branches.
 #[allow(dead_code)]
 pub fn merge_base(branch1: &str, branch2: &str) -> Result<String> {
-    git_output(&["merge-base", branch1, branch2])
-        .with_context(|| format!("Failed to find merge-base between {} and {}", branch1, branch2))
+    git_output(&["merge-base", branch1, branch2]).with_context(|| {
+        format!(
+            "Failed to find merge-base between {} and {}",
+            branch1, branch2
+        )
+    })
 }
 
 /// Count commits ahead/behind between two refs.
 pub fn commits_ahead_behind(branch: &str, base: &str) -> Result<(usize, usize)> {
-    let output = git_output(&["rev-list", "--left-right", "--count", &format!("{}...{}", base, branch)])?;
+    let output = git_output(&[
+        "rev-list",
+        "--left-right",
+        "--count",
+        &format!("{}...{}", base, branch),
+    ])?;
     let parts: Vec<&str> = output.split_whitespace().collect();
     if parts.len() != 2 {
         bail!("Unexpected output from rev-list: {}", output);
@@ -116,7 +128,8 @@ pub fn extract_branch_name(branch_type: &BranchType, full_name: &str) -> String 
     if branch_type.prefix.is_empty() {
         full_name.to_string()
     } else {
-        full_name.strip_prefix(&branch_type.prefix)
+        full_name
+            .strip_prefix(&branch_type.prefix)
             .unwrap_or(full_name)
             .to_string()
     }
@@ -193,14 +206,12 @@ pub fn in_git_repo() -> bool {
 /// Get the repository root directory.
 #[allow(dead_code)]
 pub fn repo_root() -> Result<String> {
-    git_output(&["rev-parse", "--show-toplevel"])
-        .context("Not in a git repository")
+    git_output(&["rev-parse", "--show-toplevel"]).context("Not in a git repository")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn test_make_branch_name() {

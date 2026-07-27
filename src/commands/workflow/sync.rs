@@ -7,15 +7,17 @@ use crate::commands::git::{git_output, is_dry_run, require_clean_tree};
 use crate::commands::workflow::shared::{
     commits_ahead_behind, current_branch, detect_branch_type, get_active_workflow,
 };
-use crate::config::workflow::MergeStrategy;
 use crate::commands::Ctx;
+use crate::config::workflow::MergeStrategy;
 use crate::ui;
 
 pub fn run(ctx: &Ctx, args: SyncArgs) -> Result<()> {
     let (_, workflow) = get_active_workflow()?;
 
     // Get the branch to sync
-    let branch = args.branch.unwrap_or_else(|| current_branch().unwrap_or_default());
+    let branch = args
+        .branch
+        .unwrap_or_else(|| current_branch().unwrap_or_default());
     if branch.is_empty() {
         bail!("Could not determine current branch. Are you in a git repository?");
     }
@@ -41,7 +43,10 @@ pub fn run(ctx: &Ctx, args: SyncArgs) -> Result<()> {
         false
     } else if let Some(bt) = branch_type {
         // Use branch type's merge strategy
-        matches!(bt.merge_strategy, MergeStrategy::Rebase | MergeStrategy::FfOnly)
+        matches!(
+            bt.merge_strategy,
+            MergeStrategy::Rebase | MergeStrategy::FfOnly
+        )
     } else {
         // Default to rebase for clean history
         true
@@ -98,7 +103,10 @@ fn rebase_sync(_ctx: &Ctx, branch: &str, source: &str) -> Result<()> {
     ui::print_info(&format!("Rebasing '{}' onto '{}'...", branch, source));
 
     if is_dry_run() {
-        ui::print_info(&format!("Would rebase '{}' onto 'origin/{}'", branch, source));
+        ui::print_info(&format!(
+            "Would rebase '{}' onto 'origin/{}'",
+            branch, source
+        ));
         return Ok(());
     }
 
@@ -106,7 +114,10 @@ fn rebase_sync(_ctx: &Ctx, branch: &str, source: &str) -> Result<()> {
 
     match result {
         Ok(_) => {
-            ui::print_success(&format!("Successfully rebased '{}' onto '{}'.", branch, source));
+            ui::print_success(&format!(
+                "Successfully rebased '{}' onto '{}'.",
+                branch, source
+            ));
             Ok(())
         }
         Err(e) => {
@@ -131,7 +142,10 @@ fn merge_sync(_ctx: &Ctx, branch: &str, source: &str) -> Result<()> {
     ui::print_info(&format!("Merging '{}' into '{}'...", source, branch));
 
     if is_dry_run() {
-        ui::print_info(&format!("Would merge 'origin/{}' into '{}'", source, branch));
+        ui::print_info(&format!(
+            "Would merge 'origin/{}' into '{}'",
+            source, branch
+        ));
         return Ok(());
     }
 
@@ -144,7 +158,10 @@ fn merge_sync(_ctx: &Ctx, branch: &str, source: &str) -> Result<()> {
 
     match result {
         Ok(_) => {
-            ui::print_success(&format!("Successfully merged '{}' into '{}'.", source, branch));
+            ui::print_success(&format!(
+                "Successfully merged '{}' into '{}'.",
+                source, branch
+            ));
             Ok(())
         }
         Err(_e) => {

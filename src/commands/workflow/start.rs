@@ -15,20 +15,19 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
     let (workflow_name, workflow) = get_active_workflow()?;
 
     // Find the branch type
-    let branch_type = workflow
-        .get_type(&args.branch_type)
-        .ok_or_else(|| {
-            let available: Vec<_> = workflow.types.iter().map(|t| t.name.as_str()).collect();
-            anyhow::anyhow!(
-                "Unknown branch type '{}'. Available types: {}",
-                args.branch_type,
-                available.join(", ")
-            )
-        })?;
+    let branch_type = workflow.get_type(&args.branch_type).ok_or_else(|| {
+        let available: Vec<_> = workflow.types.iter().map(|t| t.name.as_str()).collect();
+        anyhow::anyhow!(
+            "Unknown branch type '{}'. Available types: {}",
+            args.branch_type,
+            available.join(", ")
+        )
+    })?;
 
     // Validate branch name
     if !args.no_verify {
-        workflow.validate_branch_name(branch_type, &args.name)
+        workflow
+            .validate_branch_name(branch_type, &args.name)
             .map_err(|e| anyhow::anyhow!(e))?;
     }
 
@@ -74,7 +73,7 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
     run_pre_start(&workflow.hooks, &hook_env, is_dry_run())?;
 
     // Fetch latest from remote
-    ui::print_info(&format!("Fetching latest from origin..."));
+    ui::print_info(&"Fetching latest from origin...".to_string());
     let _ = git_output(&["fetch", "origin", &source]);
 
     // Create and checkout the branch
@@ -84,7 +83,10 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
             branch_name, source
         ));
     } else {
-        ui::print_info(&format!("Creating branch '{}' from '{}'...", branch_name, source));
+        ui::print_info(&format!(
+            "Creating branch '{}' from '{}'...",
+            branch_name, source
+        ));
 
         // Update source branch if it exists on remote
         let remote_ref = format!("origin/{}", source);

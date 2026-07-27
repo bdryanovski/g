@@ -5,9 +5,9 @@ use std::fs;
 
 use crate::cli::workflow::ValidateArgs;
 use crate::commands::workflow::shared::{branch_exists, load_workflows};
+use crate::commands::Ctx;
 use crate::config::workflow::{Workflow, WorkflowsConfig};
 use crate::config::workflow_presets;
-use crate::commands::Ctx;
 use crate::ui::{self, print_section};
 
 pub fn run(_ctx: &Ctx, args: ValidateArgs) -> Result<()> {
@@ -51,10 +51,7 @@ pub fn run(_ctx: &Ctx, args: ValidateArgs) -> Result<()> {
     // Check default workflow exists
     if let Some(ref default) = workflows.default {
         if workflows.get(default).is_none() && workflow_presets::get_preset(default).is_none() {
-            errors.push(format!(
-                "Default workflow '{}' not found",
-                default
-            ));
+            errors.push(format!("Default workflow '{}' not found", default));
         }
     }
 
@@ -70,7 +67,10 @@ pub fn run(_ctx: &Ctx, args: ValidateArgs) -> Result<()> {
         // Print summary
         println!("Workflows validated:");
         for name in &workflow_names {
-            let workflow = workflows.get(name).cloned().or_else(|| workflow_presets::get_preset(name));
+            let workflow = workflows
+                .get(name)
+                .cloned()
+                .or_else(|| workflow_presets::get_preset(name));
             if let Some(w) = workflow {
                 let types: Vec<_> = w.types.iter().map(|t| t.name.as_str()).collect();
                 println!("  {} - {} type(s): {}", name, types.len(), types.join(", "));
@@ -167,20 +167,19 @@ fn validate_workflow(
 
         // Check source branch reference
         let source = &bt.source;
-        if source != "HEAD" && source != "main" && source != "develop" && !source.contains('*') {
-            if !branch_exists(source).unwrap_or(false) {
+        if source != "HEAD" && source != "main" && source != "develop" && !source.contains('*')
+            && !branch_exists(source).unwrap_or(false) {
                 warnings.push(format!(
                     "[{}] Source branch '{}' for type '{}' doesn't exist locally",
                     name, source, bt.name
                 ));
             }
-        }
 
         // Check tag pattern variables
         if let Some(ref pattern) = bt.tag_pattern {
             let valid_vars = ["{name}", "{version}", "{date}", "{type}"];
             let pattern_lower = pattern.to_lowercase();
-            
+
             // Check for unknown variables
             let mut pos = 0;
             while let Some(start) = pattern_lower[pos..].find('{') {
