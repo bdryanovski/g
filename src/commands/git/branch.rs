@@ -3,6 +3,8 @@
 //! [`dispatch_branch`] routes to either [`branch_squash`] (when the user passed
 //! the `squash` subcommand) or [`enhanced_branch`] (the colourised table /
 //! `git branch` passthrough for mutating flags).
+//!
+//! The branch list supports interactive fuzzy search — press `/` to filter branches.
 
 use anyhow::{bail, Context, Result};
 use std::process::{Command, Stdio};
@@ -13,6 +15,19 @@ use crate::ui;
 use super::dry_run::{git_mutate, is_dry_run};
 use super::exec::{git_exe, git_output, git_output_lossy, passthrough, require_clean_tree};
 use super::repo::{current_branch, default_branch};
+
+/// Branch info for display and selection.
+#[derive(Clone)]
+struct BranchInfo {
+    name: String,
+    hash: String,
+    subject: String,
+    author: String,
+    date: String,
+    upstream: String,
+    is_head: bool,
+    is_remote_only: bool,
+}
 
 // ─── Dispatch ────────────────────────────────────────────────────────────────
 
@@ -230,17 +245,6 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     let mut tracked_remotes: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     // Collect local branches info
-    struct BranchInfo {
-        name: String,
-        hash: String,
-        subject: String,
-        author: String,
-        date: String,
-        upstream: String,
-        is_head: bool,
-        is_remote_only: bool,
-    }
-
     let mut branches: Vec<BranchInfo> = Vec::new();
 
     for line in local_raw.lines() {
@@ -387,5 +391,277 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
 
     table.print();
     ui::print_blank();
+
+    // Interactive mode: wait for keypress to enable fuzzy search
+    if ui::is_no_interactive() {
+        return Ok(());
+    }
+
+    // Show hint for interactive search
+    println!(
+        "  {} {} to search, {} to quit",
+        ui::muted("Press"),
+        ui::accent("/"),
+        ui::muted("q")
+    );
+    ui::print_blank();
+
+    // Wait for keypress
+    if let Some(selected_branch) = wait_for_branch_selection(&branches)? {
+        // Checkout the selected branch
+        if selected_branch != current_branch().unwrap_or_default() {
+            ui::print_info(&format!("Switching to '{}'...", selected_branch));
+            git_output(&["checkout", &selected_branch])?;
+            ui::print_success(&format!("Switched to '{}'", selected_branch));
+        }
+    }
+
     Ok(())
+}
+
+/// Wait for user input: `/` to search, `q` to quit, or timeout.
+fn wait_for_branch_selection(branches: &[BranchInfo]) -> Result<Option<String>> {
+    use crossterm::event::{self, Event, KeyCode, KeyEvent};
+    use crossterm::terminal;
+    use std::time::Duration;
+
+    // Enable raw mode to capture single keypresses
+    terminal::enable_raw_mode().context("Failed to enable raw mode")?;
+
+    let result = loop {
+        // Poll for events with a timeout
+        if event::poll(Duration::from_secs(30)).unwrap_or(false) {
+            if let Ok(Event::Key(KeyEvent { code, .. })) = event::read() {
+                match code {
+                    KeyCode::Char('/') => {
+                        terminal::disable_raw_mode().ok();
+                        // Enter fuzzy search mode with table-style display
+                        if let Some(branch) = fuzzy_branch_picker(branches) {
+                            break Ok(Some(branch));
+                        }
+                        break Ok(None);
+                    }
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        break Ok(None);
+                    }
+                    _ => {}
+                }
+            }
+        } else {
+            // Timeout - exit quietly
+            break Ok(None);
+        }
+    };
+
+    terminal::disable_raw_mode().ok();
+    result
+}
+
+/// Fuzzy branch picker with table-style display.
+fn fuzzy_branch_picker(branches: &[BranchInfo]) -> Option<String> {
+    use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+    use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
+    use crossterm::{cursor, execute};
+    use std::io::{stdout, Write};
+
+    // State
+    let mut query = String::new();
+    let mut cursor_pos: usize = 0;
+    let mut scroll_offset: usize = 0;
+
+    // Enter alternate screen
+    let mut stdout = stdout();
+    execute!(stdout, EnterAlternateScreen, cursor::Hide).ok();
+    terminal::enable_raw_mode().ok();
+
+    let result = loop {
+        // Filter branches by query
+        let filtered: Vec<&BranchInfo> = if query.is_empty() {
+            branches.iter().collect()
+        } else {
+            let q = query.to_lowercase();
+            branches
+                .iter()
+                .filter(|b| b.name.to_lowercase().contains(&q))
+                .collect()
+        };
+
+        // Get terminal size
+        let (term_width, term_height) = terminal::size().unwrap_or((80, 24));
+        let visible_rows = (term_height as usize).saturating_sub(5); // Header + search + footer
+
+        // Clamp cursor to valid range
+        if filtered.is_empty() {
+            cursor_pos = 0;
+        } else {
+            cursor_pos = cursor_pos.min(filtered.len() - 1);
+        }
+
+        // Adjust scroll offset to keep cursor visible
+        if cursor_pos < scroll_offset {
+            scroll_offset = cursor_pos;
+        } else if cursor_pos >= scroll_offset + visible_rows {
+            scroll_offset = cursor_pos - visible_rows + 1;
+        }
+
+        // Clear screen and render
+        execute!(stdout, cursor::MoveTo(0, 0), terminal::Clear(terminal::ClearType::All)).ok();
+
+        // Header
+        println!(
+            "  {}",
+            ui::primary_bold("Switch to branch")
+        );
+        println!();
+
+        // Search box
+        println!(
+            "  {} {}{}",
+            ui::muted("Search:"),
+            query,
+            ui::muted("▌")
+        );
+        println!();
+
+        // Table header
+        let name_width = 35.min(term_width as usize / 3);
+        println!(
+            "  {}  {:<width$}  {}  {}",
+            ui::muted(" "),
+            ui::muted("Branch"),
+            ui::muted("Hash"),
+            ui::muted("Last Commit"),
+            width = name_width
+        );
+        println!("  {}", ui::muted(&"─".repeat((term_width as usize).saturating_sub(4))));
+
+        // Render visible branches
+        let visible_branches: Vec<_> = filtered
+            .iter()
+            .skip(scroll_offset)
+            .take(visible_rows)
+            .collect();
+
+        for (i, branch) in visible_branches.iter().enumerate() {
+            let actual_idx = scroll_offset + i;
+            let is_selected = actual_idx == cursor_pos;
+
+            let marker = if branch.is_head {
+                "◉"
+            } else if branch.is_remote_only {
+                "○"
+            } else {
+                "◯"
+            };
+
+            // Truncate branch name
+            let name_display = if branch.name.len() > name_width {
+                format!("{}…", &branch.name[..name_width - 1])
+            } else {
+                format!("{:<width$}", branch.name, width = name_width)
+            };
+
+            // Truncate subject
+            let subject_width = (term_width as usize).saturating_sub(name_width + 20);
+            let subject_display = if branch.subject.len() > subject_width {
+                format!("{}…", &branch.subject[..subject_width.saturating_sub(1)])
+            } else {
+                branch.subject.clone()
+            };
+
+            if is_selected {
+                // Highlighted row with dim background
+                print!("\x1b[48;5;236m"); // Dim gray background
+                println!(
+                    "  {}  {}  {}  {}\x1b[0m",
+                    ui::success_bold(marker),
+                    ui::primary_bold(&name_display),
+                    ui::color_hash(&branch.hash),
+                    ui::color_subject(&subject_display),
+                );
+            } else {
+                let marker_colored = if branch.is_head {
+                    ui::success_bold(marker)
+                } else {
+                    ui::muted(marker)
+                };
+
+                let name_colored = if branch.is_head {
+                    ui::success_bold(&name_display)
+                } else if branch.is_remote_only {
+                    ui::muted(&name_display)
+                } else {
+                    ui::paint_text(&name_display)
+                };
+
+                println!(
+                    "  {}  {}  {}  {}",
+                    marker_colored,
+                    name_colored,
+                    ui::color_hash(&branch.hash),
+                    ui::muted(&subject_display),
+                );
+            }
+        }
+
+        // Show scroll indicators if needed
+        if filtered.len() > visible_rows {
+            println!();
+            println!(
+                "  {} {}/{}",
+                ui::muted("Showing"),
+                cursor_pos + 1,
+                filtered.len()
+            );
+        }
+
+        // Footer
+        println!();
+        println!(
+            "  {}  {}  {}  {}",
+            ui::muted("↑/↓ move"),
+            ui::muted("Enter select"),
+            ui::muted("Esc cancel"),
+            ui::muted("Type to filter")
+        );
+
+        stdout.flush().ok();
+
+        // Handle input
+        if let Ok(Event::Key(key)) = event::read() {
+            match key.code {
+                KeyCode::Esc => break None,
+                KeyCode::Enter => {
+                    if !filtered.is_empty() {
+                        break Some(filtered[cursor_pos].name.clone());
+                    }
+                }
+                KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() || key.code == KeyCode::Up => {
+                    cursor_pos = cursor_pos.saturating_sub(1);
+                }
+                KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() || key.code == KeyCode::Down => {
+                    if !filtered.is_empty() {
+                        cursor_pos = (cursor_pos + 1).min(filtered.len() - 1);
+                    }
+                }
+                KeyCode::Backspace => {
+                    query.pop();
+                    cursor_pos = 0;
+                    scroll_offset = 0;
+                }
+                KeyCode::Char(c) if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT => {
+                    query.push(c);
+                    cursor_pos = 0;
+                    scroll_offset = 0;
+                }
+                _ => {}
+            }
+        }
+    };
+
+    // Leave alternate screen
+    terminal::disable_raw_mode().ok();
+    execute!(stdout, LeaveAlternateScreen, cursor::Show).ok();
+
+    result
 }
