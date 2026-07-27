@@ -173,9 +173,11 @@ fn merge_to_target(
         }
     }
 
-    // Push to remote
+    // Push to remote (ignore errors for local-only repos)
     ui::print_info(&format!("Pushing '{}'...", target));
-    git_output(&["push", "origin", target])?;
+    if let Err(_) = git_output(&["push", "origin", target]) {
+        ui::print_warning("Could not push to origin (no remote configured?)");
+    }
 
     Ok(())
 }
@@ -230,10 +232,10 @@ fn delete_branch(_ctx: &Ctx, branch: &str) -> Result<()> {
         return Ok(());
     }
 
-    // Delete local branch
-    git_output(&["branch", "-d", branch])?;
+    // Delete local branch (use -D because squash merges don't register as "merged")
+    git_output(&["branch", "-D", branch])?;
 
-    // Delete remote branch (if exists)
+    // Delete remote branch (if exists, ignore errors)
     let _ = git_output(&["push", "origin", "--delete", branch]);
 
     Ok(())
