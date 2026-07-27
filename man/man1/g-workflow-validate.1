@@ -1,0 +1,21 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workflow-validate 1  "g-workflow-validate " 
+.SH NAME
+g\-workflow\-validate \- Validate workflow configuration
+.SH SYNOPSIS
+\fBg\-workflow\-validate\fR [\fB\-\-workflow\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIFILE\fR] 
+.SH DESCRIPTION
+Validate workflow configuration
+.PP
+Checks the workflow configuration for errors and warnings.
+.SH OPTIONS
+.TP
+\fB\-\-workflow\fR \fI<NAME>\fR
+Workflow name to validate (within config)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+[\fIFILE\fR]
+File to validate (defaults to active config)

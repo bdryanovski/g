@@ -65,6 +65,22 @@ This document contains the help content for the `g` command-line program.
 * [`g developer`↴](#g-developer)
 * [`g developer db`↴](#g-developer-db)
 * [`g developer repos`↴](#g-developer-repos)
+* [`g workflow`↴](#g-workflow)
+* [`g workflow start`↴](#g-workflow-start)
+* [`g workflow finish`↴](#g-workflow-finish)
+* [`g workflow sync`↴](#g-workflow-sync)
+* [`g workflow publish`↴](#g-workflow-publish)
+* [`g workflow status`↴](#g-workflow-status)
+* [`g workflow list`↴](#g-workflow-list)
+* [`g workflow info`↴](#g-workflow-info)
+* [`g workflow use`↴](#g-workflow-use)
+* [`g workflow create`↴](#g-workflow-create)
+* [`g workflow edit`↴](#g-workflow-edit)
+* [`g workflow init`↴](#g-workflow-init)
+* [`g workflow validate`↴](#g-workflow-validate)
+* [`g workflow clone`↴](#g-workflow-clone)
+* [`g workflow export`↴](#g-workflow-export)
+* [`g workflow import`↴](#g-workflow-import)
 * [`g completions`↴](#g-completions)
 
 ## `g`
@@ -112,6 +128,7 @@ Pass --help to any subcommand for detailed usage and examples.
 * `config` — Open interactive config editor
 * `stats` — Display a rich usage-statistics report
 * `developer` — Developer / debugging utilities
+* `workflow` — Manage git workflows (branching strategies)
 * `completions` — Print a shell completion script and exit
 
 ###### **Options:**
@@ -826,6 +843,311 @@ List all repositories tracked in the internal database
 Shows every repo root path that has been seen by the tool, along with the first and most recent time it was active.
 
 **Usage:** `g developer repos`
+
+
+
+## `g workflow`
+
+Manage git workflows (branching strategies)
+
+Define and use custom workflows like Git Flow, GitHub Flow, trunk-based, or create your own branching model with custom branch types, merge strategies, and lifecycle hooks.
+
+**Usage:** `g workflow <COMMAND>`
+
+Workflow overview:
+
+  g workflow list              list all available workflows
+  g workflow info gitflow      show workflow details with diagram
+  g workflow use github-flow   switch to a workflow
+
+Branch lifecycle:
+
+  g workflow start feature login   create a new branch
+  g workflow sync                  update branch from source
+  g workflow publish               push and create PR
+  g workflow finish                merge to target branch(es)
+
+Configuration:
+
+  g workflow create            interactive workflow builder
+  g workflow init --local      set up .g/ folder in repo
+
+###### **Subcommands:**
+
+* `start` — Start a new branch using workflow rules
+* `finish` — Finish the current branch (merge to target)
+* `sync` — Update branch from its source
+* `publish` — Push branch and create/update PR
+* `status` — Show workflow status of current branch
+* `list` — List all available workflows
+* `info` — Show detailed workflow information
+* `use` — Switch to a different workflow
+* `create` — Create a new workflow interactively
+* `edit` — Edit an existing workflow
+* `init` — Initialize workflow configuration
+* `validate` — Validate workflow configuration
+* `clone` — Clone a workflow with a new name
+* `export` — Export workflow configuration to TOML
+* `import` — Import workflow from a TOML file
+
+
+
+## `g workflow start`
+
+Start a new branch using workflow rules
+
+Creates a branch with the proper prefix, from the correct source branch, according to the workflow's branch type configuration.
+
+**Usage:** `g workflow start [OPTIONS] <TYPE> <NAME>`
+
+###### **Arguments:**
+
+* `<TYPE>` — Branch type (e.g., feature, hotfix, release)
+* `<NAME>` — Branch name (without prefix)
+
+###### **Options:**
+
+* `--from <BRANCH>` — Override the source branch
+* `--no-verify` — Skip validation checks
+
+
+
+## `g workflow finish`
+
+Finish the current branch (merge to target)
+
+Merges the current branch to its configured target(s) using the appropriate merge strategy, then optionally deletes the branch and creates tags as configured.
+
+**Usage:** `g workflow finish [OPTIONS] [BRANCH]`
+
+###### **Arguments:**
+
+* `<BRANCH>` — Branch to finish (defaults to current branch)
+
+###### **Options:**
+
+* `--no-delete` — Don't delete the branch after merge
+* `--no-tag` — Don't create a tag even if configured
+* `--no-verify` — Skip pre-finish hooks
+* `--strategy <STRATEGY>` — Override the merge strategy
+
+
+
+## `g workflow sync`
+
+Update branch from its source
+
+Fetches latest changes and rebases or merges from the source branch to keep the current branch up-to-date.
+
+**Usage:** `g workflow sync [OPTIONS] [BRANCH]`
+
+###### **Arguments:**
+
+* `<BRANCH>` — Branch to sync (defaults to current branch)
+
+###### **Options:**
+
+* `--rebase` — Force rebase even if merge is the default strategy
+* `--merge` — Force merge even if rebase is the default strategy
+
+
+
+## `g workflow publish`
+
+Push branch and create/update PR
+
+Pushes the branch to the remote and creates a pull request if one doesn't exist, or updates the existing PR.
+
+**Usage:** `g workflow publish [OPTIONS] [BRANCH]`
+
+###### **Arguments:**
+
+* `<BRANCH>` — Branch to publish (defaults to current branch)
+
+###### **Options:**
+
+* `--draft` — Create PR as draft
+* `--no-verify` — Skip on_publish hooks
+* `--title <TITLE>` — PR title (defaults to branch name)
+* `--body <BODY>` — PR body
+* `--reviewers <USERS>` — Add reviewers (comma-separated)
+* `--labels <LABELS>` — Add labels (comma-separated)
+
+
+
+## `g workflow status`
+
+Show workflow status of current branch
+
+Displays the current branch's workflow context including type, source, target, merge strategy, age, and PR status.
+
+**Usage:** `g workflow status`
+
+
+
+## `g workflow list`
+
+List all available workflows
+
+Shows all defined workflows (built-in presets and custom) with their branch types and a brief description.
+
+**Usage:** `g workflow list`
+
+
+
+## `g workflow info`
+
+Show detailed workflow information
+
+Displays the full workflow configuration including ASCII diagram, use cases, pros/cons, and branch type details.
+
+**Usage:** `g workflow info <NAME>`
+
+###### **Arguments:**
+
+* `<NAME>` — Workflow name (preset or custom)
+
+
+
+## `g workflow use`
+
+Switch to a different workflow
+
+Sets the active workflow for the current repository (if --local) or globally.
+
+**Usage:** `g workflow use [OPTIONS] <NAME>`
+
+###### **Arguments:**
+
+* `<NAME>` — Workflow name to activate
+
+###### **Options:**
+
+* `--local` — Set for this repository only (saves to .g/workflow.toml)
+
+
+
+## `g workflow create`
+
+Create a new workflow interactively
+
+Opens a full-screen wizard to define a custom workflow with branch types, merge strategies, hooks, and validation rules.
+
+**Usage:** `g workflow create [OPTIONS] [NAME]`
+
+###### **Arguments:**
+
+* `<NAME>` — Workflow name
+
+###### **Options:**
+
+* `--from <PRESET>` — Start from a preset
+* `--local` — Save to repo-local config (.g/workflow.toml)
+* `--no-interactive` — Skip interactive wizard, save defaults immediately
+
+
+
+## `g workflow edit`
+
+Edit an existing workflow
+
+Opens the workflow configuration in your editor ($EDITOR) for direct modification.
+
+**Usage:** `g workflow edit [OPTIONS] [NAME]`
+
+###### **Arguments:**
+
+* `<NAME>` — Workflow name to edit
+
+###### **Options:**
+
+* `--raw` — Edit raw TOML in $EDITOR
+
+
+
+## `g workflow init`
+
+Initialize workflow configuration
+
+Sets up the workflow system for first use. With --local, creates a .g/ folder in the repository for team-shared configuration.
+
+**Usage:** `g workflow init [OPTIONS]`
+
+###### **Options:**
+
+* `--local` — Create .g/ folder in repository for team-shared config
+* `--preset <PRESET>` — Use a preset as starting point
+* `--no-interactive` — Skip interactive setup
+
+
+
+## `g workflow validate`
+
+Validate workflow configuration
+
+Checks the workflow configuration for errors and warnings.
+
+**Usage:** `g workflow validate [OPTIONS] [FILE]`
+
+###### **Arguments:**
+
+* `<FILE>` — File to validate (defaults to active config)
+
+###### **Options:**
+
+* `--workflow <NAME>` — Workflow name to validate (within config)
+
+
+
+## `g workflow clone`
+
+Clone a workflow with a new name
+
+Creates a copy of an existing workflow (preset or custom) that can be modified independently.
+
+**Usage:** `g workflow clone <SOURCE> <NAME>`
+
+###### **Arguments:**
+
+* `<SOURCE>` — Source workflow name
+* `<NAME>` — New workflow name
+
+
+
+## `g workflow export`
+
+Export workflow configuration to TOML
+
+Prints the workflow configuration to stdout or writes to a file.
+
+**Usage:** `g workflow export [OPTIONS] <NAME>`
+
+###### **Arguments:**
+
+* `<NAME>` — Workflow name to export
+
+###### **Options:**
+
+* `-o`, `--output <FILE>` — Output file (defaults to stdout)
+
+
+
+## `g workflow import`
+
+Import workflow from a TOML file
+
+Loads a workflow configuration from a file and adds it to the available workflows.
+
+**Usage:** `g workflow import [OPTIONS] <FILE>`
+
+###### **Arguments:**
+
+* `<FILE>` — TOML file to import
+
+###### **Options:**
+
+* `--name <NAME>` — Override workflow name
+* `--local` — Save to repo-local config (.g/workflow.toml)
 
 
 

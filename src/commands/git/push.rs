@@ -38,6 +38,8 @@ struct PushResult {
     error: Option<String>,
     /// Whether repo is up to date (nothing to push)
     up_to_date: bool,
+    /// Remote messages (e.g., GitHub's "Create a pull request" link)
+    remote_messages: Vec<String>,
 }
 
 /// Run `g push` with enhanced output.
@@ -124,6 +126,7 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
         resolve_deltas: None,
         error: None,
         up_to_date: false,
+        remote_messages: Vec::new(),
     };
 
     // Read stderr line by line (git uses \r for progress updates)
@@ -204,6 +207,22 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
                 }
             }
 
+            // Capture remote messages (GitHub/GitLab hints, PR links, etc.)
+            // These come as "remote: <message>" lines
+            if part.starts_with("remote:") {
+                let msg = part.strip_prefix("remote:").unwrap_or(part).trim();
+                // Skip empty lines and progress indicators
+                if !msg.is_empty() 
+                    && !msg.contains("Compressing")
+                    && !msg.contains("Counting")
+                    && !msg.contains("Resolving")
+                    && !msg.contains("Total")
+                    && !msg.contains("Writing")
+                {
+                    result.remote_messages.push(msg.to_string());
+                }
+            }
+
             // Check for errors
             if part.contains("error:") || part.contains("fatal:") || part.contains("rejected") {
                 result.error = Some(part.to_string());
@@ -265,6 +284,20 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
                     ui::muted("Hint:"),
                     ui::accent("`g pull`")
                 );
+            }
+        }
+    }
+
+    // Display remote messages (PR links, hints, etc.)
+    if !result.remote_messages.is_empty() {
+        ui::print_blank();
+        println!("  {}", ui::muted("Remote:"));
+        for msg in &result.remote_messages {
+            // Highlight URLs
+            if msg.contains("http://") || msg.contains("https://") {
+                println!("  {}", ui::link(msg));
+            } else {
+                println!("  {}", ui::muted(msg));
             }
         }
     }

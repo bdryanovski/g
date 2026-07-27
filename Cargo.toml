@@ -61,6 +61,7 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 # invocation in `g notes edit` writes the note body to a temporary Markdown
 # file so the user's editor can mutate it in place.
 tempfile = "3"
+regex = "1.13.1"
 
 [build-dependencies]
 # Same clap + clap_complete as the main binary so build.rs can include

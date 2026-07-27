@@ -1,0 +1,24 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workflow-import 1  "g-workflow-import " 
+.SH NAME
+g\-workflow\-import \- Import workflow from a TOML file
+.SH SYNOPSIS
+\fBg\-workflow\-import\fR [\fB\-\-name\fR] [\fB\-\-local\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIFILE\fR> 
+.SH DESCRIPTION
+Import workflow from a TOML file
+.PP
+Loads a workflow configuration from a file and adds it to the available workflows.
+.SH OPTIONS
+.TP
+\fB\-\-name\fR \fI<NAME>\fR
+Override workflow name
+.TP
+\fB\-\-local\fR
+Save to repo\-local config (.g/workflow.toml)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fIFILE\fR>
+TOML file to import

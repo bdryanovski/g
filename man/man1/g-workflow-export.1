@@ -1,0 +1,21 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workflow-export 1  "g-workflow-export " 
+.SH NAME
+g\-workflow\-export \- Export workflow configuration to TOML
+.SH SYNOPSIS
+\fBg\-workflow\-export\fR [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINAME\fR> 
+.SH DESCRIPTION
+Export workflow configuration to TOML
+.PP
+Prints the workflow configuration to stdout or writes to a file.
+.SH OPTIONS
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FILE>\fR
+Output file (defaults to stdout)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fINAME\fR>
+Workflow name to export

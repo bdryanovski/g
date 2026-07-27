@@ -1,0 +1,30 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workflow-finish 1  "g-workflow-finish " 
+.SH NAME
+g\-workflow\-finish \- Finish the current branch (merge to target)
+.SH SYNOPSIS
+\fBg\-workflow\-finish\fR [\fB\-\-no\-delete\fR] [\fB\-\-no\-tag\fR] [\fB\-\-no\-verify\fR] [\fB\-\-strategy\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIBRANCH\fR] 
+.SH DESCRIPTION
+Finish the current branch (merge to target)
+.PP
+Merges the current branch to its configured target(s) using the appropriate merge strategy, then optionally deletes the branch and creates tags as configured.
+.SH OPTIONS
+.TP
+\fB\-\-no\-delete\fR
+Don\*(Aqt delete the branch after merge
+.TP
+\fB\-\-no\-tag\fR
+Don\*(Aqt create a tag even if configured
+.TP
+\fB\-\-no\-verify\fR
+Skip pre\-finish hooks
+.TP
+\fB\-\-strategy\fR \fI<STRATEGY>\fR
+Override the merge strategy
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+[\fIBRANCH\fR]
+Branch to finish (defaults to current branch)

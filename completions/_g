@@ -42,7 +42,7 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 '-V[Print version]' \
 '--version[Print version]' \
-":: :_g__workspace_commands" \
+":: :_g__subcmd__workspace_commands" \
 "*::: :->workspace" \
 && ret=0
 
@@ -152,7 +152,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__workspace__help_commands" \
+":: :_g__subcmd__workspace__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -212,7 +212,7 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 '-V[Print version]' \
 '--version[Print version]' \
-":: :_g__stack_commands" \
+":: :_g__subcmd__stack_commands" \
 "*::: :->stack" \
 && ret=0
 
@@ -430,7 +430,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__stack__help_commands" \
+":: :_g__subcmd__stack__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -634,7 +634,7 @@ _arguments "${_arguments_options[@]}" : \
 '-V[Print version]' \
 '--version[Print version]' \
 '::rest -- When no `squash` subcommand\: forwarded to enhanced list or `git branch`:_default' \
-":: :_g__branch_commands" \
+":: :_g__subcmd__branch_commands" \
 "*::: :->branch" \
 && ret=0
 
@@ -662,7 +662,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__branch__help_commands" \
+":: :_g__subcmd__branch__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -724,7 +724,7 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help (see more with '\''--help'\'')]' \
 '-V[Print version]' \
 '--version[Print version]' \
-":: :_g__notes_commands" \
+":: :_g__subcmd__notes_commands" \
 "*::: :->notes" \
 && ret=0
 
@@ -814,7 +814,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__notes__help_commands" \
+":: :_g__subcmd__notes__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -878,7 +878,7 @@ _arguments "${_arguments_options[@]}" : \
 '-V[Print version]' \
 '--version[Print version]' \
 '::key -- Optional positional key — when present alone, fuzzy-search the summary for matching lines (legacy behaviour):_default' \
-":: :_g__config_commands" \
+":: :_g__subcmd__config_commands" \
 "*::: :->config" \
 && ret=0
 
@@ -904,7 +904,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__config__help_commands" \
+":: :_g__subcmd__config__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -959,7 +959,7 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 '-V[Print version]' \
 '--version[Print version]' \
-":: :_g__developer_commands" \
+":: :_g__subcmd__developer_commands" \
 "*::: :->developer" \
 && ret=0
 
@@ -996,7 +996,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__developer__help_commands" \
+":: :_g__subcmd__developer__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -1011,6 +1011,329 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (repos)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(workflow)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_g__subcmd__workflow_commands" \
+"*::: :->workflow" \
+&& ret=0
+
+    case $state in
+    (workflow)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-workflow-command-$line[1]:"
+        case $line[1] in
+            (start)
+_arguments "${_arguments_options[@]}" : \
+'--from=[Override the source branch]:BRANCH:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--no-verify[Skip validation checks]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':branch_type -- Branch type (e.g., feature, hotfix, release):_default' \
+':name -- Branch name (without prefix):_default' \
+&& ret=0
+;;
+(finish)
+_arguments "${_arguments_options[@]}" : \
+'--strategy=[Override the merge strategy]:STRATEGY:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--no-delete[Don'\''t delete the branch after merge]' \
+'--no-tag[Don'\''t create a tag even if configured]' \
+'--no-verify[Skip pre-finish hooks]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::branch -- Branch to finish (defaults to current branch):_default' \
+&& ret=0
+;;
+(sync)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--rebase[Force rebase even if merge is the default strategy]' \
+'(--rebase)--merge[Force merge even if rebase is the default strategy]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::branch -- Branch to sync (defaults to current branch):_default' \
+&& ret=0
+;;
+(publish)
+_arguments "${_arguments_options[@]}" : \
+'--title=[PR title (defaults to branch name)]:TITLE:_default' \
+'--body=[PR body]:BODY:_default' \
+'--reviewers=[Add reviewers (comma-separated)]:USERS:_default' \
+'--labels=[Add labels (comma-separated)]:LABELS:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--draft[Create PR as draft]' \
+'--no-verify[Skip on_publish hooks]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::branch -- Branch to publish (defaults to current branch):_default' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Workflow name (preset or custom):_default' \
+&& ret=0
+;;
+(use)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--local[Set for this repository only (saves to .g/workflow.toml)]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Workflow name to activate:_default' \
+&& ret=0
+;;
+(create)
+_arguments "${_arguments_options[@]}" : \
+'--from=[Start from a preset]:PRESET:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--local[Save to repo-local config (.g/workflow.toml)]' \
+'--no-interactive[Skip interactive wizard, save defaults immediately]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::name -- Workflow name:_default' \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--raw[Edit raw TOML in \$EDITOR]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::name -- Workflow name to edit:_default' \
+&& ret=0
+;;
+(init)
+_arguments "${_arguments_options[@]}" : \
+'--preset=[Use a preset as starting point]:PRESET:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--local[Create .g/ folder in repository for team-shared config]' \
+'--no-interactive[Skip interactive setup]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(validate)
+_arguments "${_arguments_options[@]}" : \
+'--workflow=[Workflow name to validate (within config)]:NAME:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::file -- File to validate (defaults to active config):_default' \
+&& ret=0
+;;
+(clone)
+_arguments "${_arguments_options[@]}" : \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':source -- Source workflow name:_default' \
+':name -- New workflow name:_default' \
+&& ret=0
+;;
+(export)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output file (defaults to stdout)]:FILE:_default' \
+'--output=[Output file (defaults to stdout)]:FILE:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':name -- Workflow name to export:_default' \
+&& ret=0
+;;
+(import)
+_arguments "${_arguments_options[@]}" : \
+'--name=[Override workflow name]:NAME:_default' \
+'-C+[Run as if git was started in <path>]:PATH:_default' \
+'*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
+'--local[Save to repo-local config (.g/workflow.toml)]' \
+'--dry-run[Preview what commands would run without making any changes]' \
+'--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':file -- TOML file to import:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__subcmd__workflow__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-workflow-help-command-$line[1]:"
+        case $line[1] in
+            (start)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(finish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(sync)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(publish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(use)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(create)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(init)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(validate)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(clone)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(export)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(import)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -1041,7 +1364,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help_commands" \
+":: :_g__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -1053,7 +1376,7 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (workspace)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help__workspace_commands" \
+":: :_g__subcmd__help__subcmd__workspace_commands" \
 "*::: :->workspace" \
 && ret=0
 
@@ -1097,7 +1420,7 @@ esac
 ;;
 (stack)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help__stack_commands" \
+":: :_g__subcmd__help__subcmd__stack_commands" \
 "*::: :->stack" \
 && ret=0
 
@@ -1205,7 +1528,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (branch)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help__branch_commands" \
+":: :_g__subcmd__help__subcmd__branch_commands" \
 "*::: :->branch" \
 && ret=0
 
@@ -1233,7 +1556,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (notes)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help__notes_commands" \
+":: :_g__subcmd__help__subcmd__notes_commands" \
 "*::: :->notes" \
 && ret=0
 
@@ -1273,7 +1596,7 @@ esac
 ;;
 (config)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help__config_commands" \
+":: :_g__subcmd__help__subcmd__config_commands" \
 "*::: :->config" \
 && ret=0
 
@@ -1297,7 +1620,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (developer)
 _arguments "${_arguments_options[@]}" : \
-":: :_g__help__developer_commands" \
+":: :_g__subcmd__help__subcmd__developer_commands" \
 "*::: :->developer" \
 && ret=0
 
@@ -1312,6 +1635,82 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (repos)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(workflow)
+_arguments "${_arguments_options[@]}" : \
+":: :_g__subcmd__help__subcmd__workflow_commands" \
+"*::: :->workflow" \
+&& ret=0
+
+    case $state in
+    (workflow)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:g-help-workflow-command-$line[1]:"
+        case $line[1] in
+            (start)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(finish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(sync)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(publish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(use)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(create)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(edit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(init)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(validate)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(clone)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(export)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(import)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -1355,95 +1754,96 @@ _g_commands() {
 'config:Open interactive config editor' \
 'stats:Display a rich usage-statistics report' \
 'developer:Developer / debugging utilities' \
+'workflow:Manage git workflows (branching strategies)' \
 'completions:Print a shell completion script and exit' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'g commands' commands "$@"
 }
-(( $+functions[_g__add_commands] )) ||
-_g__add_commands() {
+(( $+functions[_g__subcmd__add_commands] )) ||
+_g__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'g add commands' commands "$@"
 }
-(( $+functions[_g__branch_commands] )) ||
-_g__branch_commands() {
+(( $+functions[_g__subcmd__branch_commands] )) ||
+_g__subcmd__branch_commands() {
     local commands; commands=(
 'squash:Collapse all commits on the current branch into one (from merge-base with base)' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'g branch commands' commands "$@"
 }
-(( $+functions[_g__branch__help_commands] )) ||
-_g__branch__help_commands() {
+(( $+functions[_g__subcmd__branch__subcmd__help_commands] )) ||
+_g__subcmd__branch__subcmd__help_commands() {
     local commands; commands=(
 'squash:Collapse all commits on the current branch into one (from merge-base with base)' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'g branch help commands' commands "$@"
 }
-(( $+functions[_g__branch__help__help_commands] )) ||
-_g__branch__help__help_commands() {
+(( $+functions[_g__subcmd__branch__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__branch__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g branch help help commands' commands "$@"
 }
-(( $+functions[_g__branch__help__squash_commands] )) ||
-_g__branch__help__squash_commands() {
+(( $+functions[_g__subcmd__branch__subcmd__help__subcmd__squash_commands] )) ||
+_g__subcmd__branch__subcmd__help__subcmd__squash_commands() {
     local commands; commands=()
     _describe -t commands 'g branch help squash commands' commands "$@"
 }
-(( $+functions[_g__branch__squash_commands] )) ||
-_g__branch__squash_commands() {
+(( $+functions[_g__subcmd__branch__subcmd__squash_commands] )) ||
+_g__subcmd__branch__subcmd__squash_commands() {
     local commands; commands=()
     _describe -t commands 'g branch squash commands' commands "$@"
 }
-(( $+functions[_g__commit_commands] )) ||
-_g__commit_commands() {
+(( $+functions[_g__subcmd__commit_commands] )) ||
+_g__subcmd__commit_commands() {
     local commands; commands=()
     _describe -t commands 'g commit commands' commands "$@"
 }
-(( $+functions[_g__compare_commands] )) ||
-_g__compare_commands() {
+(( $+functions[_g__subcmd__compare_commands] )) ||
+_g__subcmd__compare_commands() {
     local commands; commands=()
     _describe -t commands 'g compare commands' commands "$@"
 }
-(( $+functions[_g__completions_commands] )) ||
-_g__completions_commands() {
+(( $+functions[_g__subcmd__completions_commands] )) ||
+_g__subcmd__completions_commands() {
     local commands; commands=()
     _describe -t commands 'g completions commands' commands "$@"
 }
-(( $+functions[_g__config_commands] )) ||
-_g__config_commands() {
+(( $+functions[_g__subcmd__config_commands] )) ||
+_g__subcmd__config_commands() {
     local commands; commands=(
 'set:Set a config key, validated against the editable schema' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'g config commands' commands "$@"
 }
-(( $+functions[_g__config__help_commands] )) ||
-_g__config__help_commands() {
+(( $+functions[_g__subcmd__config__subcmd__help_commands] )) ||
+_g__subcmd__config__subcmd__help_commands() {
     local commands; commands=(
 'set:Set a config key, validated against the editable schema' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'g config help commands' commands "$@"
 }
-(( $+functions[_g__config__help__help_commands] )) ||
-_g__config__help__help_commands() {
+(( $+functions[_g__subcmd__config__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__config__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g config help help commands' commands "$@"
 }
-(( $+functions[_g__config__help__set_commands] )) ||
-_g__config__help__set_commands() {
+(( $+functions[_g__subcmd__config__subcmd__help__subcmd__set_commands] )) ||
+_g__subcmd__config__subcmd__help__subcmd__set_commands() {
     local commands; commands=()
     _describe -t commands 'g config help set commands' commands "$@"
 }
-(( $+functions[_g__config__set_commands] )) ||
-_g__config__set_commands() {
+(( $+functions[_g__subcmd__config__subcmd__set_commands] )) ||
+_g__subcmd__config__subcmd__set_commands() {
     local commands; commands=()
     _describe -t commands 'g config set commands' commands "$@"
 }
-(( $+functions[_g__developer_commands] )) ||
-_g__developer_commands() {
+(( $+functions[_g__subcmd__developer_commands] )) ||
+_g__subcmd__developer_commands() {
     local commands; commands=(
 'db:Open an interactive SQLite shell connected to the internal g.db database' \
 'repos:List all repositories tracked in the internal database' \
@@ -1451,13 +1851,13 @@ _g__developer_commands() {
     )
     _describe -t commands 'g developer commands' commands "$@"
 }
-(( $+functions[_g__developer__db_commands] )) ||
-_g__developer__db_commands() {
+(( $+functions[_g__subcmd__developer__subcmd__db_commands] )) ||
+_g__subcmd__developer__subcmd__db_commands() {
     local commands; commands=()
     _describe -t commands 'g developer db commands' commands "$@"
 }
-(( $+functions[_g__developer__help_commands] )) ||
-_g__developer__help_commands() {
+(( $+functions[_g__subcmd__developer__subcmd__help_commands] )) ||
+_g__subcmd__developer__subcmd__help_commands() {
     local commands; commands=(
 'db:Open an interactive SQLite shell connected to the internal g.db database' \
 'repos:List all repositories tracked in the internal database' \
@@ -1465,33 +1865,33 @@ _g__developer__help_commands() {
     )
     _describe -t commands 'g developer help commands' commands "$@"
 }
-(( $+functions[_g__developer__help__db_commands] )) ||
-_g__developer__help__db_commands() {
+(( $+functions[_g__subcmd__developer__subcmd__help__subcmd__db_commands] )) ||
+_g__subcmd__developer__subcmd__help__subcmd__db_commands() {
     local commands; commands=()
     _describe -t commands 'g developer help db commands' commands "$@"
 }
-(( $+functions[_g__developer__help__help_commands] )) ||
-_g__developer__help__help_commands() {
+(( $+functions[_g__subcmd__developer__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__developer__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g developer help help commands' commands "$@"
 }
-(( $+functions[_g__developer__help__repos_commands] )) ||
-_g__developer__help__repos_commands() {
+(( $+functions[_g__subcmd__developer__subcmd__help__subcmd__repos_commands] )) ||
+_g__subcmd__developer__subcmd__help__subcmd__repos_commands() {
     local commands; commands=()
     _describe -t commands 'g developer help repos commands' commands "$@"
 }
-(( $+functions[_g__developer__repos_commands] )) ||
-_g__developer__repos_commands() {
+(( $+functions[_g__subcmd__developer__subcmd__repos_commands] )) ||
+_g__subcmd__developer__subcmd__repos_commands() {
     local commands; commands=()
     _describe -t commands 'g developer repos commands' commands "$@"
 }
-(( $+functions[_g__diff_commands] )) ||
-_g__diff_commands() {
+(( $+functions[_g__subcmd__diff_commands] )) ||
+_g__subcmd__diff_commands() {
     local commands; commands=()
     _describe -t commands 'g diff commands' commands "$@"
 }
-(( $+functions[_g__help_commands] )) ||
-_g__help_commands() {
+(( $+functions[_g__subcmd__help_commands] )) ||
+_g__subcmd__help_commands() {
     local commands; commands=(
 'workspace:Manage worktree-based workspaces (parallel branch checkouts)' \
 'stack:Manage stacked pull requests' \
@@ -1509,90 +1909,91 @@ _g__help_commands() {
 'config:Open interactive config editor' \
 'stats:Display a rich usage-statistics report' \
 'developer:Developer / debugging utilities' \
+'workflow:Manage git workflows (branching strategies)' \
 'completions:Print a shell completion script and exit' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'g help commands' commands "$@"
 }
-(( $+functions[_g__help__add_commands] )) ||
-_g__help__add_commands() {
+(( $+functions[_g__subcmd__help__subcmd__add_commands] )) ||
+_g__subcmd__help__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'g help add commands' commands "$@"
 }
-(( $+functions[_g__help__branch_commands] )) ||
-_g__help__branch_commands() {
+(( $+functions[_g__subcmd__help__subcmd__branch_commands] )) ||
+_g__subcmd__help__subcmd__branch_commands() {
     local commands; commands=(
 'squash:Collapse all commits on the current branch into one (from merge-base with base)' \
     )
     _describe -t commands 'g help branch commands' commands "$@"
 }
-(( $+functions[_g__help__branch__squash_commands] )) ||
-_g__help__branch__squash_commands() {
+(( $+functions[_g__subcmd__help__subcmd__branch__subcmd__squash_commands] )) ||
+_g__subcmd__help__subcmd__branch__subcmd__squash_commands() {
     local commands; commands=()
     _describe -t commands 'g help branch squash commands' commands "$@"
 }
-(( $+functions[_g__help__commit_commands] )) ||
-_g__help__commit_commands() {
+(( $+functions[_g__subcmd__help__subcmd__commit_commands] )) ||
+_g__subcmd__help__subcmd__commit_commands() {
     local commands; commands=()
     _describe -t commands 'g help commit commands' commands "$@"
 }
-(( $+functions[_g__help__compare_commands] )) ||
-_g__help__compare_commands() {
+(( $+functions[_g__subcmd__help__subcmd__compare_commands] )) ||
+_g__subcmd__help__subcmd__compare_commands() {
     local commands; commands=()
     _describe -t commands 'g help compare commands' commands "$@"
 }
-(( $+functions[_g__help__completions_commands] )) ||
-_g__help__completions_commands() {
+(( $+functions[_g__subcmd__help__subcmd__completions_commands] )) ||
+_g__subcmd__help__subcmd__completions_commands() {
     local commands; commands=()
     _describe -t commands 'g help completions commands' commands "$@"
 }
-(( $+functions[_g__help__config_commands] )) ||
-_g__help__config_commands() {
+(( $+functions[_g__subcmd__help__subcmd__config_commands] )) ||
+_g__subcmd__help__subcmd__config_commands() {
     local commands; commands=(
 'set:Set a config key, validated against the editable schema' \
     )
     _describe -t commands 'g help config commands' commands "$@"
 }
-(( $+functions[_g__help__config__set_commands] )) ||
-_g__help__config__set_commands() {
+(( $+functions[_g__subcmd__help__subcmd__config__subcmd__set_commands] )) ||
+_g__subcmd__help__subcmd__config__subcmd__set_commands() {
     local commands; commands=()
     _describe -t commands 'g help config set commands' commands "$@"
 }
-(( $+functions[_g__help__developer_commands] )) ||
-_g__help__developer_commands() {
+(( $+functions[_g__subcmd__help__subcmd__developer_commands] )) ||
+_g__subcmd__help__subcmd__developer_commands() {
     local commands; commands=(
 'db:Open an interactive SQLite shell connected to the internal g.db database' \
 'repos:List all repositories tracked in the internal database' \
     )
     _describe -t commands 'g help developer commands' commands "$@"
 }
-(( $+functions[_g__help__developer__db_commands] )) ||
-_g__help__developer__db_commands() {
+(( $+functions[_g__subcmd__help__subcmd__developer__subcmd__db_commands] )) ||
+_g__subcmd__help__subcmd__developer__subcmd__db_commands() {
     local commands; commands=()
     _describe -t commands 'g help developer db commands' commands "$@"
 }
-(( $+functions[_g__help__developer__repos_commands] )) ||
-_g__help__developer__repos_commands() {
+(( $+functions[_g__subcmd__help__subcmd__developer__subcmd__repos_commands] )) ||
+_g__subcmd__help__subcmd__developer__subcmd__repos_commands() {
     local commands; commands=()
     _describe -t commands 'g help developer repos commands' commands "$@"
 }
-(( $+functions[_g__help__diff_commands] )) ||
-_g__help__diff_commands() {
+(( $+functions[_g__subcmd__help__subcmd__diff_commands] )) ||
+_g__subcmd__help__subcmd__diff_commands() {
     local commands; commands=()
     _describe -t commands 'g help diff commands' commands "$@"
 }
-(( $+functions[_g__help__help_commands] )) ||
-_g__help__help_commands() {
+(( $+functions[_g__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g help help commands' commands "$@"
 }
-(( $+functions[_g__help__log_commands] )) ||
-_g__help__log_commands() {
+(( $+functions[_g__subcmd__help__subcmd__log_commands] )) ||
+_g__subcmd__help__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'g help log commands' commands "$@"
 }
-(( $+functions[_g__help__notes_commands] )) ||
-_g__help__notes_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes_commands] )) ||
+_g__subcmd__help__subcmd__notes_commands() {
     local commands; commands=(
 'list:List every saved note in this repo (newest first)' \
 'show:Show a single note by id — prints the body and its anchor' \
@@ -1603,48 +2004,48 @@ _g__help__notes_commands() {
     )
     _describe -t commands 'g help notes commands' commands "$@"
 }
-(( $+functions[_g__help__notes__clear_commands] )) ||
-_g__help__notes__clear_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes__subcmd__clear_commands] )) ||
+_g__subcmd__help__subcmd__notes__subcmd__clear_commands() {
     local commands; commands=()
     _describe -t commands 'g help notes clear commands' commands "$@"
 }
-(( $+functions[_g__help__notes__delete_commands] )) ||
-_g__help__notes__delete_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes__subcmd__delete_commands] )) ||
+_g__subcmd__help__subcmd__notes__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g help notes delete commands' commands "$@"
 }
-(( $+functions[_g__help__notes__edit_commands] )) ||
-_g__help__notes__edit_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes__subcmd__edit_commands] )) ||
+_g__subcmd__help__subcmd__notes__subcmd__edit_commands() {
     local commands; commands=()
     _describe -t commands 'g help notes edit commands' commands "$@"
 }
-(( $+functions[_g__help__notes__list_commands] )) ||
-_g__help__notes__list_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes__subcmd__list_commands] )) ||
+_g__subcmd__help__subcmd__notes__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g help notes list commands' commands "$@"
 }
-(( $+functions[_g__help__notes__publish_commands] )) ||
-_g__help__notes__publish_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes__subcmd__publish_commands] )) ||
+_g__subcmd__help__subcmd__notes__subcmd__publish_commands() {
     local commands; commands=()
     _describe -t commands 'g help notes publish commands' commands "$@"
 }
-(( $+functions[_g__help__notes__show_commands] )) ||
-_g__help__notes__show_commands() {
+(( $+functions[_g__subcmd__help__subcmd__notes__subcmd__show_commands] )) ||
+_g__subcmd__help__subcmd__notes__subcmd__show_commands() {
     local commands; commands=()
     _describe -t commands 'g help notes show commands' commands "$@"
 }
-(( $+functions[_g__help__push_commands] )) ||
-_g__help__push_commands() {
+(( $+functions[_g__subcmd__help__subcmd__push_commands] )) ||
+_g__subcmd__help__subcmd__push_commands() {
     local commands; commands=()
     _describe -t commands 'g help push commands' commands "$@"
 }
-(( $+functions[_g__help__show_commands] )) ||
-_g__help__show_commands() {
+(( $+functions[_g__subcmd__help__subcmd__show_commands] )) ||
+_g__subcmd__help__subcmd__show_commands() {
     local commands; commands=()
     _describe -t commands 'g help show commands' commands "$@"
 }
-(( $+functions[_g__help__stack_commands] )) ||
-_g__help__stack_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack_commands] )) ||
+_g__subcmd__help__subcmd__stack_commands() {
     local commands; commands=(
 'new:Initialize a new stack starting from the current branch' \
 'add:Create a new branch on top of the current stack' \
@@ -1665,103 +2066,199 @@ _g__help__stack_commands() {
     )
     _describe -t commands 'g help stack commands' commands "$@"
 }
-(( $+functions[_g__help__stack__absorb_commands] )) ||
-_g__help__stack__absorb_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__absorb_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__absorb_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack absorb commands' commands "$@"
 }
-(( $+functions[_g__help__stack__add_commands] )) ||
-_g__help__stack__add_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__add_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack add commands' commands "$@"
 }
-(( $+functions[_g__help__stack__delete_commands] )) ||
-_g__help__stack__delete_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__delete_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack delete commands' commands "$@"
 }
-(( $+functions[_g__help__stack__details_commands] )) ||
-_g__help__stack__details_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__details_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__details_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack details commands' commands "$@"
 }
-(( $+functions[_g__help__stack__down_commands] )) ||
-_g__help__stack__down_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__down_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__down_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack down commands' commands "$@"
 }
-(( $+functions[_g__help__stack__fold_commands] )) ||
-_g__help__stack__fold_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__fold_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__fold_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack fold commands' commands "$@"
 }
-(( $+functions[_g__help__stack__list_commands] )) ||
-_g__help__stack__list_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__list_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack list commands' commands "$@"
 }
-(( $+functions[_g__help__stack__new_commands] )) ||
-_g__help__stack__new_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__new_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__new_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack new commands' commands "$@"
 }
-(( $+functions[_g__help__stack__pr_commands] )) ||
-_g__help__stack__pr_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__pr_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__pr_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack pr commands' commands "$@"
 }
-(( $+functions[_g__help__stack__push_commands] )) ||
-_g__help__stack__push_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__push_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__push_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack push commands' commands "$@"
 }
-(( $+functions[_g__help__stack__remove_commands] )) ||
-_g__help__stack__remove_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__remove_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack remove commands' commands "$@"
 }
-(( $+functions[_g__help__stack__squash_commands] )) ||
-_g__help__stack__squash_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__squash_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__squash_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack squash commands' commands "$@"
 }
-(( $+functions[_g__help__stack__switch_commands] )) ||
-_g__help__stack__switch_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__switch_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__switch_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack switch commands' commands "$@"
 }
-(( $+functions[_g__help__stack__sync_commands] )) ||
-_g__help__stack__sync_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__sync_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__sync_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack sync commands' commands "$@"
 }
-(( $+functions[_g__help__stack__up_commands] )) ||
-_g__help__stack__up_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__up_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__up_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack up commands' commands "$@"
 }
-(( $+functions[_g__help__stack__view_commands] )) ||
-_g__help__stack__view_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stack__subcmd__view_commands] )) ||
+_g__subcmd__help__subcmd__stack__subcmd__view_commands() {
     local commands; commands=()
     _describe -t commands 'g help stack view commands' commands "$@"
 }
-(( $+functions[_g__help__stage_commands] )) ||
-_g__help__stage_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stage_commands] )) ||
+_g__subcmd__help__subcmd__stage_commands() {
     local commands; commands=()
     _describe -t commands 'g help stage commands' commands "$@"
 }
-(( $+functions[_g__help__stats_commands] )) ||
-_g__help__stats_commands() {
+(( $+functions[_g__subcmd__help__subcmd__stats_commands] )) ||
+_g__subcmd__help__subcmd__stats_commands() {
     local commands; commands=()
     _describe -t commands 'g help stats commands' commands "$@"
 }
-(( $+functions[_g__help__status_commands] )) ||
-_g__help__status_commands() {
+(( $+functions[_g__subcmd__help__subcmd__status_commands] )) ||
+_g__subcmd__help__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'g help status commands' commands "$@"
 }
-(( $+functions[_g__help__workspace_commands] )) ||
-_g__help__workspace_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workflow_commands] )) ||
+_g__subcmd__help__subcmd__workflow_commands() {
+    local commands; commands=(
+'start:Start a new branch using workflow rules' \
+'finish:Finish the current branch (merge to target)' \
+'sync:Update branch from its source' \
+'publish:Push branch and create/update PR' \
+'status:Show workflow status of current branch' \
+'list:List all available workflows' \
+'info:Show detailed workflow information' \
+'use:Switch to a different workflow' \
+'create:Create a new workflow interactively' \
+'edit:Edit an existing workflow' \
+'init:Initialize workflow configuration' \
+'validate:Validate workflow configuration' \
+'clone:Clone a workflow with a new name' \
+'export:Export workflow configuration to TOML' \
+'import:Import workflow from a TOML file' \
+    )
+    _describe -t commands 'g help workflow commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__clone_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__clone_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow clone commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__create_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__create_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow create commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__edit_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow edit commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__export_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__export_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow export commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__finish_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__finish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow finish commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__import_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__import_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow import commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__info_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow info commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__init_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow init commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__list_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow list commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__publish_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__publish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow publish commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__start_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow start commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__status_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow status commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__sync_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow sync commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__use_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__use_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow use commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workflow__subcmd__validate_commands] )) ||
+_g__subcmd__help__subcmd__workflow__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'g help workflow validate commands' commands "$@"
+}
+(( $+functions[_g__subcmd__help__subcmd__workspace_commands] )) ||
+_g__subcmd__help__subcmd__workspace_commands() {
     local commands; commands=(
 'init:Reorganise an existing repo into a container/worktree layout' \
 'list:List all workspaces (git worktrees)' \
@@ -1773,48 +2270,48 @@ _g__help__workspace_commands() {
     )
     _describe -t commands 'g help workspace commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__create_commands] )) ||
-_g__help__workspace__create_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__create_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__create_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace create commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__delete_commands] )) ||
-_g__help__workspace__delete_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__delete_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace delete commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__init_commands] )) ||
-_g__help__workspace__init_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__init_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__init_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace init commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__list_commands] )) ||
-_g__help__workspace__list_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__list_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace list commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__rename_commands] )) ||
-_g__help__workspace__rename_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__rename_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__rename_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace rename commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__status_commands] )) ||
-_g__help__workspace__status_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__status_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace status commands' commands "$@"
 }
-(( $+functions[_g__help__workspace__switch_commands] )) ||
-_g__help__workspace__switch_commands() {
+(( $+functions[_g__subcmd__help__subcmd__workspace__subcmd__switch_commands] )) ||
+_g__subcmd__help__subcmd__workspace__subcmd__switch_commands() {
     local commands; commands=()
     _describe -t commands 'g help workspace switch commands' commands "$@"
 }
-(( $+functions[_g__log_commands] )) ||
-_g__log_commands() {
+(( $+functions[_g__subcmd__log_commands] )) ||
+_g__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'g log commands' commands "$@"
 }
-(( $+functions[_g__notes_commands] )) ||
-_g__notes_commands() {
+(( $+functions[_g__subcmd__notes_commands] )) ||
+_g__subcmd__notes_commands() {
     local commands; commands=(
 'list:List every saved note in this repo (newest first)' \
 'show:Show a single note by id — prints the body and its anchor' \
@@ -1826,23 +2323,23 @@ _g__notes_commands() {
     )
     _describe -t commands 'g notes commands' commands "$@"
 }
-(( $+functions[_g__notes__clear_commands] )) ||
-_g__notes__clear_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__clear_commands] )) ||
+_g__subcmd__notes__subcmd__clear_commands() {
     local commands; commands=()
     _describe -t commands 'g notes clear commands' commands "$@"
 }
-(( $+functions[_g__notes__delete_commands] )) ||
-_g__notes__delete_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__delete_commands] )) ||
+_g__subcmd__notes__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g notes delete commands' commands "$@"
 }
-(( $+functions[_g__notes__edit_commands] )) ||
-_g__notes__edit_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__edit_commands] )) ||
+_g__subcmd__notes__subcmd__edit_commands() {
     local commands; commands=()
     _describe -t commands 'g notes edit commands' commands "$@"
 }
-(( $+functions[_g__notes__help_commands] )) ||
-_g__notes__help_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help_commands] )) ||
+_g__subcmd__notes__subcmd__help_commands() {
     local commands; commands=(
 'list:List every saved note in this repo (newest first)' \
 'show:Show a single note by id — prints the body and its anchor' \
@@ -1854,68 +2351,68 @@ _g__notes__help_commands() {
     )
     _describe -t commands 'g notes help commands' commands "$@"
 }
-(( $+functions[_g__notes__help__clear_commands] )) ||
-_g__notes__help__clear_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__clear_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__clear_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help clear commands' commands "$@"
 }
-(( $+functions[_g__notes__help__delete_commands] )) ||
-_g__notes__help__delete_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__delete_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help delete commands' commands "$@"
 }
-(( $+functions[_g__notes__help__edit_commands] )) ||
-_g__notes__help__edit_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__edit_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__edit_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help edit commands' commands "$@"
 }
-(( $+functions[_g__notes__help__help_commands] )) ||
-_g__notes__help__help_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help help commands' commands "$@"
 }
-(( $+functions[_g__notes__help__list_commands] )) ||
-_g__notes__help__list_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__list_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help list commands' commands "$@"
 }
-(( $+functions[_g__notes__help__publish_commands] )) ||
-_g__notes__help__publish_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__publish_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__publish_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help publish commands' commands "$@"
 }
-(( $+functions[_g__notes__help__show_commands] )) ||
-_g__notes__help__show_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__help__subcmd__show_commands] )) ||
+_g__subcmd__notes__subcmd__help__subcmd__show_commands() {
     local commands; commands=()
     _describe -t commands 'g notes help show commands' commands "$@"
 }
-(( $+functions[_g__notes__list_commands] )) ||
-_g__notes__list_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__list_commands] )) ||
+_g__subcmd__notes__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g notes list commands' commands "$@"
 }
-(( $+functions[_g__notes__publish_commands] )) ||
-_g__notes__publish_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__publish_commands] )) ||
+_g__subcmd__notes__subcmd__publish_commands() {
     local commands; commands=()
     _describe -t commands 'g notes publish commands' commands "$@"
 }
-(( $+functions[_g__notes__show_commands] )) ||
-_g__notes__show_commands() {
+(( $+functions[_g__subcmd__notes__subcmd__show_commands] )) ||
+_g__subcmd__notes__subcmd__show_commands() {
     local commands; commands=()
     _describe -t commands 'g notes show commands' commands "$@"
 }
-(( $+functions[_g__push_commands] )) ||
-_g__push_commands() {
+(( $+functions[_g__subcmd__push_commands] )) ||
+_g__subcmd__push_commands() {
     local commands; commands=()
     _describe -t commands 'g push commands' commands "$@"
 }
-(( $+functions[_g__show_commands] )) ||
-_g__show_commands() {
+(( $+functions[_g__subcmd__show_commands] )) ||
+_g__subcmd__show_commands() {
     local commands; commands=()
     _describe -t commands 'g show commands' commands "$@"
 }
-(( $+functions[_g__stack_commands] )) ||
-_g__stack_commands() {
+(( $+functions[_g__subcmd__stack_commands] )) ||
+_g__subcmd__stack_commands() {
     local commands; commands=(
 'new:Initialize a new stack starting from the current branch' \
 'add:Create a new branch on top of the current stack' \
@@ -1937,38 +2434,38 @@ _g__stack_commands() {
     )
     _describe -t commands 'g stack commands' commands "$@"
 }
-(( $+functions[_g__stack__absorb_commands] )) ||
-_g__stack__absorb_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__absorb_commands] )) ||
+_g__subcmd__stack__subcmd__absorb_commands() {
     local commands; commands=()
     _describe -t commands 'g stack absorb commands' commands "$@"
 }
-(( $+functions[_g__stack__add_commands] )) ||
-_g__stack__add_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__add_commands] )) ||
+_g__subcmd__stack__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'g stack add commands' commands "$@"
 }
-(( $+functions[_g__stack__delete_commands] )) ||
-_g__stack__delete_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__delete_commands] )) ||
+_g__subcmd__stack__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g stack delete commands' commands "$@"
 }
-(( $+functions[_g__stack__details_commands] )) ||
-_g__stack__details_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__details_commands] )) ||
+_g__subcmd__stack__subcmd__details_commands() {
     local commands; commands=()
     _describe -t commands 'g stack details commands' commands "$@"
 }
-(( $+functions[_g__stack__down_commands] )) ||
-_g__stack__down_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__down_commands] )) ||
+_g__subcmd__stack__subcmd__down_commands() {
     local commands; commands=()
     _describe -t commands 'g stack down commands' commands "$@"
 }
-(( $+functions[_g__stack__fold_commands] )) ||
-_g__stack__fold_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__fold_commands] )) ||
+_g__subcmd__stack__subcmd__fold_commands() {
     local commands; commands=()
     _describe -t commands 'g stack fold commands' commands "$@"
 }
-(( $+functions[_g__stack__help_commands] )) ||
-_g__stack__help_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help_commands] )) ||
+_g__subcmd__stack__subcmd__help_commands() {
     local commands; commands=(
 'new:Initialize a new stack starting from the current branch' \
 'add:Create a new branch on top of the current stack' \
@@ -1990,158 +2487,357 @@ _g__stack__help_commands() {
     )
     _describe -t commands 'g stack help commands' commands "$@"
 }
-(( $+functions[_g__stack__help__absorb_commands] )) ||
-_g__stack__help__absorb_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__absorb_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__absorb_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help absorb commands' commands "$@"
 }
-(( $+functions[_g__stack__help__add_commands] )) ||
-_g__stack__help__add_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__add_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help add commands' commands "$@"
 }
-(( $+functions[_g__stack__help__delete_commands] )) ||
-_g__stack__help__delete_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__delete_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help delete commands' commands "$@"
 }
-(( $+functions[_g__stack__help__details_commands] )) ||
-_g__stack__help__details_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__details_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__details_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help details commands' commands "$@"
 }
-(( $+functions[_g__stack__help__down_commands] )) ||
-_g__stack__help__down_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__down_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__down_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help down commands' commands "$@"
 }
-(( $+functions[_g__stack__help__fold_commands] )) ||
-_g__stack__help__fold_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__fold_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__fold_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help fold commands' commands "$@"
 }
-(( $+functions[_g__stack__help__help_commands] )) ||
-_g__stack__help__help_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help help commands' commands "$@"
 }
-(( $+functions[_g__stack__help__list_commands] )) ||
-_g__stack__help__list_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__list_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help list commands' commands "$@"
 }
-(( $+functions[_g__stack__help__new_commands] )) ||
-_g__stack__help__new_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__new_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__new_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help new commands' commands "$@"
 }
-(( $+functions[_g__stack__help__pr_commands] )) ||
-_g__stack__help__pr_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__pr_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__pr_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help pr commands' commands "$@"
 }
-(( $+functions[_g__stack__help__push_commands] )) ||
-_g__stack__help__push_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__push_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__push_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help push commands' commands "$@"
 }
-(( $+functions[_g__stack__help__remove_commands] )) ||
-_g__stack__help__remove_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__remove_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help remove commands' commands "$@"
 }
-(( $+functions[_g__stack__help__squash_commands] )) ||
-_g__stack__help__squash_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__squash_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__squash_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help squash commands' commands "$@"
 }
-(( $+functions[_g__stack__help__switch_commands] )) ||
-_g__stack__help__switch_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__switch_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__switch_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help switch commands' commands "$@"
 }
-(( $+functions[_g__stack__help__sync_commands] )) ||
-_g__stack__help__sync_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__sync_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__sync_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help sync commands' commands "$@"
 }
-(( $+functions[_g__stack__help__up_commands] )) ||
-_g__stack__help__up_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__up_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__up_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help up commands' commands "$@"
 }
-(( $+functions[_g__stack__help__view_commands] )) ||
-_g__stack__help__view_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__help__subcmd__view_commands] )) ||
+_g__subcmd__stack__subcmd__help__subcmd__view_commands() {
     local commands; commands=()
     _describe -t commands 'g stack help view commands' commands "$@"
 }
-(( $+functions[_g__stack__list_commands] )) ||
-_g__stack__list_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__list_commands] )) ||
+_g__subcmd__stack__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g stack list commands' commands "$@"
 }
-(( $+functions[_g__stack__new_commands] )) ||
-_g__stack__new_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__new_commands] )) ||
+_g__subcmd__stack__subcmd__new_commands() {
     local commands; commands=()
     _describe -t commands 'g stack new commands' commands "$@"
 }
-(( $+functions[_g__stack__pr_commands] )) ||
-_g__stack__pr_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__pr_commands] )) ||
+_g__subcmd__stack__subcmd__pr_commands() {
     local commands; commands=()
     _describe -t commands 'g stack pr commands' commands "$@"
 }
-(( $+functions[_g__stack__push_commands] )) ||
-_g__stack__push_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__push_commands] )) ||
+_g__subcmd__stack__subcmd__push_commands() {
     local commands; commands=()
     _describe -t commands 'g stack push commands' commands "$@"
 }
-(( $+functions[_g__stack__remove_commands] )) ||
-_g__stack__remove_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__remove_commands] )) ||
+_g__subcmd__stack__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'g stack remove commands' commands "$@"
 }
-(( $+functions[_g__stack__squash_commands] )) ||
-_g__stack__squash_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__squash_commands] )) ||
+_g__subcmd__stack__subcmd__squash_commands() {
     local commands; commands=()
     _describe -t commands 'g stack squash commands' commands "$@"
 }
-(( $+functions[_g__stack__switch_commands] )) ||
-_g__stack__switch_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__switch_commands] )) ||
+_g__subcmd__stack__subcmd__switch_commands() {
     local commands; commands=()
     _describe -t commands 'g stack switch commands' commands "$@"
 }
-(( $+functions[_g__stack__sync_commands] )) ||
-_g__stack__sync_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__sync_commands] )) ||
+_g__subcmd__stack__subcmd__sync_commands() {
     local commands; commands=()
     _describe -t commands 'g stack sync commands' commands "$@"
 }
-(( $+functions[_g__stack__up_commands] )) ||
-_g__stack__up_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__up_commands] )) ||
+_g__subcmd__stack__subcmd__up_commands() {
     local commands; commands=()
     _describe -t commands 'g stack up commands' commands "$@"
 }
-(( $+functions[_g__stack__view_commands] )) ||
-_g__stack__view_commands() {
+(( $+functions[_g__subcmd__stack__subcmd__view_commands] )) ||
+_g__subcmd__stack__subcmd__view_commands() {
     local commands; commands=()
     _describe -t commands 'g stack view commands' commands "$@"
 }
-(( $+functions[_g__stage_commands] )) ||
-_g__stage_commands() {
+(( $+functions[_g__subcmd__stage_commands] )) ||
+_g__subcmd__stage_commands() {
     local commands; commands=()
     _describe -t commands 'g stage commands' commands "$@"
 }
-(( $+functions[_g__stats_commands] )) ||
-_g__stats_commands() {
+(( $+functions[_g__subcmd__stats_commands] )) ||
+_g__subcmd__stats_commands() {
     local commands; commands=()
     _describe -t commands 'g stats commands' commands "$@"
 }
-(( $+functions[_g__status_commands] )) ||
-_g__status_commands() {
+(( $+functions[_g__subcmd__status_commands] )) ||
+_g__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'g status commands' commands "$@"
 }
-(( $+functions[_g__workspace_commands] )) ||
-_g__workspace_commands() {
+(( $+functions[_g__subcmd__workflow_commands] )) ||
+_g__subcmd__workflow_commands() {
+    local commands; commands=(
+'start:Start a new branch using workflow rules' \
+'finish:Finish the current branch (merge to target)' \
+'sync:Update branch from its source' \
+'publish:Push branch and create/update PR' \
+'status:Show workflow status of current branch' \
+'list:List all available workflows' \
+'info:Show detailed workflow information' \
+'use:Switch to a different workflow' \
+'create:Create a new workflow interactively' \
+'edit:Edit an existing workflow' \
+'init:Initialize workflow configuration' \
+'validate:Validate workflow configuration' \
+'clone:Clone a workflow with a new name' \
+'export:Export workflow configuration to TOML' \
+'import:Import workflow from a TOML file' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g workflow commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__clone_commands] )) ||
+_g__subcmd__workflow__subcmd__clone_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow clone commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__create_commands] )) ||
+_g__subcmd__workflow__subcmd__create_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow create commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__edit_commands] )) ||
+_g__subcmd__workflow__subcmd__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow edit commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__export_commands] )) ||
+_g__subcmd__workflow__subcmd__export_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow export commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__finish_commands] )) ||
+_g__subcmd__workflow__subcmd__finish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow finish commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help_commands] )) ||
+_g__subcmd__workflow__subcmd__help_commands() {
+    local commands; commands=(
+'start:Start a new branch using workflow rules' \
+'finish:Finish the current branch (merge to target)' \
+'sync:Update branch from its source' \
+'publish:Push branch and create/update PR' \
+'status:Show workflow status of current branch' \
+'list:List all available workflows' \
+'info:Show detailed workflow information' \
+'use:Switch to a different workflow' \
+'create:Create a new workflow interactively' \
+'edit:Edit an existing workflow' \
+'init:Initialize workflow configuration' \
+'validate:Validate workflow configuration' \
+'clone:Clone a workflow with a new name' \
+'export:Export workflow configuration to TOML' \
+'import:Import workflow from a TOML file' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'g workflow help commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__clone_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__clone_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help clone commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__create_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__create_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help create commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__edit_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__edit_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help edit commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__export_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__export_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help export commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__finish_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__finish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help finish commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help help commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__import_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__import_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help import commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__info_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help info commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__init_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help init commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__list_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help list commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__publish_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__publish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help publish commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__start_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help start commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__status_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help status commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__sync_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help sync commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__use_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__use_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help use commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__help__subcmd__validate_commands] )) ||
+_g__subcmd__workflow__subcmd__help__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow help validate commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__import_commands] )) ||
+_g__subcmd__workflow__subcmd__import_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow import commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__info_commands] )) ||
+_g__subcmd__workflow__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow info commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__init_commands] )) ||
+_g__subcmd__workflow__subcmd__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow init commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__list_commands] )) ||
+_g__subcmd__workflow__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow list commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__publish_commands] )) ||
+_g__subcmd__workflow__subcmd__publish_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow publish commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__start_commands] )) ||
+_g__subcmd__workflow__subcmd__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow start commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__status_commands] )) ||
+_g__subcmd__workflow__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow status commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__sync_commands] )) ||
+_g__subcmd__workflow__subcmd__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow sync commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__use_commands] )) ||
+_g__subcmd__workflow__subcmd__use_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow use commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workflow__subcmd__validate_commands] )) ||
+_g__subcmd__workflow__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'g workflow validate commands' commands "$@"
+}
+(( $+functions[_g__subcmd__workspace_commands] )) ||
+_g__subcmd__workspace_commands() {
     local commands; commands=(
 'init:Reorganise an existing repo into a container/worktree layout' \
 'list:List all workspaces (git worktrees)' \
@@ -2154,18 +2850,18 @@ _g__workspace_commands() {
     )
     _describe -t commands 'g workspace commands' commands "$@"
 }
-(( $+functions[_g__workspace__create_commands] )) ||
-_g__workspace__create_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__create_commands] )) ||
+_g__subcmd__workspace__subcmd__create_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace create commands' commands "$@"
 }
-(( $+functions[_g__workspace__delete_commands] )) ||
-_g__workspace__delete_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__delete_commands] )) ||
+_g__subcmd__workspace__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace delete commands' commands "$@"
 }
-(( $+functions[_g__workspace__help_commands] )) ||
-_g__workspace__help_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help_commands] )) ||
+_g__subcmd__workspace__subcmd__help_commands() {
     local commands; commands=(
 'init:Reorganise an existing repo into a container/worktree layout' \
 'list:List all workspaces (git worktrees)' \
@@ -2178,68 +2874,68 @@ _g__workspace__help_commands() {
     )
     _describe -t commands 'g workspace help commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__create_commands] )) ||
-_g__workspace__help__create_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__create_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__create_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help create commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__delete_commands] )) ||
-_g__workspace__help__delete_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__delete_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__delete_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help delete commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__help_commands] )) ||
-_g__workspace__help__help_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__help_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help help commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__init_commands] )) ||
-_g__workspace__help__init_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__init_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__init_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help init commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__list_commands] )) ||
-_g__workspace__help__list_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__list_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help list commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__rename_commands] )) ||
-_g__workspace__help__rename_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__rename_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__rename_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help rename commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__status_commands] )) ||
-_g__workspace__help__status_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__status_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help status commands' commands "$@"
 }
-(( $+functions[_g__workspace__help__switch_commands] )) ||
-_g__workspace__help__switch_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__help__subcmd__switch_commands] )) ||
+_g__subcmd__workspace__subcmd__help__subcmd__switch_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace help switch commands' commands "$@"
 }
-(( $+functions[_g__workspace__init_commands] )) ||
-_g__workspace__init_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__init_commands] )) ||
+_g__subcmd__workspace__subcmd__init_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace init commands' commands "$@"
 }
-(( $+functions[_g__workspace__list_commands] )) ||
-_g__workspace__list_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__list_commands] )) ||
+_g__subcmd__workspace__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace list commands' commands "$@"
 }
-(( $+functions[_g__workspace__rename_commands] )) ||
-_g__workspace__rename_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__rename_commands] )) ||
+_g__subcmd__workspace__subcmd__rename_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace rename commands' commands "$@"
 }
-(( $+functions[_g__workspace__status_commands] )) ||
-_g__workspace__status_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__status_commands] )) ||
+_g__subcmd__workspace__subcmd__status_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace status commands' commands "$@"
 }
-(( $+functions[_g__workspace__switch_commands] )) ||
-_g__workspace__switch_commands() {
+(( $+functions[_g__subcmd__workspace__subcmd__switch_commands] )) ||
+_g__subcmd__workspace__subcmd__switch_commands() {
     local commands; commands=()
     _describe -t commands 'g workspace switch commands' commands "$@"
 }

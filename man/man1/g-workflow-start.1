@@ -1,0 +1,27 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workflow-start 1  "g-workflow-start " 
+.SH NAME
+g\-workflow\-start \- Start a new branch using workflow rules
+.SH SYNOPSIS
+\fBg\-workflow\-start\fR [\fB\-\-from\fR] [\fB\-\-no\-verify\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fITYPE\fR> <\fINAME\fR> 
+.SH DESCRIPTION
+Start a new branch using workflow rules
+.PP
+Creates a branch with the proper prefix, from the correct source branch, according to the workflow\*(Aqs branch type configuration.
+.SH OPTIONS
+.TP
+\fB\-\-from\fR \fI<BRANCH>\fR
+Override the source branch
+.TP
+\fB\-\-no\-verify\fR
+Skip validation checks
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fITYPE\fR>
+Branch type (e.g., feature, hotfix, release)
+.TP
+<\fINAME\fR>
+Branch name (without prefix)

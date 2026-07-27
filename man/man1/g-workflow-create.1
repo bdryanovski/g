@@ -1,0 +1,27 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-workflow-create 1  "g-workflow-create " 
+.SH NAME
+g\-workflow\-create \- Create a new workflow interactively
+.SH SYNOPSIS
+\fBg\-workflow\-create\fR [\fB\-\-from\fR] [\fB\-\-local\fR] [\fB\-\-no\-interactive\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fINAME\fR] 
+.SH DESCRIPTION
+Create a new workflow interactively
+.PP
+Opens a full\-screen wizard to define a custom workflow with branch types, merge strategies, hooks, and validation rules.
+.SH OPTIONS
+.TP
+\fB\-\-from\fR \fI<PRESET>\fR
+Start from a preset
+.TP
+\fB\-\-local\fR
+Save to repo\-local config (.g/workflow.toml)
+.TP
+\fB\-\-no\-interactive\fR
+Skip interactive wizard, save defaults immediately
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+[\fINAME\fR]
+Workflow name

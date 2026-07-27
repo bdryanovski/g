@@ -21,6 +21,7 @@ pub mod prelude;
 pub mod stack;
 pub mod stage;
 pub mod stats;
+pub mod workflow;
 pub mod workspace;
 
 // Test-only shared fixtures.  Compiled away in non-test builds.
