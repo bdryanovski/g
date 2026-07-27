@@ -200,7 +200,7 @@ pub fn repo_root() -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::workflow::BranchTarget;
+
 
     #[test]
     fn test_make_branch_name() {
