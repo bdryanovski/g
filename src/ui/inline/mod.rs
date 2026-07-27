@@ -335,12 +335,10 @@ where
         })
         .flatten();
 
-        match line {
-            None => return None,
-            Some(s) => match validate(&s) {
-                Ok(()) => return Some(s),
-                Err(msg) => println!("{}{}  {}", indent(), warning("✗"), muted(&msg)),
-            },
+        let s = line?;
+        match validate(&s) {
+            Ok(()) => return Some(s),
+            Err(msg) => println!("{}{}  {}", indent(), warning("✗"), muted(&msg)),
         }
     }
 }
