@@ -348,16 +348,7 @@ pub struct WorkflowHooks {
     pub on_publish: Option<Vec<String>>,
 }
 
-impl WorkflowHooks {
-    /// Returns true if no hooks are configured.
-    pub fn is_empty(&self) -> bool {
-        self.pre_start.as_ref().map(|v| v.is_empty()).unwrap_or(true)
-            && self.post_start.as_ref().map(|v| v.is_empty()).unwrap_or(true)
-            && self.pre_finish.as_ref().map(|v| v.is_empty()).unwrap_or(true)
-            && self.post_finish.as_ref().map(|v| v.is_empty()).unwrap_or(true)
-            && self.on_publish.as_ref().map(|v| v.is_empty()).unwrap_or(true)
-    }
-}
+
 
 // ─── Workflow rules ───────────────────────────────────────────────────────────
 
