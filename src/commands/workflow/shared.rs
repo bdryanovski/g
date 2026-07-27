@@ -185,11 +185,13 @@ pub fn format_merge_strategy(strategy: &MergeStrategy) -> &'static str {
 }
 
 /// Check if we're in a git repository.
+#[allow(dead_code)]
 pub fn in_git_repo() -> bool {
     git_output(&["rev-parse", "--git-dir"]).is_ok()
 }
 
 /// Get the repository root directory.
+#[allow(dead_code)]
 pub fn repo_root() -> Result<String> {
     git_output(&["rev-parse", "--show-toplevel"])
         .context("Not in a git repository")

@@ -227,6 +227,7 @@ pub enum MergeStrategy {
 
 impl MergeStrategy {
     /// Returns the git arguments for this merge strategy.
+    #[allow(dead_code)]
     pub fn git_args(&self) -> &[&str] {
         match self {
             MergeStrategy::Merge => &["--no-ff"],
@@ -238,6 +239,7 @@ impl MergeStrategy {
     }
 
     /// Returns a human-readable description.
+    #[allow(dead_code)]
     pub fn description(&self) -> &str {
         match self {
             MergeStrategy::Merge => "merge commit (preserves history)",

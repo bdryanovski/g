@@ -40,6 +40,8 @@ struct PushResult {
     up_to_date: bool,
     /// Remote messages (e.g., GitHub's "Create a pull request" link)
     remote_messages: Vec<String>,
+    /// Whether this is a new branch (first push)
+    is_new_branch: bool,
 }
 
 /// Run `g push` with enhanced output.
@@ -127,6 +129,7 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
         error: None,
         up_to_date: false,
         remote_messages: Vec::new(),
+        is_new_branch: false,
     };
 
     // Read stderr line by line (git uses \r for progress updates)
@@ -207,6 +210,11 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
                 }
             }
 
+            // Detect new branch: "* [new branch]      workflows -> workflows"
+            if part.contains("[new branch]") {
+                result.is_new_branch = true;
+            }
+
             // Capture remote messages (GitHub/GitLab hints, PR links, etc.)
             // These come as "remote: <message>" lines
             if part.starts_with("remote:") {
@@ -240,36 +248,46 @@ pub fn enhanced_push(extra_args: &[String]) -> Result<()> {
     if result.up_to_date {
         println!("  {} Already up to date", ui::success_bold("✓"));
     } else if result.success {
-        let hash_range = match (&result.old_hash, &result.new_hash) {
-            (Some(old), Some(new)) => format!("{}..{}", ui::color_hash(old), ui::color_hash(new)),
-            _ => String::new(),
-        };
-
-        // Count commits pushed
-        let commit_count = if let (Some(old), Some(new)) = (&result.old_hash, &result.new_hash) {
-            let count_output = super::exec::git_output_lossy(&[
-                "rev-list",
-                "--count",
-                &format!("{}..{}", old, new),
-            ]);
-            count_output.trim().parse::<u32>().unwrap_or(0)
+        if result.is_new_branch {
+            // New branch - show different message
+            println!(
+                "  {} Pushed new branch '{}'",
+                ui::success_bold("✓"),
+                ui::color_branch(&result.branch)
+            );
         } else {
-            0
-        };
+            // Existing branch - show hash range and commit count
+            let hash_range = match (&result.old_hash, &result.new_hash) {
+                (Some(old), Some(new)) => format!("{}..{}", ui::color_hash(old), ui::color_hash(new)),
+                _ => String::new(),
+            };
 
-        let commit_word = if commit_count == 1 {
-            "commit"
-        } else {
-            "commits"
-        };
+            // Count commits pushed
+            let commit_count = if let (Some(old), Some(new)) = (&result.old_hash, &result.new_hash) {
+                let count_output = super::exec::git_output_lossy(&[
+                    "rev-list",
+                    "--count",
+                    &format!("{}..{}", old, new),
+                ]);
+                count_output.trim().parse::<u32>().unwrap_or(0)
+            } else {
+                0
+            };
 
-        println!(
-            "  {} Pushed {} ({} {})",
-            ui::success_bold("✓"),
-            hash_range,
-            commit_count,
-            commit_word
-        );
+            let commit_word = if commit_count == 1 {
+                "commit"
+            } else {
+                "commits"
+            };
+
+            println!(
+                "  {} Pushed {} ({} {})",
+                ui::success_bold("✓"),
+                hash_range,
+                commit_count,
+                commit_word
+            );
+        }
     } else {
         println!("  {} Push failed", ui::danger_bold("✗"));
         if let Some(err) = &result.error {
