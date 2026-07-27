@@ -52,6 +52,7 @@ pub mod theme;
 
 mod inline;
 mod interactive;
+mod panels;
 mod print;
 mod render;
 mod widgets;
@@ -98,3 +99,5 @@ pub use inline::{
     inline_confirm, inline_fuzzy_select, inline_input, inline_input_validated, inline_multi_select,
     inline_select,
 };
+
+pub use panels::{Diagram, Panel};
