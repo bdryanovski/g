@@ -167,13 +167,17 @@ fn validate_workflow(
 
         // Check source branch reference
         let source = &bt.source;
-        if source != "HEAD" && source != "main" && source != "develop" && !source.contains('*')
-            && !branch_exists(source).unwrap_or(false) {
-                warnings.push(format!(
-                    "[{}] Source branch '{}' for type '{}' doesn't exist locally",
-                    name, source, bt.name
-                ));
-            }
+        if source != "HEAD"
+            && source != "main"
+            && source != "develop"
+            && !source.contains('*')
+            && !branch_exists(source).unwrap_or(false)
+        {
+            warnings.push(format!(
+                "[{}] Source branch '{}' for type '{}' doesn't exist locally",
+                name, source, bt.name
+            ));
+        }
 
         // Check tag pattern variables
         if let Some(ref pattern) = bt.tag_pattern {

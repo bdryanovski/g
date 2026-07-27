@@ -172,7 +172,7 @@ fn merge_to_target(_ctx: &Ctx, branch: &str, target: &str, strategy: &MergeStrat
 
     // Push to remote (ignore errors for local-only repos)
     ui::print_info(&format!("Pushing '{}'...", target));
-    if let Err(_) = git_output(&["push", "origin", target]) {
+    if git_output(&["push", "origin", target]).is_err() {
         ui::print_warning("Could not push to origin (no remote configured?)");
     }
 
@@ -184,9 +184,7 @@ fn create_tag(
     branch_type: &crate::config::workflow::BranchType,
     branch: &str,
 ) -> Result<()> {
-    let pattern = branch_type
-        .tag_pattern.as_deref()
-        .unwrap_or("{name}");
+    let pattern = branch_type.tag_pattern.as_deref().unwrap_or("{name}");
 
     // Extract name from branch (without prefix)
     let name = if branch_type.prefix.is_empty() {

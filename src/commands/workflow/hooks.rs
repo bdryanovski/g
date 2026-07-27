@@ -117,7 +117,9 @@ pub fn run_hooks(hooks: &[String], env: &HookEnv, dry_run: bool) -> Result<HookR
 pub fn run_pre_start(hooks: &Option<WorkflowHooks>, env: &HookEnv, dry_run: bool) -> Result<()> {
     if let Some(ref h) = hooks {
         if let Some(ref cmds) = h.pre_start {
-            if let HookResult::Failed(msg) = run_hooks(cmds, env, dry_run)? { bail!("{}", msg) }
+            if let HookResult::Failed(msg) = run_hooks(cmds, env, dry_run)? {
+                bail!("{}", msg)
+            }
         }
     }
     Ok(())
@@ -141,7 +143,9 @@ pub fn run_post_start(hooks: &Option<WorkflowHooks>, env: &HookEnv, dry_run: boo
 pub fn run_pre_finish(hooks: &Option<WorkflowHooks>, env: &HookEnv, dry_run: bool) -> Result<()> {
     if let Some(ref h) = hooks {
         if let Some(ref cmds) = h.pre_finish {
-            if let HookResult::Failed(msg) = run_hooks(cmds, env, dry_run)? { bail!("{}", msg) }
+            if let HookResult::Failed(msg) = run_hooks(cmds, env, dry_run)? {
+                bail!("{}", msg)
+            }
         }
     }
     Ok(())
@@ -163,7 +167,9 @@ pub fn run_post_finish(hooks: &Option<WorkflowHooks>, env: &HookEnv, dry_run: bo
 pub fn run_on_publish(hooks: &Option<WorkflowHooks>, env: &HookEnv, dry_run: bool) -> Result<()> {
     if let Some(ref h) = hooks {
         if let Some(ref cmds) = h.on_publish {
-            if let HookResult::Failed(msg) = run_hooks(cmds, env, dry_run)? { bail!("{}", msg) }
+            if let HookResult::Failed(msg) = run_hooks(cmds, env, dry_run)? {
+                bail!("{}", msg)
+            }
         }
     }
     Ok(())

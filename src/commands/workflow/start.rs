@@ -73,7 +73,7 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
     run_pre_start(&workflow.hooks, &hook_env, is_dry_run())?;
 
     // Fetch latest from remote
-    ui::print_info(&"Fetching latest from origin...".to_string());
+    ui::print_info("Fetching latest from origin...");
     let _ = git_output(&["fetch", "origin", &source]);
 
     // Create and checkout the branch

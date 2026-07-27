@@ -77,8 +77,10 @@ fn init_local(args: InitArgs) -> Result<()> {
     };
 
     // Create config
-    let mut workflows = WorkflowsConfig::default();
-    workflows.default = Some(workflow_name.clone());
+    let mut workflows = WorkflowsConfig {
+        default: Some(workflow_name.clone()),
+        ..Default::default()
+    };
 
     // Optionally include the preset inline
     let include_inline = if args.no_interactive {

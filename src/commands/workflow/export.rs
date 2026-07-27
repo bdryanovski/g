@@ -14,8 +14,10 @@ pub fn run(_ctx: &Ctx, args: ExportArgs) -> Result<()> {
     let workflow = get_workflow(&args.name)?;
 
     // Create a config with just this workflow
-    let mut config = WorkflowsConfig::default();
-    config.default = Some(args.name.clone());
+    let mut config = WorkflowsConfig {
+        default: Some(args.name.clone()),
+        ..Default::default()
+    };
     config.workflows.insert(args.name.clone(), workflow);
 
     // Serialize to TOML

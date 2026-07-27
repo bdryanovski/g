@@ -63,10 +63,8 @@ pub fn run(ctx: &Ctx, args: SyncArgs) -> Result<()> {
 
     // Fetch latest (ignore errors for local-only repos)
     ui::print_info("Fetching latest from origin...");
-    if !is_dry_run() {
-        if let Err(_) = git_output(&["fetch", "origin"]) {
-            ui::print_warning("Could not fetch from origin (no remote configured?)");
-        }
+    if !is_dry_run() && git_output(&["fetch", "origin"]).is_err() {
+        ui::print_warning("Could not fetch from origin (no remote configured?)");
     }
 
     // Check how far behind we are
