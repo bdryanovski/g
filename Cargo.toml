@@ -1,6 +1,6 @@
 [package]
 name = "g"
-version = "26.7.0"
+version = "26.7.1"
 edition = "2021"
 authors = ["Bozhidar Dryanovski"]
 description = "A beautiful, feature-rich Git CLI with stacked PRs, workspace management, and enhanced UX"
