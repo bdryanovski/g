@@ -100,4 +100,4 @@ pub use inline::{
     inline_select,
 };
 
-pub use panels::{Diagram, Panel};
+pub use panels::{Diagram, InfoBox, Panel, TaskRunner};

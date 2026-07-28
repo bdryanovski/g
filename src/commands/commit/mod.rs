@@ -37,6 +37,7 @@ use crate::cli::CommitArgs;
 use crate::commands::git as gitcmd;
 use crate::commands::{Ctx, Error as CommandError};
 use crate::config;
+use crate::hooks;
 use crate::storage::{repos, stats};
 use crate::ui;
 use anyhow::{bail, Result};
@@ -148,6 +149,11 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
         git_args.push("--gpg-sign");
     }
 
+    // Run pre-commit hooks (unless --no-verify)
+    if !args.no_verify {
+        hooks::run_pre_commit(false)?;
+    }
+
     ui::print_blank();
     let pb = ui::spinner("Committing…");
     let result = gitcmd::git_output(&git_args);
@@ -203,6 +209,11 @@ pub fn commit(ctx: &Ctx, args: &CommitArgs) -> Result<()> {
                     false, // not imported
                 )
                 .ok();
+            }
+
+            // Run post-commit hooks (non-blocking)
+            if let Err(e) = hooks::run_post_commit(args.no_verify) {
+                ui::print_warning(&format!("Post-commit hook error: {}", e));
             }
         }
         Err(e) => {

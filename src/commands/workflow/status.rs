@@ -8,7 +8,7 @@ use crate::commands::workflow::shared::{
 };
 use crate::commands::Ctx;
 use crate::config::workflow_presets;
-use crate::ui::{self, print_section};
+use crate::ui::{self, print_section, InfoBox};
 
 pub fn run(_ctx: &Ctx) -> Result<()> {
     let (workflow_name, workflow) = get_active_workflow()?;
@@ -84,10 +84,14 @@ pub fn run(_ctx: &Ctx) -> Result<()> {
         // Warnings
         println!();
         if behind > 0 {
-            ui::print_warning(&format!(
-                "Branch is {} commits behind '{}'. Run `g workflow sync`.",
-                behind, source
-            ));
+            InfoBox::warning("Sync Required")
+                .line(&format!(
+                    "Branch is {} commits behind '{}'.",
+                    behind, source
+                ))
+                .blank()
+                .line("Run `g workflow sync` to update from source.")
+                .print();
         }
 
         if let Some(max_hours) = bt.max_age_hours {
@@ -95,10 +99,14 @@ pub fn run(_ctx: &Ctx) -> Result<()> {
             if let Ok(age_days) = get_branch_age_days(&branch) {
                 let max_days = max_hours / 24;
                 if age_days > max_days as i64 {
-                    ui::print_warning(&format!(
-                        "Branch is {} days old. Consider finishing or rebasing.",
-                        age_days
-                    ));
+                    InfoBox::warning("Stale Branch")
+                        .line(&format!(
+                            "Branch is {} days old (max: {} days).",
+                            age_days, max_days
+                        ))
+                        .blank()
+                        .line("Consider finishing or rebasing this branch.")
+                        .print();
                 }
             }
         }

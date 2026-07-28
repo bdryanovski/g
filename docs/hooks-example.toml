@@ -1,0 +1,59 @@
+# Example hooks configuration for g
+# Save this file as:
+#   - .g/hooks.toml (repo-local, add to .gitignore)
+#   - ~/.config/g/hooks/<repo-name>.toml (per-repo global)
+#   - ~/.config/g/hooks/default.toml (fallback for all repos)
+
+# Master switch to enable/disable all hooks
+enabled = true
+
+# ─── Pre-commit ───────────────────────────────────────────────────────────────
+# Run before `git commit` — failures abort the commit
+[pre-commit]
+enabled = true
+# Only run if staged files match these patterns (empty = always run)
+staged_patterns = ["*.rs", "*.ts", "*.tsx"]
+# Pass matching staged files as arguments to commands
+pass_files = false
+
+commands = [
+    # Rust formatting check
+    { run = "cargo fmt -- --check", name = "rustfmt" },
+    # Rust linting
+    { run = "cargo clippy -- -D warnings", name = "clippy" },
+]
+
+# ─── Pre-push ─────────────────────────────────────────────────────────────────
+# Run before `git push` — failures abort the push
+[pre-push]
+enabled = true
+commands = [
+    { run = "cargo test --quiet", name = "tests" },
+]
+
+# ─── Post-commit ──────────────────────────────────────────────────────────────
+# Run after `git commit` — failures are warnings only
+[post-commit]
+enabled = false
+commands = [
+    # Example: send notification
+    # { run = "notify-send 'Committed!'", name = "notify" },
+]
+
+# ─── Post-checkout ────────────────────────────────────────────────────────────
+# Run after `git checkout` — failures are warnings only
+[post-checkout]
+enabled = false
+commands = []
+
+# ─── Post-merge ───────────────────────────────────────────────────────────────
+# Run after `git merge` — failures are warnings only
+[post-merge]
+enabled = false
+commands = []
+
+# ─── Pre-rebase ───────────────────────────────────────────────────────────────
+# Run before `git rebase` — failures abort the rebase
+[pre-rebase]
+enabled = false
+commands = []

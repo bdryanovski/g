@@ -9,7 +9,7 @@ use crate::commands::workflow::shared::{
     branch_exists, get_active_workflow, make_branch_name, resolve_source_branch, verify_rules,
 };
 use crate::commands::Ctx;
-use crate::ui;
+use crate::ui::{self, InfoBox};
 
 pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
     let (workflow_name, workflow) = get_active_workflow()?;
@@ -107,11 +107,15 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
 
     // Print next steps
     println!();
-    ui::print_info("Next steps:");
-    println!("  1. Make your changes and commit them");
-    println!("  2. Run `g workflow sync` to update from {}", source);
-    println!("  3. Run `g workflow publish` to push and create a PR");
-    println!("  4. Run `g workflow finish` to merge when ready");
+    InfoBox::info("Next Steps")
+        .line("1. Make your changes and commit them")
+        .line(&format!(
+            "2. Run `g workflow sync` to update from {}",
+            source
+        ))
+        .line("3. Run `g workflow publish` to push and create a PR")
+        .line("4. Run `g workflow finish` to merge when ready")
+        .print();
 
     Ok(())
 }

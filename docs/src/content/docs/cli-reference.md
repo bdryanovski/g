@@ -81,6 +81,11 @@ This document contains the help content for the `g` command-line program.
 * [`g workflow clone`↴](#g-workflow-clone)
 * [`g workflow export`↴](#g-workflow-export)
 * [`g workflow import`↴](#g-workflow-import)
+* [`g hooks`↴](#g-hooks)
+* [`g hooks list`↴](#g-hooks-list)
+* [`g hooks run`↴](#g-hooks-run)
+* [`g hooks init`↴](#g-hooks-init)
+* [`g hooks status`↴](#g-hooks-status)
 * [`g completions`↴](#g-completions)
 
 ## `g`
@@ -129,6 +134,7 @@ Pass --help to any subcommand for detailed usage and examples.
 * `stats` — Display a rich usage-statistics report
 * `developer` — Developer / debugging utilities
 * `workflow` — Manage git workflows (branching strategies)
+* `hooks` — Manage personal git hooks
 * `completions` — Print a shell completion script and exit
 
 ###### **Options:**
@@ -1148,6 +1154,63 @@ Loads a workflow configuration from a file and adds it to the available workflow
 
 * `--name <NAME>` — Override workflow name
 * `--local` — Save to repo-local config (.g/workflow.toml)
+
+
+
+## `g hooks`
+
+Manage personal git hooks
+
+Configure and run personal hooks that coexist with team hooks (like Husky). Hooks are stored in .g/hooks.toml (gitignored) or ~/.config/g/hooks/.
+
+**Usage:** `g hooks <COMMAND>`
+
+###### **Subcommands:**
+
+* `list` — List all configured hooks for this repository
+* `run` — Run a specific hook manually
+* `init` — Create a hooks.toml template in .g/
+* `status` — Show where hooks config is loaded from
+
+
+
+## `g hooks list`
+
+List all configured hooks for this repository
+
+**Usage:** `g hooks list`
+
+
+
+## `g hooks run`
+
+Run a specific hook manually
+
+**Usage:** `g hooks run [OPTIONS] <HOOK>`
+
+###### **Arguments:**
+
+* `<HOOK>` — Hook name to run (pre-commit, post-commit, pre-push, etc.)
+
+###### **Options:**
+
+* `--skip-empty` — Skip the hook if no files match patterns
+
+
+
+## `g hooks init`
+
+Create a hooks.toml template in .g/
+
+**Usage:** `g hooks init`
+
+
+
+## `g hooks status`
+
+Show where hooks config is loaded from
+
+**Usage:** `g hooks status`
 
 
 

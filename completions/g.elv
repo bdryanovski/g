@@ -43,6 +43,7 @@ set edit:completion:arg-completer[g] = {|@words|
             cand stats 'Display a rich usage-statistics report'
             cand developer 'Developer / debugging utilities'
             cand workflow 'Manage git workflows (branching strategies)'
+            cand hooks 'Manage personal git hooks'
             cand completions 'Print a shell completion script and exit'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
@@ -1009,6 +1010,79 @@ set edit:completion:arg-completer[g] = {|@words|
         }
         &'g;workflow;help;help'= {
         }
+        &'g;hooks'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+            cand -V 'Print version'
+            cand --version 'Print version'
+            cand list 'List all configured hooks for this repository'
+            cand run 'Run a specific hook manually'
+            cand init 'Create a hooks.toml template in .g/'
+            cand status 'Show where hooks config is loaded from'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'g;hooks;list'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+        &'g;hooks;run'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --skip-empty 'Skip the hook if no files match patterns'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+        &'g;hooks;init'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+        &'g;hooks;status'= {
+            cand -C 'Run as if git was started in <path>'
+            cand -c 'Override a configuration value (key=value)'
+            cand --dry-run 'Preview what commands would run without making any changes'
+            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+        &'g;hooks;help'= {
+            cand list 'List all configured hooks for this repository'
+            cand run 'Run a specific hook manually'
+            cand init 'Create a hooks.toml template in .g/'
+            cand status 'Show where hooks config is loaded from'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'g;hooks;help;list'= {
+        }
+        &'g;hooks;help;run'= {
+        }
+        &'g;hooks;help;init'= {
+        }
+        &'g;hooks;help;status'= {
+        }
+        &'g;hooks;help;help'= {
+        }
         &'g;completions'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
@@ -1037,6 +1111,7 @@ set edit:completion:arg-completer[g] = {|@words|
             cand stats 'Display a rich usage-statistics report'
             cand developer 'Developer / debugging utilities'
             cand workflow 'Manage git workflows (branching strategies)'
+            cand hooks 'Manage personal git hooks'
             cand completions 'Print a shell completion script and exit'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
@@ -1217,6 +1292,20 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;help;workflow;export'= {
         }
         &'g;help;workflow;import'= {
+        }
+        &'g;help;hooks'= {
+            cand list 'List all configured hooks for this repository'
+            cand run 'Run a specific hook manually'
+            cand init 'Create a hooks.toml template in .g/'
+            cand status 'Show where hooks config is loaded from'
+        }
+        &'g;help;hooks;list'= {
+        }
+        &'g;help;hooks;run'= {
+        }
+        &'g;help;hooks;init'= {
+        }
+        &'g;help;hooks;status'= {
         }
         &'g;help;completions'= {
         }

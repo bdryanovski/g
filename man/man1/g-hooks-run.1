@@ -1,0 +1,19 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH g-hooks-run 1  "g-hooks-run " 
+.SH NAME
+g\-hooks\-run \- Run a specific hook manually
+.SH SYNOPSIS
+\fBg\-hooks\-run\fR [\fB\-\-skip\-empty\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIHOOK\fR> 
+.SH DESCRIPTION
+Run a specific hook manually
+.SH OPTIONS
+.TP
+\fB\-\-skip\-empty\fR
+Skip the hook if no files match patterns
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIHOOK\fR>
+Hook name to run (pre\-commit, post\-commit, pre\-push, etc.)
