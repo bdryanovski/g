@@ -4,8 +4,11 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "docs:extract": "node scripts/extract-docs.js",
+    "docs:rustdoc": "bash scripts/build-rustdoc.sh",
+    "dev": "npm run docs:extract && astro dev",
+    "build": "npm run docs:extract && astro build",
+    "build:full": "npm run docs:extract && npm run docs:rustdoc && astro build",
     "preview": "astro preview"
   },
   "dependencies": {

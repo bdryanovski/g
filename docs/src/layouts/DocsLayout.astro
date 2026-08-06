@@ -12,9 +12,13 @@ interface Props {
 const { title, description } = Astro.props;
 
 const all = await getCollection("docs");
-const nav = [...all].sort(
-  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
-);
+
+// Split the collection by section.
+//   guides  — hand-written pages (rendered in the Start / Workflows / Reference groups)
+//   modules — generated from //! comments (rendered in the Modules group)
+const moduleEntries = [...all]
+  .filter((e) => e.data.section === "modules")
+  .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
 
 const base = import.meta.env.BASE_URL;
 const github =
@@ -26,9 +30,25 @@ let pathAfterBase = pathname;
 if (baseNorm && pathname.startsWith(baseNorm)) {
   pathAfterBase = pathname.slice(baseNorm.length) || "/";
 }
-const docMatch = pathAfterBase.match(/^\/docs\/([^/]+)/);
+// Capture the full slug after /docs/ (handles nested module slugs like
+// "modules/commands-git").
+const docMatch = pathAfterBase.match(/^\/docs\/(.+)$/);
 const currentSlug = docMatch?.[1] ?? "";
 
+// Is the page being viewed a generated module overview?
+const isModulePage = moduleEntries.some((e) => e.slug === currentSlug);
+
+// Pretty label for a module slug:  "commands-git" → "commands::git"
+function moduleLabel(slug: string): string {
+  return slug
+    .replace(/^modules\//, "")
+    .split("-")
+    .map((s) => s.replace(/-/g, "_"))
+    .join("::");
+}
+
+// Hand-written guide groups keep their explicit ordering for editorial
+// control; module overviews are appended dynamically below.
 const groups: { label: string; slug: string }[][] = [
   [
     { label: "Introduction", slug: "introduction" },
@@ -42,12 +62,21 @@ const groups: { label: string; slug: string }[][] = [
     { label: "Git flows", slug: "git-flows" },
     { label: "Stats", slug: "stats" },
   ],
-  [
-    { label: "Configuration", slug: "configuration" },
-    { label: "Theming", slug: "theming" },
-    { label: "CLI Reference", slug: "cli-reference" },
-  ],
+  [{ label: "Configuration", slug: "configuration" }, { label: "Theming", slug: "theming" }],
 ];
+
+// Reference group: CLI Reference + the rustdoc API reference landing page.
+const referenceGroup: { label: string; slug: string; href?: string }[] = [
+  { label: "CLI Reference", slug: "cli-reference" },
+  { label: "API Reference", slug: "", href: `${base}api-reference/` },
+];
+
+// Module group entries (nested under modules/).  Active detection uses the
+// full slug including the "modules/" prefix.
+const moduleGroup: { label: string; slug: string }[] = moduleEntries.map((e) => ({
+  label: moduleLabel(e.slug),
+  slug: e.slug,
+}));
 
 const uc = `${base}docs/use-cases/`;
 const useCaseChips = [
@@ -122,9 +151,9 @@ const useCaseChips = [
           groups.map((items, gi) => (
             <div class="doc-nav-group">
               <p class="doc-nav-group-title">
-                {gi === 0 ? "Start" : gi === 1 ? "Workflows" : "Reference"}
+                {gi === 0 ? "Start" : "Workflows"}
               </p>
-              <nav class="doc-nav-list" aria-label={`${gi === 0 ? "Start" : gi === 1 ? "Workflows" : "Reference"} pages`}>
+              <nav class="doc-nav-list" aria-label={`${gi === 0 ? "Start" : "Workflows"} pages`}>
                 {items.map(({ label, slug }) => {
                   const href = `${base}docs/${slug}/`;
                   const active = currentSlug === slug;
@@ -142,6 +171,51 @@ const useCaseChips = [
             </div>
           ))
         }
+
+        {/* Reference: hand-written + API reference link */}
+        <div class="doc-nav-group">
+          <p class="doc-nav-group-title">Reference</p>
+          <nav class="doc-nav-list" aria-label="Reference pages">
+            {referenceGroup.map((item) => {
+              const href = item.href ?? `${base}docs/${item.slug}/`;
+              const active = item.href
+                ? pathAfterBase.startsWith("/api-reference")
+                : currentSlug === item.slug;
+              return (
+                <a
+                  href={href}
+                  class:list={["docnav-link", active && "docnav-link--active"]}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Modules: generated from //! comments (dynamic) */}
+        {moduleGroup.length > 0 && (
+          <div class="doc-nav-group">
+            <p class="doc-nav-group-title">Modules</p>
+            <nav class="doc-nav-list" aria-label="Module overviews">
+              {moduleGroup.map(({ label, slug }) => {
+                const href = `${base}docs/${slug}/`;
+                const active = currentSlug === slug;
+                return (
+                  <a
+                    href={href}
+                    class:list={["docnav-link", "docnav-link--module", active && "docnav-link--active"]}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <span class="docnav-module-mark" aria-hidden="true">⌘</span>
+                    {label}
+                  </a>
+                );
+              })}
+            </nav>
+          </div>
+        )}
       </aside>
 
       <article class="doc-article prose">
@@ -150,6 +224,16 @@ const useCaseChips = [
           {
             description && (
               <p class="doc-article-lede">{description}</p>
+            )
+          }
+          {
+            isModulePage && (
+              <p class="doc-generated-banner">
+                <span class="doc-generated-badge">auto-generated</span>
+                This page is built from <code>//!</code> comments in the Rust
+                source. Edit the source and run{" "}
+                <code>npm run docs:extract</code> to update it.
+              </p>
             )
           }
         </header>
@@ -383,6 +467,62 @@ const useCaseChips = [
       color: var(--accent);
       background: linear-gradient(90deg, var(--accent-dim), var(--accent-2-dim));
       border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .docnav-link--module {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.8rem;
+    }
+
+    .docnav-module-mark {
+      flex-shrink: 0;
+      width: 1.1rem;
+      height: 1.1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      background: rgba(124, 58, 237, 0.1);
+      color: #7c3aed;
+      font-size: 0.65rem;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .doc-generated-banner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0.9rem 0 0;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: rgba(124, 58, 237, 0.06);
+      border: 1px solid rgba(124, 58, 237, 0.18);
+      font-size: 0.8rem;
+      color: #52526a;
+      line-height: 1.5;
+    }
+
+    .doc-generated-banner code {
+      font-size: 0.78rem;
+      background: rgba(124, 58, 237, 0.08);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .doc-generated-badge {
+      flex-shrink: 0;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      color: #fff;
     }
 
     .doc-article {
