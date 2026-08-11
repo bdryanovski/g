@@ -407,6 +407,3 @@ fn counts_display(count: Option<u32>) -> String {
         .map(|c| c.to_string())
         .unwrap_or_else(|| "?".to_string())
 }
-// test
-// test
-// test
