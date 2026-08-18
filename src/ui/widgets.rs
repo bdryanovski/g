@@ -310,20 +310,41 @@ pub struct Table {
     headers: Vec<String>,
     rows: Vec<Vec<String>>,
     col_widths: Vec<usize>,
+    /// Per-column shrink policy used when the table would overflow the terminal.
+    ///
+    /// `None` = protected: the column is never truncated (e.g. a branch name).
+    /// `Some(min)` = flexible: the column may be truncated with an ellipsis down
+    /// to `min` visible columns to reclaim horizontal space.
+    flex: Vec<Option<usize>>,
 }
 
 impl Table {
     /// Create a new table with the given header labels.
     pub fn new(headers: Vec<&str>) -> Self {
-        let col_widths = headers
+        let col_widths: Vec<usize> = headers
             .iter()
             .map(|h| console::measure_text_width(h))
             .collect();
+        let flex = vec![None; col_widths.len()];
         Self {
             headers: headers.into_iter().map(String::from).collect(),
             rows: vec![],
             col_widths,
+            flex,
         }
+    }
+
+    /// Mark column `col` as flexible: when the full table would overflow the
+    /// terminal, this column may be truncated (with a trailing `…`) down to
+    /// `min_width` visible columns to make room for protected columns.
+    ///
+    /// Columns are protected by default, so tables that never call this keep
+    /// their previous grow-to-fit behaviour.
+    pub fn set_flexible(mut self, col: usize, min_width: usize) -> Self {
+        if let Some(slot) = self.flex.get_mut(col) {
+            *slot = Some(min_width);
+        }
+        self
     }
 
     /// Append a data row, expanding column widths as needed.
@@ -337,15 +358,65 @@ impl Table {
         self.rows.push(row);
     }
 
+    /// Compute the effective per-column widths for the current terminal.
+    ///
+    /// Starts from the natural (grow-to-fit) widths. If the row would overflow
+    /// the terminal, flexible columns are trimmed one visible column at a time,
+    /// always from the currently-widest flexible column, until the table fits
+    /// or no flexible slack remains. Protected columns are never reduced.
+    fn fit_widths(&self) -> Vec<usize> {
+        let mut widths = self.col_widths.clone();
+        let n = widths.len();
+        if n == 0 {
+            return widths;
+        }
+
+        let gap_w = console::measure_text_width(theme::current().spacing.col_gap);
+        let indent_w = console::measure_text_width(indent());
+        let avail = terminal_width();
+        let overhead = indent_w + gap_w * n.saturating_sub(1);
+        let natural: usize = widths.iter().sum::<usize>() + overhead;
+        if natural <= avail {
+            return widths;
+        }
+
+        let mut overflow = natural - avail;
+        while overflow > 0 {
+            // Pick the widest column that still has flexible slack.
+            let mut victim: Option<usize> = None;
+            let mut victim_w = 0;
+            for (i, policy) in self.flex.iter().enumerate() {
+                if let Some(min) = *policy {
+                    if widths[i] > min && widths[i] > victim_w {
+                        victim_w = widths[i];
+                        victim = Some(i);
+                    }
+                }
+            }
+            match victim {
+                Some(i) => {
+                    widths[i] -= 1;
+                    overflow -= 1;
+                }
+                // No flexible slack left; the row will overflow rather than
+                // truncate a protected column (e.g. a branch name).
+                None => break,
+            }
+        }
+        widths
+    }
+
     /// Print the table to stdout: headers, a `─` divider, then each row.
     pub fn print(&self) {
         use super::print::{muted, text_bold};
         let t = theme::current();
         let gap = t.spacing.col_gap;
         let hline = t.borders.horizontal;
+        let widths = self.fit_widths();
         let pad_cell = |cell: &str, col: usize| -> String {
-            let vis = console::measure_text_width(cell);
-            let target = self.col_widths.get(col).copied().unwrap_or(0);
+            let target = widths.get(col).copied().unwrap_or(0);
+            let cell = truncate(cell, target);
+            let vis = console::measure_text_width(&cell);
             format!("{}{}", cell, " ".repeat(target.saturating_sub(vis)))
         };
 
@@ -357,8 +428,7 @@ impl Table {
             .collect();
         println!("{}{}", indent(), header_cells.join(gap));
 
-        let divider: Vec<String> = self
-            .col_widths
+        let divider: Vec<String> = widths
             .iter()
             .map(|w| muted(&hline.to_string().repeat(*w)))
             .collect();

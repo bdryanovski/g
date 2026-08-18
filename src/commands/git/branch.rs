@@ -319,6 +319,9 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
     }
 
     ui::print_blank();
+    // Marker (0), Branch (1), Merged (2) and Hash (3) are protected — never
+    // truncated. Metadata columns are flexible: on narrow terminals they shrink
+    // (Last Commit first, as the widest) so the branch name always fits.
     let mut table = ui::Table::new(vec![
         "",
         "Branch",
@@ -328,7 +331,11 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
         "Author",
         "Date",
         "Tracking",
-    ]);
+    ])
+    .set_flexible(4, 8)
+    .set_flexible(5, 6)
+    .set_flexible(6, 7)
+    .set_flexible(7, 6);
 
     for branch in &branches {
         let marker = if branch.is_head {
@@ -352,13 +359,6 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             ui::paint_text(&branch.name)
         };
 
-        // Truncate long subject lines to keep the table readable.
-        let subj = if branch.subject.len() > 40 {
-            format!("{}…", &branch.subject[..39])
-        } else {
-            branch.subject.clone()
-        };
-
         // Check if branch is merged into current HEAD
         let is_merged = merged_branches.contains(&branch.name) || branch.is_head;
         let merged_indicator = if is_merged {
@@ -367,19 +367,15 @@ pub fn enhanced_branch(extra_args: &[String]) -> Result<()> {
             ui::muted("—")
         };
 
-        let author_display = if branch.author.len() > 18 {
-            format!("{}…", &branch.author[..17])
-        } else {
-            branch.author.clone()
-        };
-
+        // Subject and author are passed in full: the table grows them to fit a
+        // wide terminal and only truncates (with `…`) when space is tight.
         table.add_row(vec![
             marker_colored,
             branch_colored,
             merged_indicator,
             ui::color_hash(&branch.hash),
-            ui::color_subject(&subj),
-            ui::color_author(&author_display),
+            ui::color_subject(&branch.subject),
+            ui::color_author(&branch.author),
             ui::color_date(&branch.date),
             if branch.upstream.is_empty() || branch.upstream == "—" {
                 ui::muted("—")
