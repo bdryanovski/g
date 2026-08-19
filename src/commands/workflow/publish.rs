@@ -4,7 +4,6 @@ use anyhow::{bail, Result};
 
 use crate::cli::workflow::PublishArgs;
 use crate::commands::git::{git_output, is_dry_run};
-use crate::commands::workflow::hooks::{extract_ticket, run_on_publish, HookEnv};
 use crate::commands::workflow::shared::{
     current_branch, detect_branch_type, extract_branch_name, get_active_workflow,
     remote_branch_exists,
@@ -44,32 +43,11 @@ pub fn run(_ctx: &Ctx, args: PublishArgs) -> Result<()> {
         workflow.main_branch.clone()
     };
 
-    // Prepare hook environment
-    let ticket = extract_ticket(&workflow, &branch);
-    let hook_env = if let Some(bt) = branch_type {
-        HookEnv::new(&workflow_name, bt, &branch, &source, &target).with_ticket(ticket.clone())
-    } else {
-        // Create minimal env for non-typed branches
-        HookEnv {
-            workflow: workflow_name.clone(),
-            branch_type: "unknown".to_string(),
-            branch_name: branch.clone(),
-            source,
-            target: target.clone(),
-            ticket: ticket.clone(),
-        }
-    };
-
-    // Run on_publish hooks
-    if !args.no_verify {
-        run_on_publish(&workflow.hooks, &hook_env, is_dry_run())?;
-    }
-
     // Push branch
     push_branch(&branch)?;
 
     // Create or update PR
-    create_or_update_pr(&branch, &target, &args, branch_type, &ticket)?;
+    create_or_update_pr(&branch, &target, &args, branch_type)?;
 
     Ok(())
 }
@@ -102,7 +80,6 @@ fn create_or_update_pr(
     target: &str,
     args: &PublishArgs,
     branch_type: Option<&crate::config::workflow::BranchType>,
-    ticket: &Option<String>,
 ) -> Result<()> {
     // Try to use gh CLI if available
     let gh_available = std::process::Command::new("gh")
@@ -150,7 +127,7 @@ fn create_or_update_pr(
         // Generate title from branch name
         if let Some(bt) = branch_type {
             let name = extract_branch_name(bt, branch);
-            format_pr_title(&bt.name, &name, ticket)
+            format_pr_title(&bt.name, &name)
         } else {
             branch.replace(['/', '-', '_'], " ")
         }
@@ -159,10 +136,6 @@ fn create_or_update_pr(
     // Determine PR body
     let body = args.body.clone().unwrap_or_else(|| {
         let mut body = String::new();
-
-        if let Some(ref t) = ticket {
-            body.push_str(&format!("Closes {}\n\n", t));
-        }
 
         if let Some(bt) = branch_type {
             body.push_str(&format!("## Type\n{}\n\n", bt.name));
@@ -244,12 +217,7 @@ fn create_or_update_pr(
 }
 
 /// Format a PR title from branch type and name.
-fn format_pr_title(branch_type: &str, name: &str, ticket: &Option<String>) -> String {
+fn format_pr_title(branch_type: &str, name: &str) -> String {
     let formatted_name = name.replace(['-', '_'], " ");
-
-    if let Some(ref t) = ticket {
-        format!("{}: {} [{}]", branch_type, formatted_name, t)
-    } else {
-        format!("{}: {}", branch_type, formatted_name)
-    }
+    format!("{}: {}", branch_type, formatted_name)
 }

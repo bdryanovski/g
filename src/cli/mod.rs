@@ -36,7 +36,6 @@ mod commit;
 mod compare;
 mod config;
 mod developer;
-mod hooks;
 mod notes;
 mod stack;
 mod stats;
@@ -60,7 +59,6 @@ pub use config::ConfigArgs;
 #[allow(unused_imports)]
 pub use config::ConfigCmd;
 pub use developer::DeveloperCommands;
-pub use hooks::HooksCommands;
 pub use notes::NotesCommands;
 pub use stack::StackCommands;
 pub use stats::StatsArgs;
@@ -235,14 +233,6 @@ pub enum Commands {
     /// strategies, and lifecycle hooks.
     #[command(subcommand)]
     Workflow(WorkflowCommands),
-
-    /// Manage personal git hooks
-    ///
-    /// Configure and run personal hooks that coexist with team hooks (like Husky).
-    /// Hooks are stored in .g/hooks.toml (gitignored) or ~/.config/g/hooks/.
-    #[command(subcommand)]
-    Hooks(HooksCommands),
-
     /// Print a shell completion script and exit
     ///
     /// Pipe the output to the right location for your shell:
@@ -305,7 +295,6 @@ impl Commands {
             Self::Stats(_) => ("stats", None),
             Self::Config(_) => ("config", None),
             Self::Workflow(sub) => ("workflow", Some(sub.name())),
-            Self::Hooks(sub) => ("hooks", Some(sub.name())),
             Self::Completions { .. } => ("completions", None),
             // Dynamic passthrough — subcommand isn't a known &'static str.
             Self::Git(_) => ("git", None),

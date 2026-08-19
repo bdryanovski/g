@@ -1,27 +1,27 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_g_global_optspecs
-    string join \n C= c= dry-run no-interactive h/help V/version
+	string join \n C= c= dry-run no-interactive h/help V/version
 end
 
 function __fish_g_needs_command
-    # Figure out if the current invocation already has a command.
-    set -l cmd (commandline -opc)
-    set -e cmd[1]
-    argparse -s (__fish_g_global_optspecs) -- $cmd 2>/dev/null
-    or return
-    if set -q argv[1]
-        # Also print the command, so this can be used to figure out what it is.
-        echo $argv[1]
-        return 1
-    end
-    return 0
+	# Figure out if the current invocation already has a command.
+	set -l cmd (commandline -opc)
+	set -e cmd[1]
+	argparse -s (__fish_g_global_optspecs) -- $cmd 2>/dev/null
+	or return
+	if set -q argv[1]
+		# Also print the command, so this can be used to figure out what it is.
+		echo $argv[1]
+		return 1
+	end
+	return 0
 end
 
 function __fish_g_using_subcommand
-    set -l cmd (__fish_g_needs_command)
-    test -z "$cmd"
-    and return 1
-    contains -- $cmd[1] $argv
+	set -l cmd (__fish_g_needs_command)
+	test -z "$cmd"
+	and return 1
+	contains -- $cmd[1] $argv
 end
 
 complete -c g -n "__fish_g_needs_command" -s C -d 'Run as if git was started in <path>' -r
@@ -47,7 +47,6 @@ complete -c g -n "__fish_g_needs_command" -f -a "config" -d 'Open interactive co
 complete -c g -n "__fish_g_needs_command" -f -a "stats" -d 'Display a rich usage-statistics report'
 complete -c g -n "__fish_g_needs_command" -f -a "developer" -d 'Developer / debugging utilities'
 complete -c g -n "__fish_g_needs_command" -f -a "workflow" -d 'Manage git workflows (branching strategies)'
-complete -c g -n "__fish_g_needs_command" -f -a "hooks" -d 'Manage personal git hooks'
 complete -c g -n "__fish_g_needs_command" -f -a "completions" -d 'Print a shell completion script and exit'
 complete -c g -n "__fish_g_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand workspace; and not __fish_seen_subcommand_from init list create switch delete status rename help" -s C -d 'Run as if git was started in <path>' -r
@@ -618,73 +617,31 @@ complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand
 complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "export" -d 'Export workflow configuration to TOML'
 complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "import" -d 'Import workflow from a TOML file'
 complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -f -a "list" -d 'List all configured hooks for this repository'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -f -a "run" -d 'Run a specific hook manually'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -f -a "init" -d 'Create a hooks.toml template in .g/'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -f -a "status" -d 'Show where hooks config is loaded from'
-complete -c g -n "__fish_g_using_subcommand hooks; and not __fish_seen_subcommand_from list run init status help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from list" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from list" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from list" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from list" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from list" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -l skip-empty -d 'Skip the hook if no files match patterns'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -s h -l help -d 'Print help'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from run" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from init" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from init" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from init" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from init" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from init" -s h -l help -d 'Print help'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from init" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from status" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from status" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from status" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from status" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from status" -s h -l help -d 'Print help'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from status" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from help" -f -a "list" -d 'List all configured hooks for this repository'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from help" -f -a "run" -d 'Run a specific hook manually'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from help" -f -a "init" -d 'Create a hooks.toml template in .g/'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from help" -f -a "status" -d 'Show where hooks config is loaded from'
-complete -c g -n "__fish_g_using_subcommand hooks; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand completions" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand completions" -s c -d 'Override a configuration value (key=value)' -r
 complete -c g -n "__fish_g_using_subcommand completions" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand completions" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand completions" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c g -n "__fish_g_using_subcommand completions" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "workspace" -d 'Manage worktree-based workspaces (parallel branch checkouts)'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "stack" -d 'Manage stacked pull requests'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "commit" -d 'Interactive guided commit with message templates'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "add" -d 'Stage files interactively, or forward arguments to `git add`'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "stage" -d 'Interactive file-tree picker for staging and unstaging'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "compare" -d 'Compare two branches visually'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "log" -d 'Enhanced git log with beautiful formatting'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "status" -d 'Enhanced git status with icons and colors'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "diff" -d 'Enhanced git diff using your configured diff tool'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "branch" -d 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "show" -d 'Enhanced git show'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "push" -d 'Enhanced git push with progress display'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "notes" -d 'Manage private review notes left from `g diff`\'s `c` key'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "config" -d 'Open interactive config editor'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "stats" -d 'Display a rich usage-statistics report'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "developer" -d 'Developer / debugging utilities'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "workflow" -d 'Manage git workflows (branching strategies)'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "hooks" -d 'Manage personal git hooks'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "completions" -d 'Print a shell completion script and exit'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow hooks completions help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "workspace" -d 'Manage worktree-based workspaces (parallel branch checkouts)'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "stack" -d 'Manage stacked pull requests'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "commit" -d 'Interactive guided commit with message templates'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "add" -d 'Stage files interactively, or forward arguments to `git add`'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "stage" -d 'Interactive file-tree picker for staging and unstaging'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "compare" -d 'Compare two branches visually'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "log" -d 'Enhanced git log with beautiful formatting'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "status" -d 'Enhanced git status with icons and colors'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "diff" -d 'Enhanced git diff using your configured diff tool'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "branch" -d 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "show" -d 'Enhanced git show'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "push" -d 'Enhanced git push with progress display'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "notes" -d 'Manage private review notes left from `g diff`\'s `c` key'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "config" -d 'Open interactive config editor'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "stats" -d 'Display a rich usage-statistics report'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "developer" -d 'Developer / debugging utilities'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "workflow" -d 'Manage git workflows (branching strategies)'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "completions" -d 'Print a shell completion script and exit'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workspace" -f -a "init" -d 'Reorganise an existing repo into a container/worktree layout'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workspace" -f -a "list" -d 'List all workspaces (git worktrees)'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workspace" -f -a "create" -d 'Create a new workspace as a sibling worktree directory'
@@ -733,7 +690,3 @@ complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_fro
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "clone" -d 'Clone a workflow with a new name'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "export" -d 'Export workflow configuration to TOML'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "import" -d 'Import workflow from a TOML file'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from hooks" -f -a "list" -d 'List all configured hooks for this repository'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from hooks" -f -a "run" -d 'Run a specific hook manually'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from hooks" -f -a "init" -d 'Create a hooks.toml template in .g/'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from hooks" -f -a "status" -d 'Show where hooks config is loaded from'

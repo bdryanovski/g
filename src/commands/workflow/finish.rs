@@ -4,7 +4,6 @@ use anyhow::{bail, Result};
 
 use crate::cli::workflow::FinishArgs;
 use crate::commands::git::{git_output, is_dry_run, require_clean_tree};
-use crate::commands::workflow::hooks::{extract_ticket, run_post_finish, run_pre_finish, HookEnv};
 use crate::commands::workflow::shared::{current_branch, detect_branch_type, get_active_workflow};
 use crate::commands::Ctx;
 use crate::config::workflow::MergeStrategy;
@@ -61,22 +60,6 @@ pub fn run(ctx: &Ctx, args: FinishArgs) -> Result<()> {
     // Get source for hooks
     let source = workflow.effective_source(branch_type);
 
-    // Create hook environment
-    let ticket = extract_ticket(&workflow, &branch);
-    let hook_env = HookEnv::new(
-        &workflow_name,
-        branch_type,
-        &branch,
-        source,
-        &target.to_string(),
-    )
-    .with_ticket(ticket);
-
-    // Run pre-finish hooks
-    if !args.no_verify {
-        run_pre_finish(&workflow.hooks, &hook_env, is_dry_run())?;
-    }
-
     // Perform merge(s)
     let targets = target.as_slice();
     for target_branch in &targets {
@@ -93,10 +76,6 @@ pub fn run(ctx: &Ctx, args: FinishArgs) -> Result<()> {
     if should_delete {
         delete_branch(ctx, &branch)?;
     }
-
-    // Run post-finish hooks
-    run_post_finish(&workflow.hooks, &hook_env, is_dry_run())?;
-
     // Print summary
     println!();
     ui::print_success(&format!("Finished '{}' -> {}", branch, targets.join(", ")));

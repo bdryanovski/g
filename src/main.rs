@@ -39,7 +39,6 @@ mod commands;
 mod config;
 mod diff;
 mod github;
-mod hooks;
 mod storage;
 mod ui;
 
@@ -277,7 +276,6 @@ fn run() -> Result<()> {
             Commands::Stats(args) => commands::stats::stats(&ctx, &args)?,
             Commands::Config(args) => commands::config::dispatch(args)?,
             Commands::Workflow(cmd) => commands::workflow::dispatch(&ctx, cmd)?,
-            Commands::Hooks(cmd) => commands::hooks::dispatch(&ctx, cmd)?,
 
             Commands::Completions { shell } => {
                 cli::print_completions(shell);

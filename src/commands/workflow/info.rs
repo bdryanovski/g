@@ -159,19 +159,6 @@ pub fn run(_ctx: &Ctx, args: InfoArgs) -> Result<()> {
         }
     }
 
-    // Hooks
-    if let Some(ref hooks) = workflow.hooks {
-        let hook_count = count_hooks(hooks);
-        if hook_count > 0 {
-            panel.print_empty();
-            panel.print_line(&format!(
-                "   {} {} hook(s) configured",
-                muted("Hooks:"),
-                hook_count
-            ));
-        }
-    }
-
     panel.print_empty();
     panel.print_footer();
     println!();
@@ -229,24 +216,4 @@ fn print_pros_cons_in_panel(panel: &Panel, pros: &[&str], cons: &[&str]) {
     for con in cons {
         panel.print_line(&format!("   {} {}", danger("-"), con));
     }
-}
-
-fn count_hooks(hooks: &crate::config::workflow::WorkflowHooks) -> usize {
-    let mut count = 0;
-    if let Some(ref cmds) = hooks.pre_start {
-        count += cmds.len();
-    }
-    if let Some(ref cmds) = hooks.post_start {
-        count += cmds.len();
-    }
-    if let Some(ref cmds) = hooks.pre_finish {
-        count += cmds.len();
-    }
-    if let Some(ref cmds) = hooks.post_finish {
-        count += cmds.len();
-    }
-    if let Some(ref cmds) = hooks.on_publish {
-        count += cmds.len();
-    }
-    count
 }

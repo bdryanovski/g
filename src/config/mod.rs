@@ -30,9 +30,6 @@ use std::path::PathBuf;
 /// `g config --menu`.
 pub mod settings;
 
-/// Git hooks configuration for personal, non-invasive hooks.
-pub mod hooks;
-
 /// Workflow configuration types for customizable git branching strategies.
 pub mod workflow;
 
@@ -617,27 +614,6 @@ pub fn save_repo_workflows(workflows: &workflow::WorkflowsConfig) -> Result<()> 
     Ok(())
 }
 
-// ─── Hooks config loading ────────────────────────────────────────────────────
-
-/// Return the full path to the repo-local hooks config file (`.g/hooks.toml`).
-///
-/// # Errors
-///
-/// Returns an error if not in a git repository.
-pub fn repo_hooks_path() -> Result<PathBuf> {
-    let repo_root = crate::commands::git::repo_root()?;
-    Ok(PathBuf::from(repo_root).join(".g").join("hooks.toml"))
-}
-
-/// Return the hooks config directory (`~/.config/g/hooks/`).
-///
-/// # Errors
-///
-/// Returns an error if the config directory cannot be determined.
-pub fn hooks_config_dir() -> Result<PathBuf> {
-    Ok(config_dir()?.join("hooks"))
-}
-
 /// Get a sanitized repo name for use in config file paths.
 ///
 /// Converts the repo root path to a safe filename by replacing path separators
@@ -665,60 +641,6 @@ fn repo_config_name() -> Result<String> {
         .collect();
 
     Ok(sanitized)
-}
-
-/// Load hooks configuration, checking multiple locations in priority order.
-///
-/// Load order (first found wins):
-/// 1. `.g/hooks.toml` — repo-local (gitignored)
-/// 2. `~/.config/g/hooks/<repo-name>.toml` — per-repo global
-/// 3. `~/.config/g/hooks/default.toml` — fallback for all repos
-///
-/// Returns an empty config if no hooks file is found.
-///
-/// # Errors
-///
-/// Returns an error if a config file exists but cannot be parsed.
-pub fn load_hooks() -> Result<hooks::HooksConfig> {
-    // 1. Check repo-local `.g/hooks.toml`
-    if let Ok(repo_path) = repo_hooks_path() {
-        if repo_path.exists() {
-            let raw = fs::read_to_string(&repo_path)
-                .with_context(|| format!("Failed to read {}", repo_path.display()))?;
-            let config: hooks::HooksConfig = toml::from_str(&raw)
-                .with_context(|| format!("Failed to parse {}", repo_path.display()))?;
-            return Ok(config);
-        }
-    }
-
-    // 2. Check `~/.config/g/hooks/<repo-name>.toml`
-    if let Ok(hooks_dir) = hooks_config_dir() {
-        if let Ok(repo_name) = repo_config_name() {
-            let repo_hooks_path = hooks_dir.join(format!("{}.toml", repo_name));
-            if repo_hooks_path.exists() {
-                let raw = fs::read_to_string(&repo_hooks_path)
-                    .with_context(|| format!("Failed to read {}", repo_hooks_path.display()))?;
-                let config: hooks::HooksConfig = toml::from_str(&raw)
-                    .with_context(|| format!("Failed to parse {}", repo_hooks_path.display()))?;
-                return Ok(config);
-            }
-        }
-    }
-
-    // 3. Check `~/.config/g/hooks/default.toml`
-    if let Ok(hooks_dir) = hooks_config_dir() {
-        let default_path = hooks_dir.join("default.toml");
-        if default_path.exists() {
-            let raw = fs::read_to_string(&default_path)
-                .with_context(|| format!("Failed to read {}", default_path.display()))?;
-            let config: hooks::HooksConfig = toml::from_str(&raw)
-                .with_context(|| format!("Failed to parse {}", default_path.display()))?;
-            return Ok(config);
-        }
-    }
-
-    // No hooks configured
-    Ok(hooks::HooksConfig::default())
 }
 
 /// Rewrite the first `theme = …` line in `raw` to use `theme`, preserving

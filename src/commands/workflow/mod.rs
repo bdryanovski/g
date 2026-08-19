@@ -12,7 +12,6 @@
 //! workflow/
 //!   mod.rs        <- this file: dispatch() + module wiring
 //!   shared.rs     <- cross-subcommand helpers (load workflow, resolve branch type, etc.)
-//!   hooks.rs      <- hook execution engine
 //!   start.rs      <- `g workflow start <type> <name>`
 //!   finish.rs     <- `g workflow finish`
 //!   sync.rs       <- `g workflow sync`
@@ -40,7 +39,6 @@ mod create;
 mod edit;
 mod export;
 mod finish;
-mod hooks;
 mod import;
 mod info;
 mod init;

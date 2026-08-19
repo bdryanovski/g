@@ -4,7 +4,6 @@ use anyhow::{bail, Result};
 
 use crate::cli::workflow::StartArgs;
 use crate::commands::git::{git_output, is_dry_run};
-use crate::commands::workflow::hooks::{extract_ticket, run_post_start, run_pre_start, HookEnv};
 use crate::commands::workflow::shared::{
     branch_exists, get_active_workflow, make_branch_name, resolve_source_branch, verify_rules,
 };
@@ -64,14 +63,6 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
         .map(|t| t.to_string())
         .unwrap_or_default();
 
-    // Create hook environment
-    let ticket = extract_ticket(&workflow, &branch_name);
-    let hook_env = HookEnv::new(&workflow_name, branch_type, &branch_name, &source, &target)
-        .with_ticket(ticket);
-
-    // Run pre-start hooks
-    run_pre_start(&workflow.hooks, &hook_env, is_dry_run())?;
-
     // Fetch latest from remote
     ui::print_info("Fetching latest from origin...");
     let _ = git_output(&["fetch", "origin", &source]);
@@ -101,9 +92,6 @@ pub fn run(_ctx: &Ctx, args: StartArgs) -> Result<()> {
 
         ui::print_success(&format!("Created and switched to '{}'", branch_name));
     }
-
-    // Run post-start hooks
-    run_post_start(&workflow.hooks, &hook_env, is_dry_run())?;
 
     // Print next steps
     println!();
