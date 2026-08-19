@@ -34,10 +34,8 @@ set edit:completion:arg-completer[g] = {|@words|
             cand compare 'Compare two branches visually'
             cand log 'Enhanced git log with beautiful formatting'
             cand status 'Enhanced git status with icons and colors'
-            cand diff 'Enhanced git diff using your configured diff tool'
             cand branch 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
             cand push 'Enhanced git push with progress display'
-            cand notes 'Manage private review notes left from `g diff`''s `c` key'
             cand config 'Open interactive config editor'
             cand stats 'Display a rich usage-statistics report'
             cand developer 'Developer / debugging utilities'
@@ -492,16 +490,6 @@ set edit:completion:arg-completer[g] = {|@words|
             cand -V 'Print version'
             cand --version 'Print version'
         }
-        &'g;diff'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
         &'g;branch'= {
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
@@ -545,107 +533,6 @@ set edit:completion:arg-completer[g] = {|@words|
             cand --help 'Print help'
             cand -V 'Print version'
             cand --version 'Print version'
-        }
-        &'g;notes'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help (see more with ''--help'')'
-            cand --help 'Print help (see more with ''--help'')'
-            cand -V 'Print version'
-            cand --version 'Print version'
-            cand list 'List every saved note in this repo (newest first)'
-            cand show 'Show a single note by id — prints the body and its anchor'
-            cand edit 'Edit the body of an existing note in `$EDITOR`'
-            cand delete 'Delete a single note by id'
-            cand clear 'Delete all notes for a given file (or every note when no path is given). Requires `--force` to actually run — protects against fat-finger typos'
-            cand publish 'Publish a saved private note to the GitHub PR for the current branch'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'g;notes;list'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'g;notes;show'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'g;notes;edit'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'g;notes;delete'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'g;notes;clear'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --force 'Skip the confirmation prompt'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'g;notes;publish'= {
-            cand -C 'Run as if git was started in <path>'
-            cand -c 'Override a configuration value (key=value)'
-            cand --dry-run 'Preview what commands would run without making any changes'
-            cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-            cand -h 'Print help (see more with ''--help'')'
-            cand --help 'Print help (see more with ''--help'')'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'g;notes;help'= {
-            cand list 'List every saved note in this repo (newest first)'
-            cand show 'Show a single note by id — prints the body and its anchor'
-            cand edit 'Edit the body of an existing note in `$EDITOR`'
-            cand delete 'Delete a single note by id'
-            cand clear 'Delete all notes for a given file (or every note when no path is given). Requires `--force` to actually run — protects against fat-finger typos'
-            cand publish 'Publish a saved private note to the GitHub PR for the current branch'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'g;notes;help;list'= {
-        }
-        &'g;notes;help;show'= {
-        }
-        &'g;notes;help;edit'= {
-        }
-        &'g;notes;help;delete'= {
-        }
-        &'g;notes;help;clear'= {
-        }
-        &'g;notes;help;publish'= {
-        }
-        &'g;notes;help;help'= {
         }
         &'g;config'= {
             cand --get 'Print the exact current value of `<key>` (scripting-friendly). Pair with a key positional: `g config --get ui.log_limit`'
@@ -765,10 +652,8 @@ set edit:completion:arg-completer[g] = {|@words|
             cand compare 'Compare two branches visually'
             cand log 'Enhanced git log with beautiful formatting'
             cand status 'Enhanced git status with icons and colors'
-            cand diff 'Enhanced git diff using your configured diff tool'
             cand branch 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
             cand push 'Enhanced git push with progress display'
-            cand notes 'Manage private review notes left from `g diff`''s `c` key'
             cand config 'Open interactive config editor'
             cand stats 'Display a rich usage-statistics report'
             cand developer 'Developer / debugging utilities'
@@ -860,34 +745,12 @@ set edit:completion:arg-completer[g] = {|@words|
         }
         &'g;help;status'= {
         }
-        &'g;help;diff'= {
-        }
         &'g;help;branch'= {
             cand squash 'Collapse all commits on the current branch into one (from merge-base with base)'
         }
         &'g;help;branch;squash'= {
         }
         &'g;help;push'= {
-        }
-        &'g;help;notes'= {
-            cand list 'List every saved note in this repo (newest first)'
-            cand show 'Show a single note by id — prints the body and its anchor'
-            cand edit 'Edit the body of an existing note in `$EDITOR`'
-            cand delete 'Delete a single note by id'
-            cand clear 'Delete all notes for a given file (or every note when no path is given). Requires `--force` to actually run — protects against fat-finger typos'
-            cand publish 'Publish a saved private note to the GitHub PR for the current branch'
-        }
-        &'g;help;notes;list'= {
-        }
-        &'g;help;notes;show'= {
-        }
-        &'g;help;notes;edit'= {
-        }
-        &'g;help;notes;delete'= {
-        }
-        &'g;help;notes;clear'= {
-        }
-        &'g;help;notes;publish'= {
         }
         &'g;help;config'= {
             cand set 'Set a config key, validated against the editable schema'

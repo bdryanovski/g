@@ -21,7 +21,6 @@
 //!   config.rs     ← ConfigArgs
 //!   stats.rs      ← StatsArgs
 //!   developer.rs  ← DeveloperCommands
-//!   notes.rs      ← NotesCommands
 //! ```
 //!
 //! Every per-domain struct/enum is re-exported below so external call sites
@@ -36,7 +35,6 @@ mod commit;
 mod compare;
 mod config;
 mod developer;
-mod notes;
 mod stack;
 mod stats;
 mod styles;
@@ -58,7 +56,6 @@ pub use config::ConfigArgs;
 #[allow(unused_imports)]
 pub use config::ConfigCmd;
 pub use developer::DeveloperCommands;
-pub use notes::NotesCommands;
 pub use stack::StackCommands;
 pub use stats::StatsArgs;
 pub use workspace::WorkspaceCommands;
@@ -103,7 +100,6 @@ pub struct GitPassArgs {
                   \x20 g status                    enhanced status with icons\n\
                   \x20 g add                       interactive file picker to stage\n\
                   \x20 g commit                    interactive conventional commit\n\
-                  \x20 g diff                      enhanced diff\n\
                   \x20 g branch                    list branches with ahead/behind\n\
                   \x20 g compare main              compare current branch to main\n\
                   \x20 g stack new my-feature      start a stacked PR workflow\n\
@@ -181,23 +177,11 @@ pub enum Commands {
     /// Enhanced git status with icons and colors
     Status(GitPassArgs),
 
-    /// Enhanced git diff using your configured diff tool
-    Diff(GitPassArgs),
-
     /// Enhanced branch listing, `git branch` passthrough, or `branch squash`
     Branch(BranchArgs),
 
     /// Enhanced git push with progress display
     Push(GitPassArgs),
-
-    /// Manage private review notes left from `g diff`'s `c` key.
-    ///
-    /// These notes live in the local SQLite DB and are never published to
-    /// GitHub.  Use `g diff` (and the `c` key inside the TUI) to create them;
-    /// this command surfaces list/edit/delete/clear operations from
-    /// outside the TUI.
-    #[command(subcommand)]
-    Notes(NotesCommands),
 
     /// Open interactive config editor
     Config(ConfigArgs),
@@ -275,10 +259,8 @@ impl Commands {
             Self::Compare(_) => ("compare", None),
             Self::Log(_) => ("log", None),
             Self::Status(_) => ("status", None),
-            Self::Diff(_) => ("diff", None),
             Self::Branch(_) => ("branch", None),
             Self::Push(_) => ("push", None),
-            Self::Notes(sub) => ("notes", Some(sub.name())),
             Self::Stats(_) => ("stats", None),
             Self::Config(_) => ("config", None),
             Self::Completions { .. } => ("completions", None),

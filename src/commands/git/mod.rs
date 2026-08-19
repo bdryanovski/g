@@ -14,7 +14,6 @@
 //!   log.rs        ← `g log` (enhanced)
 //!   status.rs     ← `g status` (enhanced, --porcelain=v2 parsing)
 //!   add.rs        ← `g add` + interactive stager
-//!   diff.rs       ← `g diff` (builtin syntect renderer / passthrough / external pipe)
 //!   branch.rs     ← `g branch` (enhanced + `branch squash`)
 //!   show.rs       ← `g show` (metadata + diff)
 //! ```
@@ -27,13 +26,11 @@
 
 mod add;
 mod branch;
-mod diff;
 mod dry_run;
 mod exec;
 mod log;
 mod push;
 mod repo;
-mod show;
 mod status;
 
 // ── Re-exports: dry-run controls ─────────────────────────────────────────────
@@ -52,8 +49,6 @@ pub use repo::{current_branch, default_branch, is_inside_git_repo, repo_root};
 // ── Re-exports: enhanced commands ────────────────────────────────────────────
 pub use add::dispatch_add;
 pub use branch::{dispatch_branch, resolve_squash_message};
-pub use diff::enhanced_diff;
 pub use log::enhanced_log;
 pub use push::enhanced_push;
-pub use show::enhanced_show;
 pub use status::enhanced_status;

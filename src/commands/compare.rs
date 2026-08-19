@@ -86,12 +86,6 @@ pub fn compare(ctx: &crate::commands::Ctx<'_>, args: &CompareArgs) -> Result<()>
         show_file_stat(&base, &head)?;
     }
 
-    // ─── Full diff ────────────────────────────────────────────────────────────
-
-    if args.diff {
-        show_full_diff(&base, &head, ctx)?;
-    }
-
     ui::print_blank();
     Ok(())
 }
@@ -181,17 +175,6 @@ fn show_file_stat(base: &str, head: &str) -> Result<()> {
         }
     }
     Ok(())
-}
-
-/// Delegate to the enhanced diff for a full patch view.
-///
-/// # Errors
-///
-/// Propagates any error from [`gitcmd::enhanced_diff`].
-fn show_full_diff(base: &str, head: &str, ctx: &crate::commands::Ctx<'_>) -> Result<()> {
-    ui::print_blank();
-    let diff_args = vec![format!("{}...{}", base, head)];
-    crate::commands::git::enhanced_diff(ctx, &diff_args)
 }
 
 /// Colorise a single diffstat file line.

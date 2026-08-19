@@ -19,7 +19,6 @@
 
 pub mod db;
 pub mod repos;
-pub mod reviews;
 pub mod stacks;
 pub mod stats;
 pub mod workspaces;
@@ -32,6 +31,5 @@ mod toml_import;
 // Re-export the most commonly used types so callers can write
 // `use crate::storage::{WorkspaceRow, StackRow, …}` without drilling into
 // sub-modules.
-pub use reviews::{LineKind, NewReviewNote, ReviewNoteRow};
 pub use stacks::{StackBranchRow, StackRow};
 pub use workspaces::WorkspaceRow;

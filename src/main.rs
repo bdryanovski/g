@@ -37,7 +37,6 @@
 mod cli;
 mod commands;
 mod config;
-mod diff;
 mod github;
 mod storage;
 mod ui;
@@ -267,10 +266,8 @@ fn run() -> Result<()> {
 
             Commands::Log(args) => commands::git::enhanced_log(&args.args)?,
             Commands::Status(args) => commands::git::enhanced_status(&args.args)?,
-            Commands::Diff(args) => commands::git::enhanced_diff(&ctx, &args.args)?,
             Commands::Branch(args) => commands::git::dispatch_branch(args)?,
             Commands::Push(args) => commands::git::enhanced_push(&args.args)?,
-            Commands::Notes(cmd) => commands::notes::dispatch(&ctx, cmd)?,
 
             Commands::Stats(args) => commands::stats::stats(&ctx, &args)?,
             Commands::Config(args) => commands::config::dispatch(args)?,
@@ -333,7 +330,6 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "log",
         "stats",
         "status",
-        "diff",
         "branch",
         "config",
         "developer",
