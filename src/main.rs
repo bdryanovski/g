@@ -269,7 +269,6 @@ fn run() -> Result<()> {
             Commands::Status(args) => commands::git::enhanced_status(&args.args)?,
             Commands::Diff(args) => commands::git::enhanced_diff(&ctx, &args.args)?,
             Commands::Branch(args) => commands::git::dispatch_branch(args)?,
-            Commands::Show(args) => commands::git::enhanced_show(&ctx, &args.args)?,
             Commands::Push(args) => commands::git::enhanced_push(&args.args)?,
             Commands::Notes(cmd) => commands::notes::dispatch(&ctx, cmd)?,
 
@@ -336,7 +335,6 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
         "status",
         "diff",
         "branch",
-        "show",
         "config",
         "developer",
         "completions",

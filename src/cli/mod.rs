@@ -187,9 +187,6 @@ pub enum Commands {
     /// Enhanced branch listing, `git branch` passthrough, or `branch squash`
     Branch(BranchArgs),
 
-    /// Enhanced git show
-    Show(GitPassArgs),
-
     /// Enhanced git push with progress display
     Push(GitPassArgs),
 
@@ -197,7 +194,7 @@ pub enum Commands {
     ///
     /// These notes live in the local SQLite DB and are never published to
     /// GitHub.  Use `g diff` (and the `c` key inside the TUI) to create them;
-    /// this command surfaces list/show/edit/delete/clear operations from
+    /// this command surfaces list/edit/delete/clear operations from
     /// outside the TUI.
     #[command(subcommand)]
     Notes(NotesCommands),
@@ -280,7 +277,6 @@ impl Commands {
             Self::Status(_) => ("status", None),
             Self::Diff(_) => ("diff", None),
             Self::Branch(_) => ("branch", None),
-            Self::Show(_) => ("show", None),
             Self::Push(_) => ("push", None),
             Self::Notes(sub) => ("notes", Some(sub.name())),
             Self::Stats(_) => ("stats", None),
