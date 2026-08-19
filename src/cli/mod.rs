@@ -40,7 +40,6 @@ mod notes;
 mod stack;
 mod stats;
 mod styles;
-pub mod workflow;
 mod workspace;
 
 // ── Public re-exports — preserve every `crate::cli::X` path used elsewhere.
@@ -62,7 +61,6 @@ pub use developer::DeveloperCommands;
 pub use notes::NotesCommands;
 pub use stack::StackCommands;
 pub use stats::StatsArgs;
-pub use workflow::WorkflowCommands;
 pub use workspace::WorkspaceCommands;
 
 // ─── Git pass-through ─────────────────────────────────────────────────────────
@@ -226,13 +224,6 @@ pub enum Commands {
     #[command(subcommand)]
     Developer(DeveloperCommands),
 
-    /// Manage git workflows (branching strategies)
-    ///
-    /// Define and use custom workflows like Git Flow, GitHub Flow, trunk-based,
-    /// or create your own branching model with custom branch types, merge
-    /// strategies, and lifecycle hooks.
-    #[command(subcommand)]
-    Workflow(WorkflowCommands),
     /// Print a shell completion script and exit
     ///
     /// Pipe the output to the right location for your shell:
@@ -294,7 +285,6 @@ impl Commands {
             Self::Notes(sub) => ("notes", Some(sub.name())),
             Self::Stats(_) => ("stats", None),
             Self::Config(_) => ("config", None),
-            Self::Workflow(sub) => ("workflow", Some(sub.name())),
             Self::Completions { .. } => ("completions", None),
             // Dynamic passthrough — subcommand isn't a known &'static str.
             Self::Git(_) => ("git", None),

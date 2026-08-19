@@ -275,7 +275,6 @@ fn run() -> Result<()> {
 
             Commands::Stats(args) => commands::stats::stats(&ctx, &args)?,
             Commands::Config(args) => commands::config::dispatch(args)?,
-            Commands::Workflow(cmd) => commands::workflow::dispatch(&ctx, cmd)?,
 
             Commands::Completions { shell } => {
                 cli::print_completions(shell);
@@ -328,7 +327,6 @@ fn should_passthrough_to_git(raw_args: &[String]) -> bool {
     const KNOWN: &[&str] = &[
         "workspace",
         "stack",
-        "workflow",
         "commit",
         "add",
         "stage",

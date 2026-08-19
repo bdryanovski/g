@@ -46,7 +46,6 @@ complete -c g -n "__fish_g_needs_command" -f -a "notes" -d 'Manage private revie
 complete -c g -n "__fish_g_needs_command" -f -a "config" -d 'Open interactive config editor'
 complete -c g -n "__fish_g_needs_command" -f -a "stats" -d 'Display a rich usage-statistics report'
 complete -c g -n "__fish_g_needs_command" -f -a "developer" -d 'Developer / debugging utilities'
-complete -c g -n "__fish_g_needs_command" -f -a "workflow" -d 'Manage git workflows (branching strategies)'
 complete -c g -n "__fish_g_needs_command" -f -a "completions" -d 'Print a shell completion script and exit'
 complete -c g -n "__fish_g_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand workspace; and not __fish_seen_subcommand_from init list create switch delete status rename help" -s C -d 'Run as if git was started in <path>' -r
@@ -465,183 +464,30 @@ complete -c g -n "__fish_g_using_subcommand developer; and __fish_seen_subcomman
 complete -c g -n "__fish_g_using_subcommand developer; and __fish_seen_subcommand_from help" -f -a "db" -d 'Open an interactive SQLite shell connected to the internal g.db database'
 complete -c g -n "__fish_g_using_subcommand developer; and __fish_seen_subcommand_from help" -f -a "repos" -d 'List all repositories tracked in the internal database'
 complete -c g -n "__fish_g_using_subcommand developer; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "start" -d 'Start a new branch using workflow rules'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "finish" -d 'Finish the current branch (merge to target)'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "sync" -d 'Update branch from its source'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "publish" -d 'Push branch and create/update PR'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "status" -d 'Show workflow status of current branch'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "list" -d 'List all available workflows'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "info" -d 'Show detailed workflow information'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "use" -d 'Switch to a different workflow'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "create" -d 'Create a new workflow interactively'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "edit" -d 'Edit an existing workflow'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "init" -d 'Initialize workflow configuration'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "validate" -d 'Validate workflow configuration'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "clone" -d 'Clone a workflow with a new name'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "export" -d 'Export workflow configuration to TOML'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "import" -d 'Import workflow from a TOML file'
-complete -c g -n "__fish_g_using_subcommand workflow; and not __fish_seen_subcommand_from start finish sync publish status list info use create edit init validate clone export import help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -l from -d 'Override the source branch' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -l no-verify -d 'Skip validation checks'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from start" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -l strategy -d 'Override the merge strategy' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -l no-delete -d 'Don\'t delete the branch after merge'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -l no-tag -d 'Don\'t create a tag even if configured'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -l no-verify -d 'Skip pre-finish hooks'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from finish" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -l rebase -d 'Force rebase even if merge is the default strategy'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -l merge -d 'Force merge even if rebase is the default strategy'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from sync" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l title -d 'PR title (defaults to branch name)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l body -d 'PR body' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l reviewers -d 'Add reviewers (comma-separated)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l labels -d 'Add labels (comma-separated)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l draft -d 'Create PR as draft'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l no-verify -d 'Skip on_publish hooks'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from publish" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from status" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from status" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from status" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from status" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from status" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from status" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from list" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from list" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from list" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from list" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from list" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from info" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from info" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from info" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from info" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from info" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from info" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -l local -d 'Set for this repository only (saves to .g/workflow.toml)'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from use" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -l from -d 'Start from a preset' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -l local -d 'Save to repo-local config (.g/workflow.toml)'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -l no-interactive -d 'Skip interactive wizard, save defaults immediately'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from create" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -l raw -d 'Edit raw TOML in $EDITOR'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from edit" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -l preset -d 'Use a preset as starting point' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -l local -d 'Create .g/ folder in repository for team-shared config'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -l no-interactive -d 'Skip interactive setup'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from init" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -l workflow -d 'Workflow name to validate (within config)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from validate" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from clone" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from clone" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from clone" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from clone" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from clone" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from clone" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -s o -l output -d 'Output file (defaults to stdout)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from export" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -l name -d 'Override workflow name' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -s C -d 'Run as if git was started in <path>' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -s c -d 'Override a configuration value (key=value)' -r
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -l local -d 'Save to repo-local config (.g/workflow.toml)'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -l dry-run -d 'Preview what commands would run without making any changes'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -s h -l help -d 'Print help (see more with \'--help\')'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from import" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "start" -d 'Start a new branch using workflow rules'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "finish" -d 'Finish the current branch (merge to target)'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "sync" -d 'Update branch from its source'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "publish" -d 'Push branch and create/update PR'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "status" -d 'Show workflow status of current branch'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "list" -d 'List all available workflows'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "info" -d 'Show detailed workflow information'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "use" -d 'Switch to a different workflow'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "create" -d 'Create a new workflow interactively'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "edit" -d 'Edit an existing workflow'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "init" -d 'Initialize workflow configuration'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "validate" -d 'Validate workflow configuration'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "clone" -d 'Clone a workflow with a new name'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "export" -d 'Export workflow configuration to TOML'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "import" -d 'Import workflow from a TOML file'
-complete -c g -n "__fish_g_using_subcommand workflow; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand completions" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand completions" -s c -d 'Override a configuration value (key=value)' -r
 complete -c g -n "__fish_g_using_subcommand completions" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand completions" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
 complete -c g -n "__fish_g_using_subcommand completions" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c g -n "__fish_g_using_subcommand completions" -s V -l version -d 'Print version'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "workspace" -d 'Manage worktree-based workspaces (parallel branch checkouts)'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "stack" -d 'Manage stacked pull requests'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "commit" -d 'Interactive guided commit with message templates'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "add" -d 'Stage files interactively, or forward arguments to `git add`'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "stage" -d 'Interactive file-tree picker for staging and unstaging'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "compare" -d 'Compare two branches visually'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "log" -d 'Enhanced git log with beautiful formatting'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "status" -d 'Enhanced git status with icons and colors'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "diff" -d 'Enhanced git diff using your configured diff tool'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "branch" -d 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "show" -d 'Enhanced git show'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "push" -d 'Enhanced git push with progress display'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "notes" -d 'Manage private review notes left from `g diff`\'s `c` key'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "config" -d 'Open interactive config editor'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "stats" -d 'Display a rich usage-statistics report'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "developer" -d 'Developer / debugging utilities'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "workflow" -d 'Manage git workflows (branching strategies)'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "completions" -d 'Print a shell completion script and exit'
-complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer workflow completions help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "workspace" -d 'Manage worktree-based workspaces (parallel branch checkouts)'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "stack" -d 'Manage stacked pull requests'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "commit" -d 'Interactive guided commit with message templates'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "add" -d 'Stage files interactively, or forward arguments to `git add`'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "stage" -d 'Interactive file-tree picker for staging and unstaging'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "compare" -d 'Compare two branches visually'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "log" -d 'Enhanced git log with beautiful formatting'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "status" -d 'Enhanced git status with icons and colors'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "diff" -d 'Enhanced git diff using your configured diff tool'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "branch" -d 'Enhanced branch listing, `git branch` passthrough, or `branch squash`'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "show" -d 'Enhanced git show'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "push" -d 'Enhanced git push with progress display'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "notes" -d 'Manage private review notes left from `g diff`\'s `c` key'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "config" -d 'Open interactive config editor'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "stats" -d 'Display a rich usage-statistics report'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "developer" -d 'Developer / debugging utilities'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "completions" -d 'Print a shell completion script and exit'
+complete -c g -n "__fish_g_using_subcommand help; and not __fish_seen_subcommand_from workspace stack commit add stage compare log status diff branch show push notes config stats developer completions help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workspace" -f -a "init" -d 'Reorganise an existing repo into a container/worktree layout'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workspace" -f -a "list" -d 'List all workspaces (git worktrees)'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workspace" -f -a "create" -d 'Create a new workspace as a sibling worktree directory'
@@ -675,18 +521,3 @@ complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_fro
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from config" -f -a "set" -d 'Set a config key, validated against the editable schema'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from developer" -f -a "db" -d 'Open an interactive SQLite shell connected to the internal g.db database'
 complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from developer" -f -a "repos" -d 'List all repositories tracked in the internal database'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "start" -d 'Start a new branch using workflow rules'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "finish" -d 'Finish the current branch (merge to target)'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "sync" -d 'Update branch from its source'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "publish" -d 'Push branch and create/update PR'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "status" -d 'Show workflow status of current branch'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "list" -d 'List all available workflows'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "info" -d 'Show detailed workflow information'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "use" -d 'Switch to a different workflow'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "create" -d 'Create a new workflow interactively'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "edit" -d 'Edit an existing workflow'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "init" -d 'Initialize workflow configuration'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "validate" -d 'Validate workflow configuration'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "clone" -d 'Clone a workflow with a new name'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "export" -d 'Export workflow configuration to TOML'
-complete -c g -n "__fish_g_using_subcommand help; and __fish_seen_subcommand_from workflow" -f -a "import" -d 'Import workflow from a TOML file'

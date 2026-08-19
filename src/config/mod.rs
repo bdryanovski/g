@@ -30,12 +30,6 @@ use std::path::PathBuf;
 /// `g config --menu`.
 pub mod settings;
 
-/// Workflow configuration types for customizable git branching strategies.
-pub mod workflow;
-
-/// Built-in workflow presets (gitflow, github-flow, trunk-based, etc.).
-pub mod workflow_presets;
-
 // ─── Config structure ─────────────────────────────────────────────────────────
 
 /// Root configuration struct — mirrors the top-level TOML table.
@@ -74,9 +68,6 @@ pub struct Config {
     /// Plugin discovery configuration.
     #[serde(default)]
     pub plugins: PluginsConfig,
-    /// Git workflow configurations (branching models).
-    #[serde(default)]
-    pub workflows: workflow::WorkflowsConfig,
 }
 
 /// General settings: git executable path, default branch, auto-fetch, pager.
@@ -542,78 +533,6 @@ pub fn set_theme(theme: &str) -> Result<()> {
     save(&cfg)
 }
 
-/// Return the full path to the repo-local workflow config file (`.g/workflow.toml`).
-///
-/// This is relative to the current git repository root.
-///
-/// # Errors
-///
-/// Returns an error if not in a git repository.
-pub fn repo_workflow_path() -> Result<PathBuf> {
-    let repo_root = crate::commands::git::repo_root()?;
-    Ok(PathBuf::from(repo_root).join(".g").join("workflow.toml"))
-}
-
-/// Load workflow configuration, merging repo-local overrides with global config.
-///
-/// Load order (later overrides earlier):
-/// 1. Global config `~/.config/g/config.toml` `[workflows]` section
-/// 2. Repo-local `.g/workflow.toml` (if present)
-///
-/// # Errors
-///
-/// Returns an error if config files exist but cannot be parsed.
-pub fn load_workflows() -> Result<workflow::WorkflowsConfig> {
-    // Start with global config
-    let global = load()?;
-    let mut workflows = global.workflows;
-
-    // Try to load repo-local config
-    if let Ok(repo_path) = repo_workflow_path() {
-        if repo_path.exists() {
-            let raw = fs::read_to_string(&repo_path)
-                .with_context(|| format!("Failed to read {}", repo_path.display()))?;
-            let local: workflow::WorkflowsConfig = toml::from_str(&raw)
-                .with_context(|| format!("Failed to parse {}", repo_path.display()))?;
-
-            // Merge: local workflows override global ones
-            for (name, wf) in local.workflows {
-                workflows.workflows.insert(name, wf);
-            }
-
-            // Local default takes precedence if set
-            if local.default.is_some() {
-                workflows.default = local.default;
-            }
-        }
-    }
-
-    Ok(workflows)
-}
-
-/// Save workflow configuration to the repo-local `.g/workflow.toml` file.
-///
-/// Creates the `.g` directory if it doesn't exist.
-///
-/// # Errors
-///
-/// Returns an error if the file cannot be written.
-pub fn save_repo_workflows(workflows: &workflow::WorkflowsConfig) -> Result<()> {
-    let repo_path = repo_workflow_path()?;
-    let dir = repo_path.parent().unwrap();
-
-    if !dir.exists() {
-        fs::create_dir_all(dir)
-            .with_context(|| format!("Failed to create directory: {}", dir.display()))?;
-    }
-
-    let raw = toml::to_string_pretty(workflows).context("Failed to serialize workflows")?;
-    fs::write(&repo_path, raw)
-        .with_context(|| format!("Failed to write {}", repo_path.display()))?;
-
-    Ok(())
-}
-
 /// Get a sanitized repo name for use in config file paths.
 ///
 /// Converts the repo root path to a safe filename by replacing path separators
@@ -710,7 +629,6 @@ impl Default for Config {
             stage: StageConfig::default(),
             aliases: HashMap::new(),
             plugins: PluginsConfig::default(),
-            workflows: workflow::WorkflowsConfig::default(),
         })
     }
 }
