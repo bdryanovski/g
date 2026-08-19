@@ -159,32 +159,6 @@ pub const SCHEMA: &[Setting] = &[
         kind: Kind::Bool,
         help: "Show emoji in the commit type picker",
     },
-    // ── diff ───────────────────────────────────────────────────────────────
-    Setting {
-        key: "diff.tool",
-        kind: Kind::Str,
-        help: "Diff tool: auto | builtin | raw | /path/to/executable",
-    },
-    Setting {
-        key: "diff.context_lines",
-        kind: Kind::Int,
-        help: "Context lines around each diff hunk",
-    },
-    Setting {
-        key: "diff.layout",
-        kind: Kind::Str,
-        help: "TUI layout: auto | stack | split | side",
-    },
-    Setting {
-        key: "diff.line_numbers",
-        kind: Kind::Bool,
-        help: "Show line numbers in the diff gutter",
-    },
-    Setting {
-        key: "diff.wrap_lines",
-        kind: Kind::Bool,
-        help: "Wrap long lines instead of clipping",
-    },
     // ── github ─────────────────────────────────────────────────────────────
     Setting {
         key: "github.api_base",

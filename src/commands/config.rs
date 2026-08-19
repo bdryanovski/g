@@ -161,14 +161,6 @@ fn handle_summary() -> Result<()> {
     ui::print_blank();
     ui::print_fieldset("Diff");
     ui::print_blank();
-    ui::print_key_value_pairs(&[
-        ("tool", ui::paint_text(&cfg.diff.tool)),
-        (
-            "context_lines",
-            ui::paint_text(&cfg.diff.context_lines.to_string()),
-        ),
-    ]);
-
     ui::print_blank();
     ui::print_fieldset("GitHub");
     ui::print_blank();

@@ -48,8 +48,6 @@ pub struct Config {
     #[serde(default)]
     pub commit: CommitConfig,
     /// Diff-tool selection and options.
-    #[serde(default)]
-    pub diff: DiffConfig,
     /// GitHub API integration.
     #[serde(default)]
     pub github: GithubConfig,
@@ -235,58 +233,6 @@ impl Default for CommitConfig {
         }
     }
 }
-
-/// Diff-tool selection and context configuration.
-///
-/// Every field is tagged with `#[serde(default)]` so a partial `[diff]` table
-/// (or none at all) deserialises cleanly — missing fields fall back to the
-/// [`Default`] impl values.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DiffConfig {
-    /// Diff tool / mode:
-    /// - `"auto"` / `"builtin"` (default) — builtin syntect-backed renderer.
-    ///   TUI when stdout is a TTY, inline ANSI otherwise.
-    /// - `"raw"` — forward `git diff` output untouched (no rendering, no
-    ///   external tool).  Equivalent to running `git diff` directly.
-    /// - Any other non-empty string — treat as an external executable path and
-    ///   pipe `git diff` stdout through it.  Falls back to the builtin
-    ///   renderer when the binary isn't found.
-    ///
-    /// The command-line flag `--raw` overrides this setting for one invocation.
-    #[serde(default)]
-    pub tool: String,
-    /// Extra arguments forwarded to the external diff tool when one is selected.
-    #[serde(default)]
-    pub tool_args: Vec<String>,
-    /// Number of context lines shown around each change hunk.
-    #[serde(default)]
-    pub context_lines: usize,
-    /// Default TUI layout for `g diff` (when stdout is a TTY):
-    /// `"auto"` | `"stack"` | `"split"` | `"side"`.  `"auto"` picks `side`
-    /// for wide terminals, `stack` for narrow.
-    #[serde(default)]
-    pub layout: String,
-    /// Show line numbers in the gutter (defaults to `true`).
-    #[serde(default)]
-    pub line_numbers: bool,
-    /// Wrap long lines instead of clipping (defaults to `false`).
-    #[serde(default)]
-    pub wrap_lines: bool,
-}
-
-impl Default for DiffConfig {
-    fn default() -> Self {
-        Self {
-            tool: "auto".into(),
-            tool_args: vec![],
-            context_lines: 3,
-            layout: "auto".into(),
-            line_numbers: true,
-            wrap_lines: false,
-        }
-    }
-}
-
 /// Interactive `g stage` settings.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StageConfig {
@@ -622,7 +568,6 @@ impl Default for Config {
             general: GeneralConfig::default(),
             ui: UiConfig::default(),
             commit: CommitConfig::default(),
-            diff: DiffConfig::default(),
             github: GithubConfig::default(),
             workspace: WorkspaceConfig::default(),
             log: LogConfig::default(),

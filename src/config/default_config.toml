@@ -72,26 +72,6 @@ gpg_sign = false
 # {footer}
 # """
 
-# ─── Diff Tool ────────────────────────────────────────────────────────────────
-[diff]
-# Builtin diff engine (syntect syntax highlighting) is the default:
-#   "auto" / "builtin" — builtin renderer (TUI if stdout is a TTY, inline ANSI otherwise)
-#   "raw"              — passthrough of `git diff` output untouched (no rendering)
-#   "/path/to/executable" — pipe `git diff` stdout through an arbitrary pager
-#
-# Use the `--raw` flag on `g diff` to force passthrough for a single invocation
-# regardless of this setting — useful for piping to a pager or scripting.
-tool = "builtin"
-tool_args = []
-context_lines = 3
-# TUI layout when stdout is a TTY: "auto" | "stack" | "split" | "side"
-# "auto" picks `side` for wide terminals, `stack` for narrow.
-layout = "auto"
-# Show line numbers in the gutter.
-line_numbers = true
-# Wrap long lines instead of clipping.
-wrap_lines = false
-
 # ─── GitHub Integration ───────────────────────────────────────────────────────
 [github]
 # GitHub token — prefer setting GITHUB_TOKEN environment variable
