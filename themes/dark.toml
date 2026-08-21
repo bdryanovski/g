@@ -27,20 +27,3 @@ cc_perf     = "yellow"
 cc_test     = "cyan"
 cc_chore    = "darkgray"
 cc_revert   = "red"
-
-# Syntax highlighting
-syntax_keyword   = "magenta"
-syntax_string    = "green"
-syntax_comment   = "darkgray"
-syntax_function  = "blue"
-syntax_type      = "yellow"
-syntax_number    = "cyan"
-syntax_operator  = "white"
-syntax_variable  = "white"
-syntax_constant  = "cyan"
-syntax_attribute = "yellow"
-
-# Diff colors
-diff_add_bg = "#002800"
-diff_del_bg = "#280000"
-diff_hunk   = "cyan"

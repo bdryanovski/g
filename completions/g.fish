@@ -289,7 +289,6 @@ complete -c g -n "__fish_g_using_subcommand stage" -s V -l version -d 'Print ver
 complete -c g -n "__fish_g_using_subcommand compare" -s C -d 'Run as if git was started in <path>' -r
 complete -c g -n "__fish_g_using_subcommand compare" -s c -d 'Override a configuration value (key=value)' -r
 complete -c g -n "__fish_g_using_subcommand compare" -l stat -d 'Only show file-level stat, not full diff'
-complete -c g -n "__fish_g_using_subcommand compare" -l diff -d 'Show full diff'
 complete -c g -n "__fish_g_using_subcommand compare" -l commits -d 'Show only commits'
 complete -c g -n "__fish_g_using_subcommand compare" -l dry-run -d 'Preview what commands would run without making any changes'
 complete -c g -n "__fish_g_using_subcommand compare" -l no-interactive -d 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
@@ -354,7 +353,6 @@ complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_f
 complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from set" -s V -l version -d 'Print version'
 complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "set" -d 'Set a config key, validated against the editable schema'
 complete -c g -n "__fish_g_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c g -n "__fish_g_using_subcommand stats" -l days -d 'Number of days to look back for time-based stats' -r
 complete -c g -n "__fish_g_using_subcommand stats" -l import-limit -d 'Maximum number of commits to import (default: all)' -r
 complete -c g -n "__fish_g_using_subcommand stats" -l search -d 'Search commit messages using fuzzy matching' -r
 complete -c g -n "__fish_g_using_subcommand stats" -s C -d 'Run as if git was started in <path>' -r

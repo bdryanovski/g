@@ -192,23 +192,6 @@ pub fn print_blank() {
     println!();
 }
 
-/// Print a full-width `───` rule scaled to the terminal width.
-#[allow(dead_code)]
-pub fn print_rule() {
-    let width = super::render::terminal_width()
-        .saturating_sub(indent().len())
-        .max(10);
-    let rule = theme::current().borders.horizontal;
-    println!(
-        "{}{}",
-        indent(),
-        paint_spec(
-            &rule.to_string().repeat(width),
-            theme::current().styles.rule
-        )
-    );
-}
-
 /// Print a numbered step: `  [n/total]  <msg>`.
 pub fn print_step(step: usize, total: usize, msg: &str) {
     println!(

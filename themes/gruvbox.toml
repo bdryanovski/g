@@ -23,20 +23,3 @@ cc_perf     = "#fe8019"
 cc_test     = "#8ec07c"
 cc_chore    = "#928374"
 cc_revert   = "#fb4934"
-
-# Syntax highlighting
-syntax_keyword   = "#fb4934"
-syntax_string    = "#b8bb26"
-syntax_comment   = "#928374"
-syntax_function  = "#8ec07c"
-syntax_type      = "#fabd2f"
-syntax_number    = "#d3869b"
-syntax_operator  = "#fe8019"
-syntax_variable  = "#ebdbb2"
-syntax_constant  = "#d3869b"
-syntax_attribute = "#fe8019"
-
-# Diff colors
-diff_add_bg = "#2e3420"
-diff_del_bg = "#3c2020"
-diff_hunk   = "#83a598"

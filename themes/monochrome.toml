@@ -23,20 +23,3 @@ cc_perf     = "gray"
 cc_test     = "white"
 cc_chore    = "darkgray"
 cc_revert   = "gray"
-
-# Syntax highlighting (grayscale)
-syntax_keyword   = "white"
-syntax_string    = "gray"
-syntax_comment   = "darkgray"
-syntax_function  = "white"
-syntax_type      = "white"
-syntax_number    = "gray"
-syntax_operator  = "white"
-syntax_variable  = "white"
-syntax_constant  = "gray"
-syntax_attribute = "gray"
-
-# Diff colors (grayscale)
-diff_add_bg = "#1a1a1a"
-diff_del_bg = "#2a2a2a"
-diff_hunk   = "gray"

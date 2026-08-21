@@ -1,4 +1,4 @@
-//! Compare two branches with commit stats, file stats, and optional diffs.
+//! Compare two branches with commit stats and file stats.
 //!
 //! ## Tutorial overview
 //!
@@ -8,16 +8,14 @@
 //! 2. Optionally fetches from remotes so the counts reflect the current remote state.
 //! 3. Uses `git rev-list --count` to compute how many commits each branch is ahead
 //!    or behind the other.
-//! 4. Displays the differences as a list of commits, a file-level diffstat, or a
-//!    full patch, depending on the flags the user passes.
+//! 4. Displays the differences as a list of commits or a file-level diffstat,
+//!    depending on the flags the user passes.
 //!
 //! ## Rust concepts used here
 //!
 //! - `unwrap_or_else` for providing defaults when an `Option` is `None`.
 //! - String formatting with `format!` for complex CLI output.
 //! - Iterators (`map`, `collect`, `join`) to process multi-line git output.
-//! - Module delegation: [`show_full_diff`] calls `enhanced_diff` from the `git`
-//!   module rather than duplicating the diff-tool selection logic.
 
 use anyhow::Result;
 
@@ -37,7 +35,7 @@ use crate::ui;
 /// - The config cannot be loaded.
 /// - An optional `git fetch` fails.
 /// - Any git command used for counting or displaying commits fails.
-pub fn compare(ctx: &crate::commands::Ctx<'_>, args: &CompareArgs) -> Result<()> {
+pub fn compare(args: &CompareArgs) -> Result<()> {
     let cfg = config::load()?;
 
     let current = gitcmd::current_branch().unwrap_or_else(|_| "HEAD".into());
@@ -76,13 +74,13 @@ pub fn compare(ctx: &crate::commands::Ctx<'_>, args: &CompareArgs) -> Result<()>
 
     // ─── Commits ──────────────────────────────────────────────────────────────
 
-    if ahead > 0 && (args.commits || (!args.stat && !args.diff)) {
+    if ahead > 0 && (args.commits || !args.stat) {
         show_commits(&base, &head, ahead)?;
     }
 
     // ─── File stat ────────────────────────────────────────────────────────────
 
-    if args.stat || (!args.diff && !args.commits) {
+    if args.stat || !args.commits {
         show_file_stat(&base, &head)?;
     }
 

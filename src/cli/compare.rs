@@ -15,10 +15,6 @@ pub struct CompareArgs {
     #[arg(long)]
     pub stat: bool,
 
-    /// Show full diff
-    #[arg(long)]
-    pub diff: bool,
-
     /// Show only commits
     #[arg(long)]
     pub commits: bool,

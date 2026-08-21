@@ -15,7 +15,6 @@
 //!   status.rs     ← `g status` (enhanced, --porcelain=v2 parsing)
 //!   add.rs        ← `g add` + interactive stager
 //!   branch.rs     ← `g branch` (enhanced + `branch squash`)
-//!   show.rs       ← `g show` (metadata + diff)
 //! ```
 //!
 //! ## Public surface

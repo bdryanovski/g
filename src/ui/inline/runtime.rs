@@ -29,20 +29,6 @@ pub fn is_interactive() -> bool {
 /// A key binding hint: `(key, description)`.
 pub type KeyHint<'a> = (&'a str, &'a str);
 
-/// Print the standard inline header into the scroll buffer: a blank line, the
-/// slash fieldset title, a muted hint line, and a trailing blank.
-///
-/// This stays in history and is never overwritten by later in-place redraws.
-#[allow(dead_code)]
-pub fn header(prompt: &str, hint: &str) {
-    use crate::ui::print::muted;
-    println!();
-    crate::ui::widgets::print_fieldset(prompt);
-    println!();
-    println!("{}{}", indent(), muted(hint));
-    println!();
-}
-
 /// Print a header with colored key binding hints.
 ///
 /// Each hint is a `(key, description)` pair. Keys are highlighted, descriptions

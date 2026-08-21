@@ -76,7 +76,6 @@ gpg_sign = false
 [github]
 # GitHub token — prefer setting GITHUB_TOKEN environment variable
 # token = ""
-default_reviewers = []
 default_labels = []
 # For GitHub Enterprise:
 # api_base = "https://github.your-company.com/api/v3"

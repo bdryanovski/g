@@ -13,7 +13,6 @@
 //! - [`repos`] — upsert/lookup repo anchor rows (shared FK for all tables).
 //! - [`workspaces`] — CRUD for git worktree metadata (replaces `workspaces.toml`).
 //! - [`stacks`] — CRUD for stacked-PR metadata (replaces `stacks.toml`).
-//! - [`reviews`] — private code-review notes (local-only bucket).
 //! - [`stats`] — append-only event recording for command usage and activity.
 //! - [`toml_import`] — one-time import of legacy TOML data on first run.
 

@@ -24,11 +24,6 @@ ratatui        = { version = "0.30", features = ["crossterm"] }
 ratatui-cheese = "0.6"
 crossterm      = "0.29"
 
-# Builtin diff — syntax highlighting.
-# `syntect` ships TextMate grammars/themes (same model as hunk/VSCode).
-# `default-fancy` pulls in the oniguruma regex engine for full grammar compat.
-syntect = { version = "5", default-features = false, features = ["default-fancy", "default-syntaxes", "default-themes", "plist-load", "yaml-load"] }
-
 # ANSI-aware text width measurement and terminal size detection.
 # Used for column alignment in tables and fieldset width calculation.
 console = "0.15"
@@ -46,6 +41,9 @@ thiserror = "1"
 
 # Utilities
 dirs   = "5"
+# The `serde` feature is needed only by `storage::toml_import` — the legacy
+# pre-SQLite TOML migration deserialises `DateTime` fields. Deleting that
+# module (see architecture review, candidate 8) would drop the feature.
 chrono = { version = "0.4", features = ["serde"] }
 which  = "6"
 
@@ -54,12 +52,6 @@ ureq = { version = "2", features = ["json"] }
 
 # Embedded database
 rusqlite = { version = "0.31", features = ["bundled"] }
-
-# Tempfile is used in both tests (isolated git repos) and at runtime — `$EDITOR`
-# invocation in `g notes edit` writes the note body to a temporary Markdown
-# file so the user's editor can mutate it in place.
-tempfile = "3"
-regex = "1.13.1"
 
 [build-dependencies]
 # Same clap + clap_complete as the main binary so build.rs can include

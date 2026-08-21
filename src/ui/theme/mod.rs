@@ -216,21 +216,6 @@ impl Theme {
             cc_test: Color::Cyan,
             cc_chore: Color::DarkGray,
             cc_revert: Color::Red,
-            // Syntax highlighting (light theme)
-            syntax_keyword: Color::Magenta,
-            syntax_string: Color::Green,
-            syntax_comment: Color::DarkGray,
-            syntax_function: Color::Blue,
-            syntax_type: Color::Rgb(128, 64, 0), // brown/orange
-            syntax_number: Color::Cyan,
-            syntax_operator: Color::Black,
-            syntax_variable: Color::Black,
-            syntax_constant: Color::Cyan,
-            syntax_attribute: Color::Rgb(128, 64, 0),
-            // Diff colors (light background)
-            diff_add_bg: Color::Rgb(220, 255, 220),
-            diff_del_bg: Color::Rgb(255, 220, 220),
-            diff_hunk: Color::Blue,
         };
         Self::from_palette(palette)
     }

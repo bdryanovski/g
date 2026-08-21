@@ -461,7 +461,6 @@ set edit:completion:arg-completer[g] = {|@words|
             cand -C 'Run as if git was started in <path>'
             cand -c 'Override a configuration value (key=value)'
             cand --stat 'Only show file-level stat, not full diff'
-            cand --diff 'Show full diff'
             cand --commits 'Show only commits'
             cand --dry-run 'Preview what commands would run without making any changes'
             cand --no-interactive 'Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments'
@@ -572,7 +571,6 @@ set edit:completion:arg-completer[g] = {|@words|
         &'g;config;help;help'= {
         }
         &'g;stats'= {
-            cand --days 'Number of days to look back for time-based stats'
             cand --import-limit 'Maximum number of commits to import (default: all)'
             cand --search 'Search commit messages using fuzzy matching'
             cand -C 'Run as if git was started in <path>'

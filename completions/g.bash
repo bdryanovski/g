@@ -578,7 +578,7 @@ _g() {
             return 0
             ;;
         g__subcmd__compare)
-            opts="-C -c -h -V --stat --diff --commits --dry-run --no-interactive --help --version"
+            opts="-C -c -h -V --stat --commits --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2136,16 +2136,12 @@ _g() {
             return 0
             ;;
         g__subcmd__stats)
-            opts="-C -c -h -V --days --no-git --import --import-limit --search --duplicates --message-stats --dry-run --no-interactive --help --version"
+            opts="-C -c -h -V --no-git --import --import-limit --search --duplicates --message-stats --dry-run --no-interactive --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                --days)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
                 --import-limit)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0

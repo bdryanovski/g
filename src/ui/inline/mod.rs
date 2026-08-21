@@ -4,10 +4,10 @@
 //! terminal scroll buffer (no alternate screen) and stay in history. The shared
 //! machinery lives in:
 //!
-//! - [`runtime`] — the TTY guard, the static [`runtime::header`], and the
-//!   raw-mode key loop [`runtime::run_raw`].
+//! - [`runtime`] — the TTY guard, the static [`runtime::header_with_hints`],
+//!   and the raw-mode key loop [`runtime::run_raw`].
 //! - [`widgets`] — option/checkbox row rendering and the in-place
-//!   [`widgets::redraw_rows`].
+//!   [`widgets::redraw_scrollable`].
 //!
 //! Each prompt below prints its header + initial body, then hands the key loop
 //! to `run_raw` — so the navigation logic reads top-to-bottom with no
@@ -341,12 +341,6 @@ where
             Err(msg) => println!("{}{}  {}", indent(), warning("✗"), muted(&msg)),
         }
     }
-}
-
-/// Inline text input without validation. Convenience wrapper.
-#[allow(dead_code)]
-pub fn inline_input(prompt: &str, default: Option<&str>) -> Option<String> {
-    inline_input_validated(prompt, default, |_| Ok(()))
 }
 
 // ─── inline_confirm ───────────────────────────────────────────────────────────

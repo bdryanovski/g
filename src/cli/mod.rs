@@ -50,9 +50,9 @@ pub use branch::BranchSquashCmd;
 pub use commit::CommitArgs;
 pub use compare::CompareArgs;
 pub use config::ConfigArgs;
-// `ConfigCmd` is destructured at runtime by `main::handle_config` but the
-// build script only walks the clap tree via `Cli::command()`, so the
-// re-export looks unused there — allow it for that compilation unit.
+// The build script compiles `cli/mod.rs` standalone (it only walks the clap
+// tree via `Cli::command()`), where this re-export looks unused — allow it
+// for that compilation unit.
 #[allow(unused_imports)]
 pub use config::ConfigCmd;
 pub use developer::DeveloperCommands;
@@ -63,7 +63,7 @@ pub use workspace::WorkspaceCommands;
 // ─── Git pass-through ─────────────────────────────────────────────────────────
 
 /// Pass-through args used by every enhanced git command (`g log`, `g status`,
-/// `g diff`, `g show`, `g add`).  Lives in `mod.rs` because the `Commands`
+/// `g add`).  Lives in `mod.rs` because the `Commands`
 /// enum below references it from six variants — keeping it local avoids a
 /// trivial one-struct sub-file.
 #[derive(Args)]

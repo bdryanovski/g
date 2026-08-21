@@ -159,9 +159,6 @@ fn handle_summary() -> Result<()> {
     ]);
 
     ui::print_blank();
-    ui::print_fieldset("Diff");
-    ui::print_blank();
-    ui::print_blank();
     ui::print_fieldset("GitHub");
     ui::print_blank();
     ui::print_key_value_pairs(&[

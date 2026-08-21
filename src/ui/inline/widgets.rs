@@ -14,25 +14,8 @@ use crossterm::terminal::{self, ClearType};
 use crossterm::{execute, queue};
 
 use crate::ui::interactive::SelectOption;
-use crate::ui::print::{muted, paint_text, primary, success, warning};
+use crate::ui::print::{muted, paint_text, primary, success};
 use crate::ui::render::indent;
-
-/// Re-render `n` rows in place: move the cursor up to the first row, then clear
-/// and reprint each via `render_row(i, writer)`. Leaves the cursor one line
-/// below the last row — exactly where it started.
-#[allow(dead_code)]
-pub fn redraw_rows(
-    n: usize,
-    stdout: &mut impl Write,
-    mut render_row: impl FnMut(usize, &mut dyn Write),
-) {
-    let _ = execute!(stdout, cursor::MoveToPreviousLine(n as u16));
-    for i in 0..n {
-        let _ = queue!(stdout, terminal::Clear(ClearType::CurrentLine));
-        render_row(i, stdout);
-    }
-    let _ = stdout.flush();
-}
 
 /// Print a single-select option row (ends with `\r\n`, safe in raw mode).
 pub fn option_row(opt: &SelectOption, is_cursor: bool, max_label: usize, stdout: &mut dyn Write) {
@@ -148,18 +131,6 @@ impl ScrollView {
         }
     }
 
-    /// Create a scroll view with explicit max visible rows.
-    #[allow(dead_code)]
-    pub fn with_max_visible(total: usize, max_visible: usize) -> Self {
-        let visible = max_visible.clamp(MIN_VISIBLE, total);
-        Self {
-            total,
-            cursor: 0,
-            offset: 0,
-            visible,
-        }
-    }
-
     /// Move cursor down, adjusting viewport offset if needed.
     pub fn move_down(&mut self) {
         if self.cursor < self.total - 1 {
@@ -182,30 +153,10 @@ impl ScrollView {
         }
     }
 
-    /// Jump to start of list.
-    #[allow(dead_code)]
-    pub fn move_to_start(&mut self) {
-        self.cursor = 0;
-        self.offset = 0;
-    }
-
-    /// Jump to end of list.
-    #[allow(dead_code)]
-    pub fn move_to_end(&mut self) {
-        self.cursor = self.total.saturating_sub(1);
-        self.offset = self.total.saturating_sub(self.visible);
-    }
-
     /// Range of visible items `[start, end)`.
     pub fn visible_range(&self) -> std::ops::Range<usize> {
         let end = (self.offset + self.visible).min(self.total);
         self.offset..end
-    }
-
-    /// Cursor position relative to the visible window (for highlighting).
-    #[allow(dead_code)]
-    pub fn local_cursor(&self) -> usize {
-        self.cursor - self.offset
     }
 
     /// Returns true if there are items above the visible window.
@@ -227,19 +178,6 @@ impl ScrollView {
     pub fn items_below(&self) -> usize {
         self.total.saturating_sub(self.offset + self.visible)
     }
-
-    /// Total number of lines this view will render (visible + indicators).
-    #[allow(dead_code)]
-    pub fn rendered_lines(&self) -> usize {
-        let mut lines = self.visible.min(self.total);
-        if self.has_items_above() {
-            lines += 1;
-        }
-        if self.has_items_below() {
-            lines += 1;
-        }
-        lines
-    }
 }
 
 /// Print the "more items above" indicator.
@@ -260,26 +198,6 @@ pub fn scroll_indicator_below(count: usize, stdout: &mut dyn Write) {
         format!("↓ {} more items below", count)
     };
     let _ = write!(stdout, "{}   {}\r\n", indent(), muted(&msg));
-}
-
-/// Print scroll position summary (e.g., "Showing 1-15 of 42").
-#[allow(dead_code)]
-pub fn scroll_position_summary(view: &ScrollView, selected_count: usize, stdout: &mut dyn Write) {
-    let start = view.offset + 1;
-    let end = (view.offset + view.visible).min(view.total);
-    let pos = format!("Showing {}-{} of {}", start, end, view.total);
-    let selected = if selected_count > 0 {
-        format!("  •  {} selected", selected_count)
-    } else {
-        String::new()
-    };
-    let _ = write!(
-        stdout,
-        "{}   {}{}\r\n",
-        indent(),
-        muted(&pos),
-        warning(&selected)
-    );
 }
 
 /// Re-render a scrollable view in place.

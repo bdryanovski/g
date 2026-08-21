@@ -41,36 +41,6 @@ pub struct Palette {
     pub cc_chore: Color,
     /// `revert:` prefix color.
     pub cc_revert: Color,
-
-    // ── Syntax highlighting colors ─────────────────────────────────────────
-    /// Keywords (`fn`, `let`, `if`, `match`, etc.).
-    pub syntax_keyword: Color,
-    /// Strings and string literals.
-    pub syntax_string: Color,
-    /// Comments.
-    pub syntax_comment: Color,
-    /// Function and method names.
-    pub syntax_function: Color,
-    /// Types, structs, enums, traits.
-    pub syntax_type: Color,
-    /// Numbers and numeric literals.
-    pub syntax_number: Color,
-    /// Operators (`+`, `-`, `=`, `::`, etc.).
-    pub syntax_operator: Color,
-    /// Variables and identifiers.
-    pub syntax_variable: Color,
-    /// Constants and statics.
-    pub syntax_constant: Color,
-    /// Attributes and annotations (`#[...]`).
-    pub syntax_attribute: Color,
-
-    // ── Diff-specific colors ───────────────────────────────────────────────
-    /// Added line background (subtle).
-    pub diff_add_bg: Color,
-    /// Deleted line background (subtle).
-    pub diff_del_bg: Color,
-    /// Hunk header color.
-    pub diff_hunk: Color,
 }
 
 impl Palette {
@@ -98,21 +68,6 @@ impl Palette {
             cc_test: Color::Cyan,
             cc_chore: Color::DarkGray,
             cc_revert: Color::Red,
-            // Syntax highlighting (dark theme defaults)
-            syntax_keyword: Color::Magenta,
-            syntax_string: Color::Green,
-            syntax_comment: Color::DarkGray,
-            syntax_function: Color::Blue,
-            syntax_type: Color::Yellow,
-            syntax_number: Color::Cyan,
-            syntax_operator: Color::White,
-            syntax_variable: Color::White,
-            syntax_constant: Color::Cyan,
-            syntax_attribute: Color::Yellow,
-            // Diff colors
-            diff_add_bg: Color::Rgb(0, 40, 0),
-            diff_del_bg: Color::Rgb(40, 0, 0),
-            diff_hunk: Color::Cyan,
         }
     }
 }

@@ -256,8 +256,6 @@ pub struct GithubConfig {
     /// GitHub personal access token.  Prefer the `GITHUB_TOKEN` environment
     /// variable over storing a token in the config file.
     pub token: Option<String>,
-    /// Default PR reviewers added to every newly created PR.
-    pub default_reviewers: Vec<String>,
     /// Default labels applied to every newly created PR.
     pub default_labels: Vec<String>,
     /// GitHub API base URL.  Override for GitHub Enterprise instances
@@ -269,7 +267,6 @@ impl Default for GithubConfig {
     fn default() -> Self {
         Self {
             token: None,
-            default_reviewers: vec![],
             default_labels: vec![],
             api_base: "https://api.github.com".into(),
         }
@@ -477,35 +474,6 @@ pub fn set_theme(theme: &str) -> Result<()> {
     let mut cfg = load()?;
     cfg.ui.theme = theme.to_string();
     save(&cfg)
-}
-
-/// Get a sanitized repo name for use in config file paths.
-///
-/// Converts the repo root path to a safe filename by replacing path separators
-/// and special characters.
-fn repo_config_name() -> Result<String> {
-    let repo_root = crate::commands::git::repo_root()?;
-    let path = std::path::Path::new(&repo_root);
-
-    // Use the last component (directory name) as the base
-    let name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("unknown");
-
-    // Sanitize: replace any non-alphanumeric chars except dash/underscore
-    let sanitized: String = name
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '_'
-            }
-        })
-        .collect();
-
-    Ok(sanitized)
 }
 
 /// Rewrite the first `theme = …` line in `raw` to use `theme`, preserving

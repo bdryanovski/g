@@ -572,7 +572,6 @@ _arguments "${_arguments_options[@]}" : \
 '-C+[Run as if git was started in <path>]:PATH:_default' \
 '*-c+[Override a configuration value (key=value)]:KEY=VAL:_default' \
 '--stat[Only show file-level stat, not full diff]' \
-'--diff[Show full diff]' \
 '--commits[Show only commits]' \
 '--dry-run[Preview what commands would run without making any changes]' \
 '--no-interactive[Disable all interactive TUI prompts; use defaults or require --flag values. Useful for scripting and CI environments]' \
@@ -760,7 +759,6 @@ esac
 ;;
 (stats)
 _arguments "${_arguments_options[@]}" : \
-'--days=[Number of days to look back for time-based stats]:DAYS:_default' \
 '--import-limit=[Maximum number of commits to import (default\: all)]:N:_default' \
 '--search=[Search commit messages using fuzzy matching]:QUERY:_default' \
 '-C+[Run as if git was started in <path>]:PATH:_default' \

@@ -262,7 +262,7 @@ fn run() -> Result<()> {
             Commands::Commit(args) => commands::commit::commit(&ctx, &args)?,
             Commands::Add(args) => commands::git::dispatch_add(args)?,
             Commands::Stage => commands::stage::stage()?,
-            Commands::Compare(args) => commands::compare::compare(&ctx, &args)?,
+            Commands::Compare(args) => commands::compare::compare(&args)?,
 
             Commands::Log(args) => commands::git::enhanced_log(&args.args)?,
             Commands::Status(args) => commands::git::enhanced_status(&args.args)?,

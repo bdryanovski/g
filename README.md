@@ -436,7 +436,6 @@ tool = "auto"          # builtin renderer (TUI if TTY, inline ANSI otherwise)
 
 [github]
 # token = "..."             # prefer GITHUB_TOKEN env var
-default_reviewers = ["alice", "bob"]
 default_labels = ["needs-review"]
 
 [workspace]

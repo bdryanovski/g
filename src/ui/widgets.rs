@@ -69,12 +69,6 @@ pub fn print_fieldset(title: &str) {
     print_buffer_row(&buffer, 0);
 }
 
-/// Print a slash fieldset with a title and item count appended: `Title (n)`.
-#[allow(dead_code)]
-pub fn print_fieldset_count(title: &str, count: usize) {
-    print_fieldset(&format!("{} ({})", title, count));
-}
-
 // ─── Branch / stack markers ───────────────────────────────────────────────────
 
 /// Return the filled (`◉`) or hollow (`◯`) branch marker colored by state.
@@ -443,55 +437,6 @@ impl Table {
             println!("{}{}", indent(), cells.join(gap));
         }
     }
-}
-
-// ─── Stack tree ───────────────────────────────────────────────────────────────
-
-/// Print a stack tree to stdout.
-///
-/// `branches` is a slice of `(name, is_current, pr_url)` tuples ordered from
-/// the top of the stack to the base.
-#[allow(dead_code)]
-pub fn print_stack_tree(stack_name: &str, branches: &[(String, bool, Option<String>)]) {
-    use super::print::{link_muted, primary_bold, text_bold};
-    println!(
-        "\n{}  {} {}",
-        indent(),
-        text_bold("Stack:"),
-        primary_bold(stack_name)
-    );
-    println!();
-    let t = theme::current();
-    let b = &t.borders;
-    let dash = b.horizontal;
-    let last = branches.len().saturating_sub(1);
-    for (i, (branch, is_current, pr_url)) in branches.iter().enumerate() {
-        let connector = if i == last { b.tree_last } else { b.tee_left };
-        let pipe = if i == last { ' ' } else { b.vertical };
-
-        print!(
-            "{}{}{}{} {} {}",
-            indent(),
-            paint(&connector.to_string(), t.palette.muted),
-            paint(&dash.to_string(), t.palette.muted),
-            paint(&dash.to_string(), t.palette.muted),
-            branch_marker(*is_current),
-            branch_name_colored(branch, *is_current)
-        );
-        if let Some(url) = pr_url {
-            print!("  {}", link_muted(url));
-        }
-        println!();
-        if i < last {
-            println!(
-                "{}{}   {}",
-                indent(),
-                paint(&pipe.to_string(), t.palette.muted),
-                paint(&b.vertical.to_string(), t.palette.muted)
-            );
-        }
-    }
-    println!();
 }
 
 // ─── Commit log layout ────────────────────────────────────────────────────────
